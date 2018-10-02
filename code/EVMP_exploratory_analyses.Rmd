@@ -1,0 +1,59 @@
+---
+title: "EVMP_01"
+author: "Ed Gage"
+date: "October 1, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE)
+opts_knit$set(root.dir=normalizePath('../')) # this is required if my Rmd is nested below the project directory
+opts_chunk$set(fig.path = "../output/figures/") # corrected path and added dev .. if I want to specify a subdirectory for figs
+
+# see discussion here: https://stackoverflow.com/questions/24585254/working-with-knitr-using-subdirectories
+
+```
+
+
+**Updated: `r format(Sys.time(), '%Y %B %d')`**
+
+## Introduction
+
+This document provides basic QA/QC tools for the Spring 2017 willow utilization data.
+
+Analyses aim to characterize basic data structure and identify potential issues such as:
+
+* Inconsistently named/typed factors    
+* Missing values
+* Data values outside of expected range or showing unusual patterns
+
+In addition, data are cleaned to produce archival files for further analyses.
+
+```{r,echo=FALSE}
+# library(here)
+# here()
+# install.packages("bindrcpp")
+suppressPackageStartupMessages(library(tidyverse))
+library(fs)
+suppressPackageStartupMessages(library(sf))
+# library(raster)
+suppressPackageStartupMessages(library(janitor))
+suppressPackageStartupMessages(library(readxl))
+# library(glue)
+suppressPackageStartupMessages(library(mapview))
+# library(ggmap)
+# library(ggrepel)
+suppressPackageStartupMessages(library(viridis))
+library(ggExtra)
+library(DT)
+library(kableExtra)
+suppressPackageStartupMessages(library(lubridate))
+library(anytime)
+suppressPackageStartupMessages(library(compare))
+suppressPackageStartupMessages(library(skimr)) ## some useful functions
+suppressPackageStartupMessages(library(dataMaid))
+
+```
+
+## Spring: 2017 

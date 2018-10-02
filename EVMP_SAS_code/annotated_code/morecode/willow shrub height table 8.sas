@@ -1,0 +1,198 @@
+/*This program creates willow height data found in table 8 of Zeigenfuss and Johnson (2015)--Average and maximum 
+  willow height and percent willow cover on the elk winter range of Rocky Mountain National Park, Colorado, at
+  baseline measurement (2008–9) and at first 5-yr sampling (2013). Estimates are for the macroplot methods described 
+  in Zeigenfuss and others (2011) and include sites that were burned in 2013. The first step of the code reads in 
+  data from a file contaning the baseline data from willow macroplots and calculates canopy area for
+  each plot and assigns the baseline year (2008) to these data and sorts the data down to willow and non-willow 
+  species groups and calculates means for the variables "average height" and "maximum ht" for each group.*/ 
+
+
+data shrubcover;
+	infile 'c:\RMNP veg monitoring\data\willow macroplots.prn' firstobs=2;
+	input date $ site_type $ site_number site_id $ sp $ pc_in_plot diam1 diam2 ht bud_scar_ht
+		microplot $ stems_in_micro $ group $;
+		if diam1=. then diam1=diam2;
+		if diam2=. then diam2=diam1;
+		area=(((diam1/100)*(diam2/100)*3.14159)/4)*(pc_in_plot/100);
+		year=2008;
+proc sort;
+		by year site_type site_number site_id group;
+	proc univariate noprint;
+		by year site_type site_number site_id group;
+		var ht ;
+		output out=out2008c mean=avht max=maxht  ;
+
+/*Next,the code reads a file with information for 2013 height measurements and performs the same steps as above 
+  for these data.*/
+
+
+data shrubht1;
+	infile 'c:\RMNP veg monitoring\5_yr_analysis\data\willow macro 2013.prn' firstobs=2;
+	input  site_type $ site_number site_id $ sp $ pc_in_plot diam1 diam2 ht bud_scar_ht
+		microplot $ stems_in_micro $ pcdead group $;
+		if diam1=. then diam1=diam2;
+		if diam2=. then diam2=diam1;
+		area=(((diam1/100)*(diam2/100)*3.14159)/4)*(pc_in_plot/100);
+		year=2013;
+proc sort;
+		by year site_type site_number site_id group;
+	proc univariate noprint;
+		by year site_type site_number site_id group;
+		var ht ;
+		output out=out2013c mean=avht max=maxht   ;
+
+
+/* Here the data are merged into a single dataset*/
+
+data shrubht2;
+	set out2008c out2013c;
+	proc sort;
+	by site_type site_number site_id;
+
+/*Now, information on site characteristics for each plot are added read and then merged with the
+  height data from 2008 and 2013.*/
+
+
+data shrub;
+	infile 'c:\RMNP veg monitoring\5_yr_analysis\data\willow site info 2013 revised 2015.prn' firstobs=2;
+	input site_type $ site_number fence $ burn $;
+proc sort;
+		by site_type site_number;
+
+data shrubht3;
+	merge shrubht2 shrub;
+	by site_type site_number;
+	title "willow macroplot height";
+	*if site_number gt 57 then delete;
+		if site_type='WC' and site_number=5  and year=2013 then delete;
+	proc sort;
+		by site_type site_number site_id fence burn year;
+	proc transpose out=tran1;
+		by site_type site_number site_id fence burn year;
+		id group;
+
+
+/*In this step, the data is transposed so that year becomes a column variable.*/
+
+
+data shrubht4;
+			set tran1;
+			if willow=. then willow=0;
+			if nonwillo=. then nonwillo=0;
+		proc sort;
+			by site_type site_number site_id fence burn year;
+		proc transpose out=tran2;
+			by site_type site_number site_id fence burn year;
+	
+	data shrubht4a;
+		set tran2;
+		group=_name_;
+		drop _name_;
+	proc sort;
+			by site_type site_number site_id fence burn group;
+		proc transpose out=tran3;
+			by site_type site_number site_id fence burn group;
+			id year;
+	
+data shrubht5;
+	set tran3;
+	proc sort;
+			by site_type site_number site_id fence burn group;
+		proc transpose out=tran4;
+			by site_type site_number site_id fence burn group;
+
+/*Now, measurements on non-willows are removed from the dataset. Individual codes are assigned to group the data
+  by their "condition" into burned-grazed, burned-fenced, unburnd-grazed, and unburned-fenced groups. A condition
+  code of 'WN' is given to non-core sites.*/
+		
+data shrubht5a;
+	set tran4;
+	if group='nonwillo' then delete;
+	if _name_='_2008' then year=2008;
+	if _name_='_2013' then year=2013;
+	drop _name_;
+	if burn='Y' and fence='N' then cond='BG';
+	if burn='Y' and fence='Y' then cond='BF';
+	if burn='N' and fence='N' then cond='UG';
+	if burn='N' and fence='Y' then cond='UF';
+	if site_type='WNC' then cond='WN';
+	proc sort;
+		by year cond; 
+
+
+/*In this step, location codes are added to the data for some tests we did based on whether there were differences
+  between Moraine Park, Horseshoe Park, Beaver Meadows, and non-core winter range sites. Test variable could be
+  max height or average height. This is where the code for table 9 diverges. Here we only group by whether a site
+  is fenced, unfenced, or non-core (fencegroup).*/
+
+
+data shrubht_nb;
+	set shrubht5a;
+if site_type='WC' and (site_number ge 76 or site_number=74 or (site_number ge 64 and site_number le 72) or site_number=62 or (site_number ge 52 and site_number
+		le 57) or (site_number ge 24 and site_number le 35) or (site_number ge 37 and site_number le 39)) then loc='MP';
+if site_type='WC' and (site_number=36 or (site_number ge 40 and site_number le 44) or (site_number ge 49 and site_number le 51) or (site_number ge 58 and
+		site_number le 61) or site_number=63 or site_number=75)then loc='BM';
+if site_type='WC' and (site_number le 23 or (site_number ge 45 and site_number le 48) or site_number=73) then loc='HP';
+if site_type='WNC' then loc='WNC';
+*if burn='Y' then delete;
+*if fence='Y' then delete;
+	if cond='BF' or cond='UF' then fencegroup='Y  ';
+	if cond='UG' or cond='BG' then fencegroup='N  ';
+	if site_type='WNC' then fencegroup='WNC';
+	
+	proc sort;
+		by  fencegroup;
+		proc  mixed;
+		by fencegroup;
+		*by  loc cond;
+		class year site_id cond loc fencegroup;
+	
+		model avht= year /ddfm=satterth;
+		random site_id;
+		lsmeans year /pdiff;
+proc sort;
+		by  fencegroup ;
+		proc  mixed;
+		by fencegroup;
+		*by  loc cond;
+		class year site_id cond loc fencegroup;
+	
+		model maxht= year /ddfm=satterth;
+		random site_id;
+		lsmeans year /pdiff;
+
+/*In this final step, weights are assigned for 2013 to account for the amount of willow falling into each condition
+  group for each year. These weights are used to calculate weighted averages for willow heights in order to assess
+  progress toward EVMP willow height objectives.*/
+
+
+data shrubht_nb2;
+	set shrubht_nb;
+if year=2013 and cond='BF' or cond='UF' then areawt=0.202;
+	if year=2013 and cond='UG' or cond='BG' then areawt=0.669;	
+	if year=2008 and site_type='WC' then areawt=0.871;
+if cond='BF' or cond='UF' then fencegroup='Y  ';
+	/*if cond='UG' or cond='BG' then fencegroup='N  ';
+
+	if year=2013 and cond='BF' then areawt=0.085;
+	if year=2013 and cond='BG' then areawt=0.45;
+	if year=2013 and cond='UG' then areawt=0.219;
+	if year=2013 and cond='UF' then areawt=0.117;*/
+	if site_type='WNC' then areawt=0.129;
+	
+	
+	proc sort;	
+	by fencegroup ;
+	proc univariate noprint;
+		by fencegroup  ;
+		var avht maxht ;
+		weight areawt;
+		output out=outht mean=ht mht stdmean=seht semht  n=nht nmax;
+		proc print data=outht;
+
+		
+
+
+
+
+run;

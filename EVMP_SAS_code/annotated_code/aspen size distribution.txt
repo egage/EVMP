@@ -1,0 +1,72 @@
+/*This program creates data found in figs. 3,4,5, and 7 of Zeigenfuss and Johnson (2015)--Distribution of aspen tree (height greater than 2.5 meters) stem 
+  diameters in monitoring sites. The first step of the code reads in data from a file with tallies of live aspen stems by dbh size class. Then the code 
+  reads a file with information for each aspen monitoring site. In the third step, these two files are merged, and saplings are removed and trees are 
+  reclassed into groups of small (2-10 cm dbh), medium (10-20 cm dbh) and large (20+ dbh) trees.*/
+
+data aspen;
+	infile 'c:\RMNP veg monitoring\5_yr_analysis\data\Aspen live stem tallies.csv' delimiter=',' firstobs=3;
+	input sitetype $ sitenum siteid $ year dbh0_2 dbh2_4 dbh4_6 dbh6_8 dbh8_10 dbh10_12 dbh12_14 dbh14_16 dbh16_18 dbh18_20 
+		dbh20_22 dbh22_24 dbh24_26 dbh26_28 dbh28_30 dbh30_32 dbh32_34 dbh34plus ht0_50 ht51_100 ht101_150 ht151_200 ht201_250;
+	if dbh0_2=. then dbh0_2=0;
+proc sort;
+		by sitetype sitenum siteid;
+
+data site_info;
+	infile 'c:\RMNP veg monitoring\5_yr_analysis\data\Aspen monitoring site info.csv' delimiter=',' firstobs=2;
+	input sitetype $ sitenum siteid $ fenced $ burned $ burnyear fence2013 $ distfence $ estab2013 $ slope aspect $ elev R_U $ barkscar
+		ansign $ antype $;
+		drop burnyear fence2013 distfence estab2013 ansign antype slope aspect elev R_U barkscar;
+		proc sort;
+			by sitetype sitenum siteid;
+
+data aspenall;
+	merge  site_info aspen;
+	by sitetype sitenum siteid;
+    dbh2_10=dbh2_4+dbh4_6+dbh6_8+dbh8_10;
+    dbh10_20=dbh10_12+dbh12_14+dbh14_16+dbh16_18+dbh18_20;
+    dbh20plus=dbh20_22+dbh22_24+dbh24_26+dbh26_28+dbh28_30+dbh30_32+dbh32_34+dbh34plus;
+    drop  dbh2_4 dbh4_6 dbh6_8 dbh8_10 dbh10_12 dbh12_14 dbh14_16
+        dbh16_18 dbh18_20 dbh20_22 dbh22_24 dbh24_26 dbh26_28 dbh28_30 dbh30_32 dbh32_34 dbh34plus ht0_50 ht51_100 ht101_150 ht151_200 ht201_250;
+
+
+/*Now, dataset is transposed to provide first sampling period (time of site establishment--usually 2008) and the second sampling period (2013).*/ 
+
+
+data aspen2;
+    set aspenall;
+    proc sort;
+            by sitetype sitenum siteid year;
+        proc transpose out=tran1;
+            by sitetype sitenum siteid year;
+
+/*The stem density per acre is calculated (per acre numbers are used because they relate to the EVMP objectives) and total number of trees
+   per acre for each size class are calculated.*/
+
+
+
+data aspen3;
+    set tran1;
+    trees_per_acre=col1*161.96;
+    proc sort;
+        by siteid year;
+    proc univariate noprint;
+        by siteid year;
+        var trees_per_acre;
+        output out=out15 sum=ttrees;
+
+
+/* Percent trees in each size class are calculated for 2013 for each site. This data was added to the graphics from Zeigenfuss et al (2011) so the baseline percentages 
+   were not calculated here.*/
+
+
+data aspen4;
+    merge out15 aspen3;
+    by  siteid year;
+	if year ne 2013 then delete;
+	pct_total=(trees_per_acre/ttrees)*100;
+	if trees_per_acre=0 then pct_total=0;
+	proc sort;
+		by _name_ siteid year;
+	proc print; 
+
+            run;
