@@ -1,15 +1,20 @@
 ---
-title: "EVMP_01"
+title: "2018 Elk Vegetation Management Plan Data Exploration"
 author: "Ed Gage"
-date: "October 1, 2018"
-output: html_document
+date: ""
+output: 
+  html_document: 
+    number_sections: yes
+    theme: journal
+    toc: yes
 ---
+
 
 ```{r setup, include=FALSE}
 library(knitr)
 opts_chunk$set(echo = FALSE)
-opts_knit$set(root.dir=normalizePath('../')) # this is required if my Rmd is nested below the project directory
-opts_chunk$set(fig.path = "../output/figures/") # corrected path and added dev .. if I want to specify a subdirectory for figs
+opts_knit$set(root.dir=normalizePath('../')) # this is required if Rmd is nested below the project directory
+opts_chunk$set(fig.path = "../output/figures/") # corrected path and added dev. Needed to specify a subdirectory for figs
 
 # see discussion here: https://stackoverflow.com/questions/24585254/working-with-knitr-using-subdirectories
 
@@ -56,4 +61,56 @@ suppressPackageStartupMessages(library(dataMaid))
 
 ```
 
-##  
+# Data Importation, Exploration, and Wrangling
+
+
+
+
+# Translation of Past Analyses from SAS 
+
+## Willow Height
+
+Rewrite the SAS program used to analyze willow height data as found in table 9 of Zeigenfuss and Johnson (2015)--Least squares means of average and maximum willow height and percent willow cover on burned sites compared to unburned sites using the macroplot method at EVMP willow monitoring sites in Rocky Mountain National Park, Colorado. 
+
+**Steps:** 
+
+1. Read in data from a file contaning the baseline data from willow macroplots  
+2. Calculate canopy area for each plot and assigns the baseline year (2008) to these data 
+3. Sort data down to willow and non-willow species groups and calculates mean for the variables "average height" and "maximum ht" for each group.
+
+**See: **  
+
+>willow shrub cover macro table 8.sas  
+>willow shrub height table 8.sas  
+>willow shrub cover macro table 9.txt    
+>willow shrub height table 9.txt  
+
+## Aspen Height  
+
+Rewrite the SAS program used to create figs. 3,4,5, and 7 of Zeigenfuss and Johnson (2015)--Distribution of aspen tree (height greater than 2.5 meters) stem diameters in monitoring sites. 
+
+**Steps:** 
+1. Read in data from a file with tallies of live aspen stems by dbh size class  
+2. Read in a file with information for each aspen monitoring site  
+3. Merge these two files, remove saplings 
+4. Reclass trees into groups of small (2-10 cm dbh), medium (10-20 cm dbh) and large (20+ dbh) trees.
+
+
+**See: **  
+
+>aspen sapling table 4.sas  
+>aspen sapling table 5.sas  
+
+
+## Recreation of Figures from Past Publications  
+
+**Key publications:**  
+
+_Zeigenfuss, L. C., and T. L. Johnson. 2015. Monitoring of Vegetation Response to Elk Population and Habitat Management in Rocky Mountain National Park, 2008–14. Report 2015-1216, U.S. Geological Survey, Reston, VA._
+[Link](http://pubs.er.usgs.gov/publication/ofr20151216)
+
+
+
+
+
+
