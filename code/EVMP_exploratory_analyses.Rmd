@@ -20,7 +20,7 @@ opts_chunk$set(fig.path = "../output/figures/") # corrected path and added dev .
 
 ## Introduction
 
-This document provides basic QA/QC tools for the Spring 2017 willow utilization data.
+This document provides a basic exploration of EVMP files provided by RMNP in September, 2018.
 
 Analyses aim to characterize basic data structure and identify potential issues such as:
 
@@ -28,7 +28,7 @@ Analyses aim to characterize basic data structure and identify potential issues 
 * Missing values
 * Data values outside of expected range or showing unusual patterns
 
-In addition, data are cleaned to produce archival files for further analyses.
+In addition, data are cleaned in preparation for further analyses.
 
 ```{r,echo=FALSE}
 # library(here)
@@ -56,4 +56,4 @@ suppressPackageStartupMessages(library(dataMaid))
 
 ```
 
-## Spring: 2017 
+##  
