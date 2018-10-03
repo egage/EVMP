@@ -4,7 +4,6 @@ author: "Ed Gage"
 date: ""
 output: 
   html_document: 
-    number_sections: yes
     theme: journal
     toc: yes
 ---
@@ -50,20 +49,66 @@ suppressPackageStartupMessages(library(mapview))
 # library(ggmap)
 # library(ggrepel)
 suppressPackageStartupMessages(library(viridis))
-library(ggExtra)
+# library(ggExtra)
+library(ggstance)
+library(readxl)
 library(DT)
-library(kableExtra)
+# library(kableExtra)
 suppressPackageStartupMessages(library(lubridate))
-library(anytime)
-suppressPackageStartupMessages(library(compare))
+# library(anytime)
+# install.packages("fs")
+# suppressPackageStartupMessages(library(compare))
 suppressPackageStartupMessages(library(skimr)) ## some useful functions
 suppressPackageStartupMessages(library(dataMaid))
+
 
 ```
 
 # Data Importation, Exploration, and Wrangling
 
+## Import and overview  {.tabset}  
 
+### List of files provided by RMNP (9/20/2018)  
+
+```{r}
+# list of files 
+# fs::dir_ls(recursive = TRUE) 
+
+file.listing <- dir_info(recursive = TRUE) %>%
+  # filter(type == "file", permissions == "u+r", size > "10KB") %>%
+  arrange(desc(size)) %>%
+  select(type, path, permissions, size, modification_time)
+
+file.listing %>%
+  stringr::str_split(string = path,n = 2,pattern = ".")
+  separate(col = path, into = 'fty',sep = ".")
+
+datatable(file.listing)
+
+```
+
+
+```{r}
+
+# xls_example <- readxl_example("datasets.xls")
+# excel_sheets(xls_example)
+
+
+willow.off <- read_xlsx("data/EVMP_data/provisional_data_20180920/Willow Offtake Data 2009-2018.xlsx")
+read_excel(willow.off, sheet = "chickwts")
+excel_sheets(willow.off)
+
+asp.bl <- read_excel("data/EVMP_data/provisional_data_20180920/Aspen_Baseline_2013_2018_5_Year_Msmts_Including_Burn_Data.xlsx") 
+
+excel_sheets(asp.bl)
+
+```
+
+
+
+### Quality checks
+
+####Missing data####  
 
 
 # Translation of Past Analyses from SAS 

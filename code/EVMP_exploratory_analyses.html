@@ -128,19 +128,24 @@ $(document).ready(function () {
 
 <div id="TOC">
 <ul>
-<li><a href="#introduction"><span class="toc-section-number">0.1</span> Introduction</a></li>
-<li><a href="#data-importation-exploration-and-wrangling"><span class="toc-section-number">1</span> Data Importation, Exploration, and Wrangling</a></li>
-<li><a href="#translation-of-past-analyses-from-sas"><span class="toc-section-number">2</span> Translation of Past Analyses from SAS</a><ul>
-<li><a href="#willow-height"><span class="toc-section-number">2.1</span> Willow Height</a></li>
-<li><a href="#aspen-height"><span class="toc-section-number">2.2</span> Aspen Height</a></li>
-<li><a href="#recreation-of-figures-from-past-publications"><span class="toc-section-number">2.3</span> Recreation of Figures from Past Publications</a></li>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#data-importation-exploration-and-wrangling">Data Importation, Exploration, and Wrangling</a><ul>
+<li><a href="#import-and-overview">Import and overview</a><ul>
+<li><a href="#list-of-files-provided-by-rmnp-9202018">List of files provided by RMNP (9/20/2018)</a></li>
+<li><a href="#quality-checks">Quality checks</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#translation-of-past-analyses-from-sas">Translation of Past Analyses from SAS</a><ul>
+<li><a href="#willow-height">Willow Height</a></li>
+<li><a href="#aspen-height">Aspen Height</a></li>
+<li><a href="#recreation-of-figures-from-past-publications">Recreation of Figures from Past Publications</a></li>
 </ul></li>
 </ul>
 </div>
 
 <p><strong>Updated: 2018 October 03</strong></p>
 <div id="introduction" class="section level2">
-<h2><span class="header-section-number">0.1</span> Introduction</h2>
+<h2>Introduction</h2>
 <p>This document provides a basic exploration of EVMP files provided by RMNP in September, 2018.</p>
 <p>Analyses aim to characterize basic data structure and identify potential issues such as:</p>
 <ul>
@@ -150,14 +155,62 @@ $(document).ready(function () {
 <li>Data values outside of expected range or showing unusual patterns</li>
 </ul>
 <p>In addition, data are cleaned in preparation for further analyses.</p>
+<pre><code>## 
+## Attaching package: 'ggstance'</code></pre>
+<pre><code>## The following objects are masked from 'package:ggplot2':
+## 
+##     geom_errorbarh, GeomErrorbarh</code></pre>
 </div>
 <div id="data-importation-exploration-and-wrangling" class="section level1">
-<h1><span class="header-section-number">1</span> Data Importation, Exploration, and Wrangling</h1>
+<h1>Data Importation, Exploration, and Wrangling</h1>
+<div id="import-and-overview" class="section level2 tabset">
+<h2>Import and overview</h2>
+<div id="list-of-files-provided-by-rmnp-9202018" class="section level3">
+<h3>List of files provided by RMNP (9/20/2018)</h3>
+<pre><code>## code
+## code/EVMP_exploratory_analyses.html
+## code/EVMP_exploratory_analyses.Rmd
+## code/EVMP_SAS_code
+## code/EVMP_SAS_code/annotated_code
+## code/EVMP_SAS_code/annotated_code/annotatedcode.zip
+## code/EVMP_SAS_code/annotated_code/aspen sapling table 4.sas
+## code/EVMP_SAS_code/annotated_code/aspen sapling table 5.sas
+## code/EVMP_SAS_code/annotated_code/aspen size distribution.txt
+## code/EVMP_SAS_code/annotated_code/browseIndex.jpg
+## code/EVMP_SAS_code/annotated_code/morecode
+## code/EVMP_SAS_code/annotated_code/morecode/browse index.pdf
+## code/EVMP_SAS_code/annotated_code/morecode/willow shrub cover macro table 8.sas
+## code/EVMP_SAS_code/annotated_code/morecode/willow shrub cover macro table 9.txt
+## code/EVMP_SAS_code/annotated_code/morecode/willow shrub height table 8.sas
+## code/EVMP_SAS_code/annotated_code/morecode/willow shrub height table 9.txt
+## code/EVMP_SAS_code/annotated_code/morecode.zip
+## data
+## data/EVMP_data
+## data/EVMP_data/provisional_data_20180920
+## data/EVMP_data/provisional_data_20180920/Aspen_Baseline_2013_2018_5_Year_Msmts_Including_Burn_Data.xlsx
+## data/EVMP_data/provisional_data_20180920/email provisional data.pdf
+## data/EVMP_data/provisional_data_20180920/reexternalrevegdatafor10yearevmpanalysis.zip
+## data/EVMP_data/provisional_data_20180920/Upland_Line_Intercept_2007_2013_2018.xlsx
+## data/EVMP_data/provisional_data_20180920/Willow Cumulative 5-yr data Baseline_2013_2018.xlsx
+## data/EVMP_data/provisional_data_20180920/Willow Offtake Data 2009-2018.xlsx
+## data/EVMP_kmz
+## data/EVMP_kmz/EVMP_plots.kmz
+## data/EVMP_kmz/EVMP_plots.kmz.metadata.xml
+## EVMP.Rproj
+## README.md</code></pre>
+</div>
+<div id="quality-checks" class="section level3">
+<h3>Quality checks</h3>
+<div id="missing-data" class="section level4">
+<h4>Missing data</h4>
+</div>
+</div>
+</div>
 </div>
 <div id="translation-of-past-analyses-from-sas" class="section level1">
-<h1><span class="header-section-number">2</span> Translation of Past Analyses from SAS</h1>
+<h1>Translation of Past Analyses from SAS</h1>
 <div id="willow-height" class="section level2">
-<h2><span class="header-section-number">2.1</span> Willow Height</h2>
+<h2>Willow Height</h2>
 <p>Rewrite the SAS program used to analyze willow height data as found in table 9 of Zeigenfuss and Johnson (2015)–Least squares means of average and maximum willow height and percent willow cover on burned sites compared to unburned sites using the macroplot method at EVMP willow monitoring sites in Rocky Mountain National Park, Colorado.</p>
 <p><strong>Steps:</strong></p>
 <ol style="list-style-type: decimal">
@@ -175,7 +228,7 @@ willow shrub height table 9.txt</p>
 </blockquote>
 </div>
 <div id="aspen-height" class="section level2">
-<h2><span class="header-section-number">2.2</span> Aspen Height</h2>
+<h2>Aspen Height</h2>
 <p>Rewrite the SAS program used to create figs. 3,4,5, and 7 of Zeigenfuss and Johnson (2015)–Distribution of aspen tree (height greater than 2.5 meters) stem diameters in monitoring sites.</p>
 <p><strong>Steps:</strong> 1. Read in data from a file with tallies of live aspen stems by dbh size class<br />
 2. Read in a file with information for each aspen monitoring site<br />
@@ -187,7 +240,7 @@ aspen sapling table 5.sas</p>
 </blockquote>
 </div>
 <div id="recreation-of-figures-from-past-publications" class="section level2">
-<h2><span class="header-section-number">2.3</span> Recreation of Figures from Past Publications</h2>
+<h2>Recreation of Figures from Past Publications</h2>
 <p><strong>Key publications:</strong></p>
 <p><em>Zeigenfuss, L. C., and T. L. Johnson. 2015. Monitoring of Vegetation Response to Elk Population and Habitat Management in Rocky Mountain National Park, 2008–14. Report 2015-1216, U.S. Geological Survey, Reston, VA.</em> <a href="http://pubs.er.usgs.gov/publication/ofr20151216">Link</a></p>
 </div>
