@@ -1,17 +1,17 @@
 ---
-title: "2018 Elk Vegetation Management Plan Data Exploration"
-author: "Ed Gage"
+title: "EVMP Data Analysis 2018"
+author: ""
 date: ""
 output: 
   html_document: 
-    theme: journal
+    theme: flatly
     toc: yes
 ---
 
 
 ```{r setup, include=FALSE}
 library(knitr)
-opts_chunk$set(echo = FALSE)
+opts_chunk$set(echo = TRUE, warning = FALSE)
 opts_knit$set(root.dir=normalizePath('../')) # this is required if Rmd is nested below the project directory
 opts_chunk$set(fig.path = "../output/figures/") # corrected path and added dev. Needed to specify a subdirectory for figs
 
@@ -39,7 +39,7 @@ In addition, data are cleaned in preparation for further analyses.
 # here()
 # install.packages("bindrcpp")
 suppressPackageStartupMessages(library(tidyverse))
-library(fs)
+suppressPackageStartupMessages(library(fs))
 suppressPackageStartupMessages(library(sf))
 # library(raster)
 suppressPackageStartupMessages(library(janitor))
@@ -50,38 +50,31 @@ suppressPackageStartupMessages(library(mapview))
 # library(ggrepel)
 suppressPackageStartupMessages(library(viridis))
 # library(ggExtra)
-library(ggstance)
-library(readxl)
-library(DT)
+suppressPackageStartupMessages(library(ggstance))
+suppressPackageStartupMessages(library(readxl))
+suppressPackageStartupMessages(library(DT))
 # library(kableExtra)
 suppressPackageStartupMessages(library(lubridate))
-# library(anytime)
-# install.packages("fs")
-# suppressPackageStartupMessages(library(compare))
 suppressPackageStartupMessages(library(skimr)) ## some useful functions
 suppressPackageStartupMessages(library(dataMaid))
-
+# library(ggmap)
 
 ```
 
-# Data Importation, Exploration, and Wrangling
+# Data Exploration, and Wrangling
 
-## Import and overview  {.tabset}  
+## Import and overview   
 
-### List of files provided by RMNP (9/20/2018)  
+__List of files provided by RMNP (9/20/2018):__
 
 ```{r}
 # list of files 
 # fs::dir_ls(recursive = TRUE) 
 
 file.listing <- dir_info(recursive = TRUE) %>%
-  # filter(type == "file", permissions == "u+r", size > "10KB") %>%
+  filter(type == "file", permissions == "u+r", size > "10KB") %>%
   arrange(desc(size)) %>%
-  select(type, path, permissions, size, modification_time)
-
-file.listing %>%
-  stringr::str_split(string = path,n = 2,pattern = ".")
-  separate(col = path, into = 'fty',sep = ".")
+  select(path, permissions, size, modification_time)
 
 datatable(file.listing)
 
@@ -94,26 +87,262 @@ datatable(file.listing)
 # excel_sheets(xls_example)
 
 
-willow.off <- read_xlsx("data/EVMP_data/provisional_data_20180920/Willow Offtake Data 2009-2018.xlsx")
-read_excel(willow.off, sheet = "chickwts")
-excel_sheets(willow.off)
+# willow.off <- read_xlsx("data/EVMP_data/provisional_data_20180920/Willow Offtake Data 2009-2018.xlsx")
+# read_excel(willow.off, sheet = "chickwts")
+# excel_sheets(willow.off)
+# 
+# asp.bl <- read_excel("data/EVMP_data/provisional_data_20180920/Aspen_Baseline_2013_2018_5_Year_Msmts_Including_Burn_Data.xlsx") 
+# 
+# excel_sheets(asp.bl)
 
-asp.bl <- read_excel("data/EVMP_data/provisional_data_20180920/Aspen_Baseline_2013_2018_5_Year_Msmts_Including_Burn_Data.xlsx") 
+```
 
-excel_sheets(asp.bl)
+
+### Aspen Baseline 2013-2018
+
+**Data import**  
+
+Tally of Live Aspen Stems per Plot >2.5 m in Height (DBH=diameter at breast height [1.4 m])		
+
+Tally of Live Aspen Stems per Plot <2.5 m in Height				
+
+
+Tally of Dead Aspen Stems per Plot >2.5 m in Height (DBH=diameter at breast height [1.4 m])
+
+Cleaned data to make readable as csv
+
+Site Type: AC=core, ANC=non-core, AK=Kawuneechee Valley
+
+
+```{r}
+
+a2 <- read_xlsx("./data/EVMP_data/provisional_data_20180920/AspenBaselne2013-2018/Aspen_Baseline_Burn_Data_20181002.xlsx", sheet = 2) %>% 
+  mutate_if(.predicate = is.numeric,.funs = as.character())
+  
+  
+# a cleaned version of 'Aspen_Baseline_2013_2018_5_Year_Msmts_Including_Burn_Data.xlsx'
+
+
+a3 <- read_xlsx("./data/EVMP_data/provisional_data_20180920/AspenBaselne2013-2018/Aspen_Baseline_Burn_Data_20181002.xlsx", sheet = 3) %>% 
+  mutate_if(.predicate = is.numeric,.funs = as.character())
+
+a4 <- read_xlsx("./data/EVMP_data/provisional_data_20180920/AspenBaselne2013-2018/Aspen_Baseline_Burn_Data_20181002.xlsx", sheet = 4) %>% 
+  mutate(SiteNumber = as.character(SiteNumber)) %>% 
+  mutate_if(.predicate = is.numeric,.funs = as.character())
+
+a5 <- read_xlsx("./data/EVMP_data/provisional_data_20180920/AspenBaselne2013-2018/Aspen_Baseline_Burn_Data_20181002.xlsx", sheet = 5) %>% 
+  mutate(SiteNumber = as.character(SiteNumber)) %>% 
+  mutate_if(.predicate = is.numeric,.funs = as.character())
+
+a6 <- read_xlsx("./data/EVMP_data/provisional_data_20180920/AspenBaselne2013-2018/Aspen_Baseline_Burn_Data_20181002.xlsx", sheet = 6)%>% 
+  mutate(SiteNumber = as.character(SiteNumber)) %>% 
+  mutate_if(.predicate = is.numeric,.funs = as.character())
+
+
+a7 <- read_xlsx("./data/EVMP_data/provisional_data_20180920/AspenBaselne2013-2018/Aspen_Baseline_Burn_Data_20181002.xlsx", sheet = 7) %>% 
+  mutate(SiteNumber = as.character(SiteNumber)) %>% 
+  mutate_if(.predicate = is.numeric,.funs = as.character())
+
+a8 <- read_xlsx("./data/EVMP_data/provisional_data_20180920/AspenBaselne2013-2018/Aspen_Baseline_Burn_Data_20181002.xlsx", sheet = 8) %>% 
+  mutate(SiteNumber = as.character(SiteNumber)) %>% 
+  mutate_if(.predicate = is.numeric,.funs = as.character())
+
+a9 <- read_xlsx("./data/EVMP_data/provisional_data_20180920/AspenBaselne2013-2018/Aspen_Baseline_Burn_Data_20181002.xlsx", sheet = 9) %>% 
+  mutate(SiteNumber = as.character(SiteNumber)) %>% 
+  mutate_if(.predicate = is.numeric,.funs = as.character())
+
+a10 <- read_xlsx("./data/EVMP_data/provisional_data_20180920/AspenBaselne2013-2018/Aspen_Baseline_Burn_Data_20181002.xlsx", sheet = 10) %>% 
+  mutate(SiteNumber = as.character(SiteNumber)) %>% 
+  mutate_if(.predicate = is.numeric,.funs = as.character())
+
+a11 <- read_xlsx("./data/EVMP_data/provisional_data_20180920/AspenBaselne2013-2018/Aspen_Baseline_Burn_Data_20181002.xlsx", sheet = 11) %>% 
+  mutate(SiteNumber = as.character(SiteNumber)) %>% 
+  mutate_if(.predicate = is.numeric,.funs = as.character())
+
+a12.bl <- read_xlsx("./data/EVMP_data/provisional_data_20180920/AspenBaselne2013-2018/Aspen_Baseline_Burn_Data_20181002.xlsx", sheet = 12)
+
+a13.bl.l <- read_xlsx("./data/EVMP_data/provisional_data_20180920/AspenBaselne2013-2018/Aspen_Baseline_Burn_Data_20181002.xlsx", sheet = 12)
+
+a14.master <- read_xlsx("./data/EVMP_data/provisional_data_20180920/AspenBaselne2013-2018/Aspen_Baseline_Burn_Data_20181002.xlsx", sheet = 14)
+
+
+
+```
+
+
+```{r}
+# combine
+a.list <- list(a2,a3,a4,a5, a6, a7, a8, a9)
+
+asp.merge <- map_df(a.list, bind_rows) %>% 
+  clean_names()
+# clean the names
+
+```
+
+
+### Tidy data some more
+
+```{r}
+asp.merge %>% 
+  names() %>% 
+  as.tibble() %>%
+  rename(variable = value)  %>% 
+  datatable(rownames = FALSE)
+  
+  
+  
+```
+
+```{r}
+
+asp.merge %>% 
+  names() %>% 
+  as.tibble() %>%
+  rename(variable = value) 
+  
+## create tidy object of just the tall Aspen Stems per Plot >2.5 m in Height (DBH=diameter at breast height [1.4 m])
+asp.tall <- asp.merge %>% 
+  select(-contains("hei")) %>% 
+  gather(key = var, val = val, -c(live_dead,yr, site_id, site_number, site_type)) %>% 
+  mutate(HeightClass = "Tall") 
+
+
+```
+
+** tidy formatted data -- Tall aspen (> 2.5 m)
+```{r}
+
+# asp.tall %>% 
+#   datatable()
+
+```
+
+
+** tidy formatted data -- Short aspen (< 2.5 m)
+```{r}
+
+## create tidy object of just the tall Aspen Stems per Plot >2.5 m in Height (DBH=diameter at breast height [1.4 m])
+asp.short <- asp.merge %>% 
+  select(-contains("dbh")) %>%
+  select(-contains("cm_2")) %>%
+  glimpse() %>% 
+  gather(key = var, val = val, -c(live_dead,yr, site_id, site_number, site_type)) %>% 
+  mutate(HeightClass = "Short") 
+
+# asp.short %>% 
+#   datatable()
+
+asp.tidy.full <- bind_rows(asp.tall,asp.short) %>% 
+  mutate(yr = as.factor(yr))
+
+asp.tidy.full %>% 
+  datatable()
+
+# asp.tidy.full %>% 
+#   group_by(var,yr) %>% 
+#   summarise(mean.val = mean(val, na.rm = TRUE), sd.val = sd(val, na.rm = TRUE)) %>% 
+#   filter(mean.val >0) %>% 
+#   spread(data = var,value = mean.val)
+
 
 ```
 
 
 
-### Quality checks
 
-####Missing data####  
+```{r, fig.height=12, eval= FALSE}
+### some plots 
 
+# asp.tidy.full %>% 
+#   ggplot(aes(x = yr, y = val)) +
+#   geom_boxplot(aes(fill = live_dead)) +
+#   facet_grid(HeightClass ~ var, scales = 'free')
+
+
+asp.tidy.full %>%
+  filter(HeightClass == "Tall") %>% 
+  # names() %>% as.tibble() %>%  
+  # distinct(value)
+  filter(!is.na(yr)) %>% 
+  filter(site_type == 'AC') %>% 
+  # filter() %>% 
+  mutate(yr = as.numeric(yr)) %>%
+  group_by(site_number, var, yr, live_dead) %>% 
+  summarise(mean.val = mean(val,na.rm = TRUE), sd.val = sd(val,na.rm = TRUE)) %>% 
+  ggplot(aes(x = yr, y = mean.val)) +
+  geom_line(aes(color = live_dead)) +
+  facet_wrap(~var, scales = 'free')
+
+
+asp.tidy.full %>%
+  filter(HeightClass == "Tall") %>% 
+  # names() %>% as.tibble() %>%  
+  # distinct(value)
+  filter(!is.na(yr)) %>% 
+  group_by(site_number, var, yr, live_dead) %>% 
+  summarise(mean.val = mean(val,na.rm = TRUE), sd.val = sd(val,na.rm = TRUE)) %>% 
+  ggplot(aes(x = var, y = mean.val)) +
+  
+  geom_point(aes(color = live_dead)) +
+  facet_grid(var ~ yr, scales = 'free')
+
+asp.tidy.full %>%
+  filter(HeightClass == "Tall") %>% 
+  filter(!is.na(yr)) %>% 
+  ggplot(aes(x = yr, y = val)) +
+  geom_boxplot(aes(fill = live_dead)) +
+  facet_grid(site_type ~ yr, scales = 'free')
+
+```
+
+
+
+#### Quality checks
+
+**Missing data**  
+
+
+### Willow Offtake 2009-2018 
+
+**Data import** 
+
+#### Quality checks
+
+**Missing data**  
+
+
+### Willow Cumulative 2013-2018
+
+**Data import** 
+
+#### Quality checks
+
+**Missing data**
+
+
+### Upland Line Intercept 2007-2018
+
+**Data import** 
+
+#### Quality checks
+
+**Missing data**
 
 # Translation of Past Analyses from SAS 
 
-## Willow Height
+
+### Aspen Baseline 2013-2018
+
+
+```{r}
+
+
+
+```
+
+
+### Willow Offtake 2009-2018
 
 Rewrite the SAS program used to analyze willow height data as found in table 9 of Zeigenfuss and Johnson (2015)--Least squares means of average and maximum willow height and percent willow cover on burned sites compared to unburned sites using the macroplot method at EVMP willow monitoring sites in Rocky Mountain National Park, Colorado. 
 
@@ -130,7 +359,11 @@ Rewrite the SAS program used to analyze willow height data as found in table 9 o
 >willow shrub cover macro table 9.txt    
 >willow shrub height table 9.txt  
 
-## Aspen Height  
+
+### Willow Cumulative 2013-2018
+
+
+### Upland Line Intercept 2007-2018
 
 Rewrite the SAS program used to create figs. 3,4,5, and 7 of Zeigenfuss and Johnson (2015)--Distribution of aspen tree (height greater than 2.5 meters) stem diameters in monitoring sites. 
 
@@ -154,6 +387,7 @@ Rewrite the SAS program used to create figs. 3,4,5, and 7 of Zeigenfuss and John
 _Zeigenfuss, L. C., and T. L. Johnson. 2015. Monitoring of Vegetation Response to Elk Population and Habitat Management in Rocky Mountain National Park, 2008–14. Report 2015-1216, U.S. Geological Survey, Reston, VA._
 [Link](http://pubs.er.usgs.gov/publication/ofr20151216)
 
+# Plots as in LZ 2015
 
 
 
