@@ -1,0 +1,1305 @@
+---
+title: "EVMP Analysis"
+author: "E. Gage"
+date: ''
+output:
+  html_document:
+    theme: flatly
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align = 'center')
+opts_knit$set(root.dir=normalizePath('../')) # this is required if Rmd is nested below the project directory
+opts_chunk$set(fig.path = "../output/figures/") # corrected path and added dev. Needed to specify a subdirectory for figs
+
+# see discussion here: https://stackoverflow.com/questions/24585254/working-with-knitr-using-subdirectories
+
+```
+
+**PROVISIONAL DATA**
+
+**Updated: `r format(Sys.time(), '%Y %B %d')`**
+
+# Introduction
+
+This document provides a basic exploration of EVMP files provided by RMNP on October 10, 2018.
+
+THe code and analyses aim to characterize basic data structure, identify problems, and clean and reorganize as needed for plotting and modeling. Specific obejctives include identifying issues such as:
+
+* Inconsistently named/typed factors    
+* Missing values
+* Data values outside of expected range or showing unusual patterns
+
+
+```{r,echo=FALSE}
+# library(here)
+# here()
+# install.packages("bindrcpp")
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(fs))
+suppressPackageStartupMessages(library(sf))
+# library(raster)
+suppressPackageStartupMessages(library(janitor))
+suppressPackageStartupMessages(library(readxl))
+# library(glue)
+suppressPackageStartupMessages(library(mapview))
+# library(ggmap)
+# library(ggrepel)
+suppressPackageStartupMessages(library(viridis))
+# library(ggExtra)
+suppressPackageStartupMessages(library(ggstance))
+suppressPackageStartupMessages(library(readxl))
+suppressPackageStartupMessages(library(DT))
+# library(kableExtra)
+suppressPackageStartupMessages(library(lubridate))
+suppressPackageStartupMessages(library(skimr)) ## some useful functions
+suppressPackageStartupMessages(library(dataMaid))
+# library(ggmap)
+library(lubridate)
+library(mapview)
+
+```
+
+# Methods
+
+### Data notes
+
+The following are notes from E. Ertl describing EVMP vegetation data collection, as recorded in 2018.  
+
+
+#### Aspen
+
+* Plots lost: AC41 (plot was washed away in the 2013 flood)
+
+* Plots added: AC68 to replace AC41
+
+* Plots that had been treated with fuels management work that has not been noted before: ANC5, ANC7, ANC8, ANC19 (I think?) these areas were thinned of most large trees opening up the canopy substantially and the area was also pile burned; none of the plots appeared to be directly in the pile burn scars but a few came very close; these treatments could alter data in the future (working on getting a GIS layer for this)
+
+* Formatted 2015 – 2018 data  
+
+* 2015-2017 data only consisted of burn plot sampling; no burn plot data collected in 2014
+
+#### Upland
+
+
+* Plots lost: UC09 (this plot was most likely lost in the 2013 flood), UC14 & UC24 (plots were lost to waterline construction that occurred from 2015-2018)
+
+* Plots added: UC37, UC38, UC39 to replace the three plots that were lost
+
+* Plots have been treated by prescribed fire in the past; Prescribed fire occurred from 9/17 – 10/2 of 2008; First round of data collected for upland sites occurred in 2007 (working on getting recent GIS layers to account for any other treatments)
+
+* Prescribed burning is planned for this coming October 2018 as well, which will potentially burn several upland plots in the Beaver Meadows area
+
+* Formatted 2018 shrub data
+
+#### Willow
+
+* Plots lost: WK03; this plot hasn’t been found since 2012 and we looked several times in 2018
+
+* Plots added: WK09 to replace WK03 (updated measurement schedule in the protocol), WK10 added late season after talking with Linda Z. – she suggested there be 4 fenced plots in the KV to make the data collected from this area more robust. We weren’t aware of this when we installed WK09, so there will be nine total west side plots (4 fenced and 5 unfenced).
+
+* Removed the microplot stem counts from the macroplot sampling in the protocol per Linda Z. early summer
+
+* Formatted 2015 – 2018 cumulative willow data
+	2015-2017 data only consisted of burn plot sampling; there is no burn data for 2014
+	In 2015 it appears they were only measuring willow in the macroplots, not all shrubs like they should have been.
+
+* Fixed unit and rounding issues in data.
+	In 2016 the crew measured additional burned sites that are not on the burn survey list (WC32, WC34, WC78, WC84, and WC85). For some plots they only measured willow instead of measuring all shrubs. Fixed unit and rounding issues in data.
+
+* There is only west side data for 2016 and 2017; Nick B. said they weren’t aware that west side plots were supposed to be measured every year back in 2014/2015
+	Burn survey and west side data are currently combined by year measured
+
+* Formatted 2015 – 2018 offtake data (2014 was already added and analyzed in the 2013 review)
+	2015 offtake notes: Crew didn’t sample WC9, WC78, WC79 (plots are in fences) and sampled extra plots that are not on the protocol list for offtake including WC34, WC35, WC52, WC54, WC56, WK6, WK7, and WK8 (none of these are in fences)
+	2016 offtake notes: Crew didn’t sample WC79 (fenced), WC85 (fenced), WK3 (lost), WNC30 (couldn’t find plot) and sampled extra plots that are not on the protocol list for offtake including WC34, WC35, WC37 (fenced), WC50 (fenced), WC57, WC69, WC70, WC71, WC76 (fenced), WC81, WC82, WC83, WC86 (fenced)
+	2017 offtake notes: Crew didn’t sample WC76 (fenced), WC85 (fenced), WNC30 (couldn’t find plot), WK3 (lost), WK6 (river probably too high to access) and no extra plots were sampled
+	2018 offtake notes: Crew didn’t sample WC33 (removed 2014), WC76 (fenced), WC77 (fenced), WK3 (lost and removed from list in 2018, replaced with WK9 at end of season), WK6 (river too high to access plot)
+* There were discrepancies between the protocol and the willow master database on what sites to sample for offtake (added by C. Piper). Linda and I updated this schedule in the protocol for future years because the old schedule included plots that were no longer there and plots that have since been fenced.
+* Burn Surveys 2015-2019 – spoke with Linda Z. and she doesn’t think these need to be measured again in 2019 unless the data is showing something interesting.
+* Willow stake restoration sites – have these been cross referenced with willow monitoring sites? Were willow stakes planted in some plots? I did find notes that there were willow stakes being measured in WC76 over the years, which would need to be analyzed separately I’m assuming.
+
+#### Other notes
+
+* Kept all of Linda’s original data for the last 5-year review under EVMP’s “analysis” folder
+
+* Created new (2018) versions of data for 10-year review analysis but did not delete out any data from previous years where plots were lost this year; also kept old components in the data (i.e. willow shoot measurements, microplot stem counts)
+
+* All formatted data for 2018 can be found under EVMPVegetationAnalysis10 Year Review
+
+* Blank datasheets have been updated for 2018
+
+* Protocols are currently being updated for 2018; Hopefully this will clear up data inconsistencies the last few years 
+* Master databases have been updated for 2018 
+
+* Added a “Fuels Treatment Post Establishment” and “Treatment Year” column that could be queried by type (i.e. prescribed fire, mechanical treatments, etc.) 
+
+
+* Created new shapefiles for all veg plots; trying to find shapefiles for treatment areas in the park and will put them in the EVMP_Veg_Data_2018 geodatabase
+	Located under EVMPVegetationGISEVMP_Veg_Data_2018.gdb OR ShapefilesMaster_Veg_Sites_Shp2018
+
+* Created new veg maps
+	Located under EVMPVegetationLogisticsMapsEVMP vegetation plot maps2018 Veg Site MapsPlot Maps
+
+* Wild Basin Willow Data – I created a folder with all of the data collected at Wild Basin this fall. It is located under EVMPVegetationAnnual RecordsFY18Wild Basin – Willow Data
+* Uploaded all 4 iPads with new electronic datasheets for willow and upland, photo points and plot diagrams from 2018, willow ID keys, updated protocol from 2018, and new vegetation site maps.
+
+-----
+
+## Data Exploration and Wrangling
+
+Working with files in the 10 yr data folder. Each tab in the included excel files were exported as separate CSV files. 
+
+Select among the tabs below to view data import steps and basic data characterstics.
+
+### Import and overview   
+
+__List of files provided by RMNP (10/10/2018):__
+
+
+```{r}
+
+#  {.tabset .tabset-fade .tabset-pills}
+
+
+# list of files 
+# fs::dir_ls(recursive = TRUE) 
+
+file.listing <- dir_info(recursive = TRUE) %>%
+  filter(type == "file", permissions == "u+r", size > "10KB") %>%
+  arrange(desc(size)) %>%
+  dplyr::select(path, size, modification_time)
+
+datatable(file.listing, rownames = FALSE, caption = "List of files provided by RMNP 2018-10-10")
+
+```
+
+
+
+```{r}
+
+# xls_example <- readxl_example("datasets.xls")
+# excel_sheets(xls_example)
+
+
+# willow.off <- read_xlsx("data/EVMP_data/provisional_data_20180920/Willow Offtake Data 2009-2018.xlsx")
+# read_excel(willow.off, sheet = "chickwts")
+# excel_sheets(willow.off)
+# 
+# asp.bl <- read_excel("data/EVMP_data/provisional_data_20180920/Aspen_Baseline_2013_2018_5_Year_Msmts_Including_Burn_Data.xlsx") 
+# 
+# excel_sheets(asp.bl)
+
+```
+
+
+```{r, eval=FALSE}
+
+# Create a cache of workbook tabs as CSV files
+
+## cache csv. This creates a csv cache of each tab in the workbook. Prett cool...
+read_then_csv <- function(sheet, path) {
+  pathbase <- path %>%
+    basename() %>%
+    tools::file_path_sans_ext()
+  path %>%
+    read_excel(sheet = sheet) %>% 
+    write_csv(paste0(pathbase, "-", sheet, ".csv"))
+}
+
+path %>%
+  excel_sheets() %>%
+  set_names() %>% 
+  map(read_then_csv, path = path)
+```
+
+
+
+```{r}
+
+## all the csv - as vector
+# csv.all <- fs::dir_ls("data/EVMP_data/csv",glob = "*.csv")
+
+## all the csv
+csv.all <- tibble(ffname = fs::dir_ls("data/EVMP_data/csv",glob = "*.csv"))
+
+## list column approach
+csv.all.lc <- csv.all %>% 
+  mutate(data = map(ffname,read_csv))
+
+## 2 improve above: try specifying the NA string on import....
+
+
+
+
+```
+
+
+```{r}
+#### maps
+### choose either from the z or non-z containing vars. I'm not sure which?? Seem equivalent as far as count
+
+# site info
+sinfo <- csv.all.lc %>%
+  # View()
+  # filter(str_detect(ffname, "Site")) 
+  filter(str_detect(ffname, "z2018 Site Info.csv"))
+
+
+sinfo.df <- sinfo %>% 
+  pluck(2) %>% 
+  pluck(1)
+
+# sinfo.df %>% 
+#   names()
+
+```
+
+```{r}
+# sinfo.df <- sinfo.df #%>% 
+  # janitor::clean_names() #%>% 
+  # filter(!is.na(UTM_E_NAD83))
+
+sinfo.sf <- st_as_sf(sinfo.df, coords = c("UTM_E_NAD83", "UTM_N_NAD83"), crs = 26913)
+
+```
+
+## Overview Map
+
+```{r}
+
+map01 <- sinfo.sf %>% 
+  mapview(zcol='FENCED')
+
+
+# mapviewOptions(basemaps = c("Esri.WorldShadedRelief"),
+#                raster.palette = grey.colors,
+#                vector.palette = colorRampPalette(c("snow", "cornflowerblue", "grey10")),
+#                na.color = "magenta",
+#                layers.control.pos = "topright")
+# 
+# mapviewOptions(basemaps = c("Esri.WorldShadedRelief"),
+#                raster.palette = grey.colors,
+#                vector.palette = colorRampPalette(c("snow", "cornflowerblue", "grey10")),
+#                na.color = "magenta",
+#                layers.control.pos = "topright")
+
+map01
+
+
+```
+
+
+```{r}
+
+### measurement data
+### choose either from the z or non-z containing vars. I'm not sure which?? Seem equivalent as far as count
+
+csv.all.lc <- csv.all.lc %>% 
+  filter(str_detect(ffname, "z")) 
+
+```
+
+
+```{r}
+######### CREATE TYPE FIELD #########
+
+csv.all.lc <- csv.all.lc %>% 
+  mutate(file_name_abr = str_replace(string = ffname, pattern = "data/EVMP_data/csv/Willow_Cumulative_Data_Baseline_Through", replacement = "F"))
+
+## case when into type
+csv.all.lc <- csv.all.lc %>% 
+  dplyr::select(-ffname) %>%
+  mutate(vType = case_when(grepl("Macro", file_name_abr) ~ "Macroplot",
+                          grepl("site", file_name_abr, ignore.case = TRUE) ~ "Site_info",
+                          grepl("Key", file_name_abr, ignore.case = TRUE) ~ "Key",
+                          grepl("Line", file_name_abr, ignore.case = TRUE) ~ "Line_int"
+                          )
+         )
+
+# View(csv.all.lc)
+
+```
+
+### Variable names across input files 
+
+
+
+```{r}
+# extract the field names from each csv
+csv.all.lc <- csv.all.lc %>% 
+  mutate(field_names = map(data, names)) 
+  
+# unnest to get at field names
+# across all csv files
+csv.all.lc %>% 
+  unnest(field_names) %>% 
+  distinct(file_name_abr,field_names) %>% 
+  datatable(rownames = FALSE, caption = "Distinct field names acrosss all csv files")
+
+#### Distinct field names via unnest()
+# csv.all.lc %>% 
+#   unnest(field_names) %>% 
+#   distinct(ffname,field_names) %>% 
+#   datatable()
+
+```
+
+
+### Line intercept Analysis
+
+Distinct variable names across all input csv files for just line intercept plot
+
+
+```{r}
+## just line intercept
+csv.all.lc.li <- csv.all.lc %>% 
+  filter(vType == "Line_int") 
+
+csv.all.lc.li %>% 
+  unnest(field_names) %>% 
+  distinct(file_name_abr,field_names) %>% 
+  # write_csv("output/temp_4_review/distinc_line_in_names.csv")
+  datatable(rownames = FALSE, caption = "Distinct variable names for line intercept files.")
+
+```
+
+
+
+
+```{r}
+
+#### FUNCTIONS 
+######## select functions
+
+## test function. selects only the DATE column
+# filtFunSel <- function(x){
+#   x %>% dplyr::select(DATE)
+# }
+
+#### Select multiple columns. Note some key interecept ones don't work!
+# need to figure out  
+
+filtFunSel <- function(x){
+  x %>% dplyr::select(c(DATE,
+                      SITE_TYPE,
+                      SITE_NUMBER,
+                      SITE_ID,
+                      SPECIES_CODE,
+                      #SHRUB_INTERCEPT_START_M,
+                      #SHRUB_INTERCEPT_STOP_M,
+                      MAX_HEIGHT_CM,
+                      #DEAD,
+                      BROWSED,
+                      INTERCEPT_LENGTH_M,
+                      GENUS))
+}
+
+
+csv.all.lc.li <- csv.all.lc.li %>% 
+  mutate(data.sel = map(.x = data, filtFunSel))
+
+
+
+# csv.all.lc.li %>% 
+#   unnest(field_names) %>% 
+#   distinct(field_names)%>% 
+#   datapasta::dpasta()
+
+
+## badass purrr ninja move:
+csv.all.lc.li.df <- csv.all.lc.li %>% 
+  pluck(1) %>%
+  map(filtFunSel) %>% 
+  reduce(.f = rbind)
+
+
+
+
+```
+
+
+```{r}
+library(lubridate)
+##
+csv.all.lc.li.df <- csv.all.lc.li.df %>%
+  mutate(DATE = as.Date(DATE)) %>% 
+  mutate(yr = as.factor(year(DATE))) %>%
+  mutate(mo = month(DATE))
+
+# 
+# csv.all.lc.li.df %>% 
+#   filter(!is.na(MAX_HEIGHT_CM)) %>%
+#   # names() %>% 
+#   group_by(yr,SITE_TYPE, SITE_NUMBER, SITE_ID, MAX_HEIGHT_CM) %>% 
+#   summarize()
+  
+
+```
+
+
+### Macroplot Inventory Analysis
+
+```{r}
+
+
+```
+
+
+```{r}
+csv.all.lc.mcro <- csv.all.lc %>% 
+  filter(vType == "Macroplot") 
+
+#
+csv.all.lc.mcro %>% 
+  unnest(field_names) %>% 
+  distinct(file_name_abr,field_names) %>% 
+  # write_csv("output/temp_4_review/macroplot_fld_names.csv")
+  datatable(rownames = FALSE, caption = "Macroplot inventory variable names.")
+
+# # The _at() variants directly support strings:
+# starwars %>% summarise_at(c("height", "mass"), mean, na.rm = TRUE)
+
+```
+
+```{r}
+csv.all.lc.mcro %>% 
+  unnest(field_names) %>% 
+  # tabyl(file_name_abr)
+  tabyl(file_name_abr,field_names) %>% 
+  # write_csv("output/temp_4_review/macroplot_fld_names.csv")
+  datatable(rownames = FALSE, caption = "Macroplot inventory variable names.")
+
+
+```
+
+
+
+```{r}
+
+FunSelMacro <- function(x){
+  x %>% dplyr::select(c(DATE,
+                      SITE_TYPE,
+                      SITE_NUMBER,
+                      SITE_ID,
+                      SPECIES_CODE,
+                      PERCENT_PLANT_IN_PLOT,
+                      CANOPY_DIA_1_CM,
+                      CANOPY_DIA_2_CM,
+                      PLANT_HT_CM,
+                      HT_TO_TALLEST_BUDSCAR_CM))
+}
+
+
+csv.all.lc.mcro <- csv.all.lc.mcro %>% 
+  mutate(data.sel = map(.x = data, FunSelMacro))
+
+# csv.all.lc.li %>% 
+#   unnest(field_names) %>% 
+#   distinct(field_names)%>% 
+#   datapasta::dpasta()
+
+
+## badass purrr ninja move:
+csv.all.lc.mcro.df <- csv.all.lc.mcro %>% 
+  pluck(1) %>%
+  map(FunSelMacro) %>% 
+  reduce(.f = rbind)
+
+```
+
+```{r}
+csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>% 
+  mutate(yr = year(DATE)) %>% 
+  mutate(mo = lubridate::month(DATE))
+```
+
+
+
+## Data QA/QC and Cleaning {.tabset .tabset-fade .tabset-pills}
+
+### Missing observations across variables and years
+```{r}
+
+naniar::vis_miss(csv.all.lc.li.df)
+
+```
+
+
+### Missingness across years 
+
+```{r}
+
+mplot1 <- csv.all.lc.li.df %>% 
+  mutate(yr = year(DATE)) %>% 
+  mutate(yr = as.factor(yr)) %>% 
+  naniar::gg_miss_fct(yr) +
+  theme_minimal() + 
+  labs(title = 'Missing data', y = "", x="Year")
+
+mplot1
+
+```
+
+```{r, eval=FALSE}
+
+csv.all.lc.li.df %>% 
+  group_by(yr) %>% 
+  nest() %>% 
+  map(data, naniar::vis_miss)
+
+naniar::vis_miss(csv.all.lc.li.df) %>% 
+  facet_wrap(~)
+```
+
+### Missingness across months 
+
+
+
+
+```{r}
+csv.all.lc.li.df %>% 
+  mutate(mo = month(DATE)) %>% 
+  naniar::gg_miss_fct(mo) +
+  labs(title = "Variables: Missing data by month", x="Month") +
+  scale_fill_viridis(discrete = FALSE, option = "A")
+
+```
+
+
+# Results 
+
+## Shrub Line Intercept Datataset: Shrub Height
+
+### Max shrub height
+
+
+
+```{r}
+#
+csv.all.lc.li.df %>% 
+  filter(!is.na(MAX_HEIGHT_CM)) %>%
+  # names() %>% 
+  group_by(yr,SITE_TYPE, SITE_NUMBER, SITE_ID, SPECIES_CODE, MAX_HEIGHT_CM) %>%
+  summarise(mean.max.ht = mean(MAX_HEIGHT_CM,na.rm=TRUE)) %>% 
+  ggplot(aes(yr, SPECIES_CODE)) +
+  geom_tile(aes(fill=MAX_HEIGHT_CM),color = 'white') +
+  scale_fill_viridis(option = "A") +
+  theme_minimal() +
+  labs(title = "Maximum shrub height", x = "Year", y = "Species")
+
+
+```
+
+#### All shrub species and years by type
+
+```{r}
+csv.all.lc.li.df %>% 
+  filter(!is.na(MAX_HEIGHT_CM)) %>%
+  # names() %>% 
+  group_by(yr,SITE_TYPE, SPECIES_CODE, MAX_HEIGHT_CM) %>%
+  summarise(mean.max.ht = mean(MAX_HEIGHT_CM,na.rm=TRUE)) %>% 
+  ggplot(aes(yr, SPECIES_CODE)) +
+  geom_tile(aes(fill=MAX_HEIGHT_CM),color = 'white') +
+  scale_fill_viridis(option = "C") +
+  # theme_minimal() +
+  theme_bw() +
+  labs(title = "Maximum shrub height", x = "Year", y = "Species") +
+  facet_wrap(~SITE_TYPE, ncol = 3) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+
+```
+
+#### Boxplots 
+
+SITE_TYPE: WC=Willow Core, WNC=Willow Noncore, WK=Willow Kawuneeche Valley
+
+```{r}
+csv.all.lc.li.df %>% 
+  filter(!is.na(MAX_HEIGHT_CM)) %>%
+  filter(str_detect(SPECIES_CODE, "^SA")) %>% 
+  filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR") %>%
+  # names() %>% 
+  # group_by(yr,SITE_TYPE, SPECIES_CODE, MAX_HEIGHT_CM) %>%
+  # summarise(mean.max.ht = mean(MAX_HEIGHT_CM,na.rm=TRUE)) %>% 
+  ggplot(aes(yr, MAX_HEIGHT_CM)) +
+  geom_boxplot(aes(fill=SITE_TYPE), color = 'black') +
+  scale_fill_viridis(discrete = TRUE) +
+  theme_bw() +
+  labs(title = "Maximum shrub height", x = "Year", y = "Species")+
+  facet_wrap(~SPECIES_CODE, ncol = 3)
+  # facet_grid(SPECIES_CODE~yr)
+
+
+```
+
+
+```{r, fig.height=9, fig.width=8}
+csv.all.lc.li.df %>% 
+  filter(!is.na(MAX_HEIGHT_CM)) %>%
+  filter(str_detect(SPECIES_CODE, "^SA")) %>% 
+  filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER") %>%
+  # names() %>% 
+  # group_by(yr,SITE_TYPE, SPECIES_CODE, MAX_HEIGHT_CM) %>%
+  # summarise(mean.max.ht = mean(MAX_HEIGHT_CM,na.rm=TRUE)) %>% 
+  ggplot(aes(yr, MAX_HEIGHT_CM)) +
+  geom_boxplot(aes(fill=SITE_TYPE), color = 'black') +
+  scale_fill_viridis(discrete = TRUE) +
+  # theme_minimal() +
+  theme_bw() +
+  labs(title = "Maximum shrub height by Year, species and Site Type", x = "Year", y = "Species")+
+  # facet_wrap(~SPECIES_CODE, ncol = 3) %>%
+  facet_grid(SPECIES_CODE~yr, scales = "free_x")
+
+```
+
+
+FENCED: (Y=Yes, N=No, P=Planned)
+
+BROWSED: (Y=Yes, N=No)
+
+----
+
+```{r, eval=FALSE}
+
+# csv.all.lc %>% View()
+
+
+# unnest to get at field names
+# across all csv files
+csv.all.lc %>% 
+  unnest(field_names) %>% 
+  distinct(ffname,field_names) %>% 
+  datatable()
+
+
+
+
+
+```
+
+
+
+
+```{r}
+
+csv.all.lc.mcro %>% 
+  unnest(field_names) %>% 
+  distinct(file_name_abr,field_names) %>% 
+  # write_csv("output/temp_4_review/macroplot_fld_names.csv")
+  datatable(rownames = FALSE, caption = "Macroplot inventory variable names.")
+
+
+```
+
+### Canopy Diameter
+
+
+
+```{r, eval=TRUE}
+## average the canopy
+csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>% 
+  # names() %>% 
+  mutate(CANOPY_DIA_CM_avg = (CANOPY_DIA_1_CM + CANOPY_DIA_2_CM)/2)
+
+# csv.all.lc.mcro.df %>% 
+#   head()
+
+```
+
+
+```{r, eval=FALSE}
+
+csv.all.lc.mcro.df %>%
+  # filter(yr == "2009" | yr == "2013") %>% 
+    filter(str_detect(SPECIES_CODE, "^SA")) %>% 
+  filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER") %>% 
+  mutate(yr = as.factor(yr)) %>% 
+  ggplot(aes(yr, CANOPY_DIA_CM_avg)) +
+  geom_jitter() +
+  facet_grid(SPECIES_CODE~SITE_TYPE) +
+  theme_bw()
+  
+
+
+```
+
+```{r, fig.width=6, fig.align = 'center', fig.height=9}
+csv.all.lc.mcro.df %>%
+  # filter(yr == "2009" | yr == "2013") %>% 
+  filter(str_detect(SPECIES_CODE, "^SA")) %>% 
+  filter(SITE_TYPE == "WC") %>% 
+  filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER" & SPECIES_CODE !="SALE" & SPECIES_CODE !="SALU") %>% 
+  mutate(yr = as.factor(yr)) %>% 
+  ggplot(aes(yr, CANOPY_DIA_CM_avg)) +
+  geom_boxplot(color="black", fill = "ivory2") +
+  geom_jitter(alpha=.1, color="blue") +
+  facet_grid(SPECIES_CODE~SITE_TYPE, scales = "free_y") +
+  theme_bw() +
+  labs(title = "Core Elk Winter Range Canopy Width", y = "Canopy height (cm)")
+
+```
+
+
+#### Count of Observations by Species  
+
+```{r}
+
+csv.all.lc.mcro.df %>% 
+  group_by(SPECIES_CODE) %>%
+  tally() %>% 
+  arrange(desc(n)) %>% 
+  datatable(rownames = FALSE, caption = "Count of observations by shrub species.")
+
+```
+
+
+```{r}
+
+```
+
+
+
+----
+
+```{r,eval=FALSE}
+
+# scrap
+# line int
+# csv.lineInt <- tibble(files = fs::dir_ls("data/EVMP_data/csv",glob = "*Line Intercept.csv"))
+
+c.line <- fs::dir_ls("data/EVMP_data/csv",glob = "*Line Intercept.csv")
+
+
+## read them all in and combines them
+c.line.dat <- map_df(c.line,read_csv)
+
+## many duplicates...
+c.line.dat <- distinct(c.line.dat)
+
+View(c.line.dat)
+## compare this to just the longest record, Same?
+
+Willow_Cumulative_Data_Baseline_Through_2018_2013_Line_Intercept <- read_csv("data/EVMP_data/csv/Willow_Cumulative_Data_Baseline_Through_2018-2013 Line Intercept.csv")
+View(Willow_Cumulative_Data_Baseline_Through_2018_2013_Line_Intercept)
+
+Willow_Cumulative_Data_Baseline_Through_2018_2008_09_Line_Intercept_Baseline <- read_csv("data/EVMP_data/csv/Willow_Cumulative_Data_Baseline_Through_2018-2008-09 Line Intercept Baseline.csv")
+View(Willow_Cumulative_Data_Baseline_Through_2018_2008_09_Line_Intercept_Baseline)
+
+```
+
+#### Macroplot
+
+
+```{r}
+## macroplot
+
+
+```
+
+
+### Aspen Baseline 2013-2018
+
+
+
+Tally of Live Aspen Stems per Plot >2.5 m in Height (DBH=diameter at breast height [1.4 m])		
+
+Tally of Live Aspen Stems per Plot <2.5 m in Height				
+
+
+Tally of Dead Aspen Stems per Plot >2.5 m in Height (DBH=diameter at breast height [1.4 m])
+
+Cleaned data to make readable as csv
+
+Site Type: AC=core, ANC=non-core, AK=Kawuneechee Valley
+
+```{r}
+
+#  data/EVMP_20181010/TenYearReview/Aspen_Data_Baseline_through_2018.xlsx
+
+```
+
+
+
+#### Quality checks
+
+
+
+
+### Willow Offtake 2009-2018 
+
+**Data import** using excel files.
+
+```{r, eval=FALSE}
+
+# data/EVMP_20181010/TenYearReview/Willow_Cumulative_Data_Baseline_Through_2018.xlsx
+wo <- readxl::excel_sheets("data/EVMP_data/TenYearReview/Willow_Cumulative_Data_Baseline_Through_2018.xlsx")
+wo
+
+path <- ("data/EVMP_data/TenYearReview/Willow_Cumulative_Data_Baseline_Through_2018.xlsx")
+
+
+#### Read in the worksheets and create list of df
+# each tab is a df in the list object
+wo.d <- path %>% 
+  excel_sheets() %>% 
+  set_names() %>% 
+  map(read_excel, path = path) # 
+
+## this just got ALL of the tabs. Will want to subset the list to get the "like" types (e.g., rowbind columns structured the same way)
+# wo.d %>% names()
+#  [1] "KEY"                             "2008 Site Info"                 
+#  [3] "2008-09 Macroplot Baseline"      "2008-09 Line Intercept Baseline"
+#  [5] "2013 Site Info"                  "2013 Macroplot Inventory"       
+#  [7] "2013 Line Intercept"             "2015 Site Info"                 
+#  [9] "2015 Macroplot Inventory"        "2015 Line Intercept"            
+# [11] "2016 Site Info"                  "2016 Macroplot Inventory"       
+# [13] "2016 Line Intercept"             "2017 Site Info"                 
+# [15] "2017 Macroplot Inventory"        "2017 Line Intercept"            
+# [17] "2018 Site Info"                  "2018 Macroplot Inventory"       
+# [19] "2018 Line Intercept"  
+
+
+
+###### Get the names of the macroplot tabs as vector with datapasta
+wo.d %>% 
+  names() %>% 
+  as.tibble() %>% 
+  filter(str_detect(value, 'Macroplot')) # copy from clipboard and paste as vector
+
+### Extract out just the macroplot tabs
+mp.list <- purrr::map(c("z2008-09 Macroplot Baseline",
+  "z2013 Macroplot Inventory",
+  "z2015 Macroplot Inventory",
+  "z2016 Macroplot Inventory",
+  "z2017 Macroplot Inventory",
+  "z2018 Macroplot Inventory"),
+  ~ wo.d[.]) 
+
+# get the names of df. Note use of the 'at_depth' argument to dial into the second level of the list
+df.names <- mp.list %>% 
+  at_depth(2, names) %>% 
+  at_depth(2, tibble)
+
+# df.names %>% 
+#   at_depth(2,walk(.,View)) # this sort of works, but b/c of the nested lists, not useful
+
+###### UNLIST!!!!! #####
+new.pp <- unlist(df.names,recursive=FALSE)
+
+# walk(new.pp,View) # this works! Opens a View portal for each list item 
+# walk(new.pp,print) # prints each list item to console
+# the takehome is there are different number of columns in each tab!
+# can't combine
+
+df.names %>% 
+  at_depth(2,map_df(.,rbind))
+
+
+
+##################
+# purrr::map(c(#"2008-09 Macroplot Baseline",
+#   "2013 Macroplot Inventory",
+#   "2015 Macroplot Inventory",
+#   "2016 Macroplot Inventory",
+#   "2017 Macroplot Inventory",
+#   "2018 Macroplot Inventory"),
+#   ~ wo.d[.]) 
+
+
+
+```
+
+>Create a cache of workbook tabs as CSV files
+
+```{r, eval=FALSE}
+
+## cache csv. This creates a csv cache of each tab in the workbook. Prett cool...
+read_then_csv <- function(sheet, path) {
+  pathbase <- path %>%
+    basename() %>%
+    tools::file_path_sans_ext()
+  path %>%
+    read_excel(sheet = sheet) %>% 
+    write_csv(paste0(pathbase, "-", sheet, ".csv"))
+}
+
+path %>%
+  excel_sheets() %>%
+  set_names() %>% 
+  map(read_then_csv, path = path)
+
+
+map_df(.x = mp.list,.f = bind_rows)
+
+mp.list2 <- mp.list %>% 
+  # map(as.character)
+  map_if(is.numeric, as.character) 
+
+
+bind_rows(mp.list, .id = "id")
+
+
+za <- path %>%
+  excel_sheets() %>%
+  set_names() %>% 
+  map_df(~ read_excel(path = path, sheet = .x), .id = "sheet")
+
+path %>%
+  excel_sheets() %>%
+  set_names() %>% 
+  map_df(~ read_excel(path = path, sheet = .x, range = "A2:F15"), .id = "sheet")
+
+# # #  fail
+# ss <- data.table::rbindlist(mp.list, use.names=TRUE, fill=TRUE) %>% as.data.frame()
+
+
+######
+
+######
+name.lineInt <- wo.d 
+# %>% 
+  # names() %>% 
+  # as.tibble() %>% 
+  # filter(str_detect(value, 'Line'))
+
+wo.d %>%
+  names() %>%
+  as.tibble() %>%
+  filter(str_detect(value, 'Site')) 
+######
+
+### Extract out just the line intercept
+bl.list <- purrr::map(c("2008-09 Line Intercept Baseline",
+  "2013 Line Intercept",
+  "2015 Line Intercept",
+  "2016 Line Intercept",
+  "2017 Line Intercept",
+  "2018 Line Intercept"),
+  ~ name.lineInt[.]) 
+
+
+# #### Example: extract subset
+# library(purrr)
+# library(magrittr)
+#> 
+#> Attaching package: 'magrittr'
+#> The following object is masked from 'package:purrr':
+#> 
+# #>     set_names
+# l <- list(a = "foo", b = "bar", c = "baz")
+# 
+# purrr::map(c("a", "b"), ~ l[.]) %>% unlist()
+# ####
+
+
+
+
+## not working. unpack
+# data_xlsx_df <- map_df(set_names(files), function(file) {
+#   file %>% 
+#     excel_sheets() %>% 
+#     set_names() %>% 
+#     map_df(
+#       ~ read_xlsx(path = file, sheet = .x1),
+#       .id = "sheet")
+# }, .id = "file")
+
+
+# library(readxl)    
+# read_excel_allsheets <- function(filename) {
+#     sheets <- readxl::excel_sheets(filename)
+#     x <-    lapply(sheets, function(X) readxl::read_excel(filename, sheet = X))
+#     names(x) <- sheets
+#     x
+# }
+# 
+# mysheets <- read_excel_allsheets("data/EVMP_20181010/TenYearReview/Willow_Cumulative_Data_Baseline_Through_2018.xlsx")
+
+
+b2007 <- readxl::read_excel("data/EVMP_20181010/TenYearReview/Upland_Line_Intercept_2007_2013_2018.xlsx",sheet = 2) %>% 
+  mutate(yr = 2007)
+
+b2013 <- readxl::read_excel("data/EVMP_20181010/TenYearReview/Upland_Line_Intercept_2007_2013_2018.xlsx",sheet = 3) %>% 
+  mutate(yr = 2013)
+
+
+b2018 <- readxl::read_excel("data/EVMP_20181010/TenYearReview/Upland_Line_Intercept_2007_2013_2018.xlsx",sheet = 4) %>% 
+  mutate(yr = 2018) %>% 
+  mutate(SHRUB_HEIGHT_CM = as.character(SHRUB_HEIGHT_CM))
+
+# combine 07 and 13
+baseline <- bind_rows(b2007,b2013) 
+
+## bring in the 2018
+baseline <- baseline %>% 
+  bind_rows(., b2018)
+
+# View(baseline)
+
+
+```
+
+
+
+#### Quality checks
+
+**Missing data**  
+
+
+### Willow Cumulative 2013-2018
+
+**Data import** 
+```{r}
+
+# data/EVMP_20181010/TenYearReview/Willow_Cumulative_Data_Baseline_Through_2018.xlsx
+
+```
+
+
+#### Quality checks
+
+**Missing data**
+
+
+### Upland Line Intercept 2007-2018
+
+SITE_TYPE (UC=Upland Core, UNC=Upland Noncore)
+
+ANIMAL_SIGN_TYPE (T=Track, S=Scat, P=Present, B=Burrows, D=Plant Damage, BR=Browse)
+
+ANIMAL_SIGN_SPECIES (E=Elk, D=Deer, M=Moose, GS=Ground Squirrels, C=Tent Caterpillars, BHS=Big Horn Sheep, R=Raptor)
+
+SHRUB_SPECIES (Individual shrubs measured along 30 m transect line)
+
+
+
+**Data import** 
+```{r, eval=FALSE}
+
+uli <- readxl::excel_sheets("data/EVMP_20181010/TenYearReview/Upland_Line_Intercept_2007_2013_2018.xlsx")
+uli
+
+b2007 <- readxl::read_excel("data/EVMP_20181010/TenYearReview/Upland_Line_Intercept_2007_2013_2018.xlsx",sheet = 2) %>% 
+  mutate(yr = 2007)
+
+b2013 <- readxl::read_excel("data/EVMP_20181010/TenYearReview/Upland_Line_Intercept_2007_2013_2018.xlsx",sheet = 3) %>% 
+  mutate(yr = 2013)
+
+
+b2018 <- readxl::read_excel("data/EVMP_20181010/TenYearReview/Upland_Line_Intercept_2007_2013_2018.xlsx",sheet = 4) %>% 
+  mutate(yr = 2018) %>% 
+  mutate(SHRUB_HEIGHT_CM = as.character(SHRUB_HEIGHT_CM))
+
+# combine 07 and 13
+baseline <- bind_rows(b2007,b2013) 
+
+## bring in the 2018
+baseline <- baseline %>% 
+  bind_rows(., b2018)
+
+# View(baseline)
+
+# janitor::excel_numeric_to_date()
+
+######### DEAL WITH NA #############
+
+na_strings <- c("NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt available")
+
+baseline %>%
+  naniar::replace_with_na_all(condition = ~.x %in% na_strings) %>%
+  mutate(DATE = as.numeric(DATE)) 
+# %>% 
+#   excel_numeric_to_date(DATE, date_system = "modern")  
+
+
+
+```
+
+The following plot illustrates missing data amd data type 
+```{r, eval=FALSE}
+
+# Examine the file
+baseline %>% 
+  visdat::vis_dat() + 
+  coord_flip()
+
+
+```
+
+```{r, eval=FALSE}
+bl.sel <- baseline %>%
+  select(
+  ELEVATION_M,
+  starts_with("UTM"),
+  DATE,
+  SITE_ID,
+  SITE_NUMBER,
+  SITE_TYPE,
+  SHRUB_SPECIES,
+  SHRUB_HEIGHT_CM,
+  yr
+  ) 
+
+
+
+####
+
+bl.sel %>% 
+  na.omit() 
+
+```
+
+
+
+#### Quality checks
+
+**Missing data**
+
+# Translation of Past Analyses from SAS 
+
+
+### Aspen Baseline 2013-2018
+
+
+```{r}
+
+
+
+```
+
+
+### Willow Offtake 2009-2018
+
+Rewrite the SAS program used to analyze willow height data as found in table 9 of Zeigenfuss and Johnson (2015)--Least squares means of average and maximum willow height and percent willow cover on burned sites compared to unburned sites using the macroplot method at EVMP willow monitoring sites in Rocky Mountain National Park, Colorado. 
+
+**Steps:** 
+
+1. Read in data from a file contaning the baseline data from willow macroplots  
+2. Calculate canopy area for each plot and assigns the baseline year (2008) to these data 
+3. Sort data down to willow and non-willow species groups and calculates mean for the variables "average height" and "maximum ht" for each group.
+
+**See: **  
+
+>willow shrub cover macro table 8.sas  
+>willow shrub height table 8.sas  
+>willow shrub cover macro table 9.txt    
+>willow shrub height table 9.txt  
+
+
+### Upland Line Intercept 2007-2018
+
+Rewrite the SAS program used to create figs. 3,4,5, and 7 of Zeigenfuss and Johnson (2015)--Distribution of aspen tree (height greater than 2.5 meters) stem diameters in monitoring sites. 
+
+**Steps:** 
+1. Read in data from a file with tallies of live aspen stems by dbh size class  
+2. Read in a file with information for each aspen monitoring site  
+3. Merge these two files, remove saplings 
+4. Reclass trees into groups of small (2-10 cm dbh), medium (10-20 cm dbh) and large (20+ dbh) trees.
+
+
+**See: **  
+
+>aspen sapling table 4.sas  
+>aspen sapling table 5.sas  
+
+
+## Recreation of Figures from Past Publications  
+
+## References  
+
+
+Johnson, T. L., L. C. Zeigenfuss, N. Thompson, and J. A. Mack. 2016. The role of science through a century of elk and habitat management at Rocky Mountain National Park. Park Science 32(2):70–72
+
+Zeigenfuss, L.C., and Schoenecker, K.A., 2015, Development of a grazing monitoring program for Great Sand Dunes National Park: U.S. Geological Survey, Open-File Report 2015–1136, 44 p., http://dx.doi.org/10.3133/ofr20151136.
+Monitoring plan for vegetation responses to elk management in Rocky Mountain National Park; 2011; OFR; 2011-1013 
+
+Zeigenfuss, Linda C.; Johnson, Therese; Wiebe, Zachary. Alpine plant community trends on the elk summer range of Rocky Mountain National Park, Colorado: an analysis of existing data; 2006; OFR; 2006-1122; 
+
+Zeigenfuss, Linda C. Effects of elk herbivory on vegetation and nitrogen processes; 2004; Article; Journal; Journal of Wildlife Management; Schoenecker, K.A.; Singer, F.J.; Zeigenfuss, L.C.; Binkley, D.; Menezes, R.S.C. Ecological evaluation of the abundance and effects of elk herbivory in Rocky Mountain National Park, Colorado, 1994-1999; 2002; OFR; 2002-208; Compiled by Singer, Francis J.; 
+
+Zeigenfuss, Linda C. Influences of herbivory and water on willow in elk winter range 2002 Journal of Wildlife Management 
+
+Zeigenfuss, L.C.; Singer, F.J.; Williams, S.A.; Johnson, T.L. Sustainability of vegetation communities grazed by elk in Rocky Mountain National Park; 2002; Report; Report; Ecological evaluation of the abundance and effects of elk herbivory in Rocky Mountain National Park, Colorado, 1994-1999. Open File Report 02-208; Schoenecker, K.A.; Singer, F.J.; Menezes, R.S.C.; Zeigenfuss, L.C.; Binkley, D.
+
+_Zeigenfuss, L. C., and T. L. Johnson. 2015. Monitoring of Vegetation Response to Elk Population and Habitat Management in Rocky Mountain National Park, 2008–14. Report 2015-1216, U.S. Geological Survey, Reston, VA._
+[Link](http://pubs.er.usgs.gov/publication/ofr20151216)
+
+
+
+# bin
+
+
+```{r, eval=FALSE}
+### mapview example
+library(leaflet)
+## default position is topleft next to zoom control
+
+img <- "https://www.r-project.org/logo/Rlogo.svg"
+leaflet() %>% addTiles() %>% addLogo(img, url = "https://www.r-project.org/logo/")
+
+## with local image
+library(png)
+
+img <- system.file("img", "Rlogo.png", package="png")
+leaflet() %>% addTiles() %>% addLogo(img, src = "local", alpha = 0.3)
+
+## dancing banana gif :-)
+m <- mapview(breweries91)
+
+addLogo(m, "https://jeroenooms.github.io/images/banana.gif",
+        position = "bottomleft",
+        offset.x = 5,
+        offset.y = 40,
+        width = 100,
+        height = 100)
+
+addLogo(m, img,
+        position = "bottomleft",
+        offset.x = 5,
+        offset.y = 40,
+        width = 100,
+        height = 100)
+
+#### slide view
+library(jpeg)
+library(raster)
+
+web_img2000 <- "http://cdn.newsapi.com.au/image/v1/68565a36c0fccb1bc43c09d96e8fb029"
+
+jpg2000 <- readJPEG(readBin(web_img2000, "raw", 1e6))
+
+# Convert imagedata to raster
+rst_blue2000 <- raster(jpg2000[, , 1])
+rst_green2000 <- raster(jpg2000[, , 2])
+rst_red2000 <- raster(jpg2000[, , 3])
+
+img2000 <- brick(rst_red2000, rst_green2000, rst_blue2000)
+
+web_img2013 <- "http://cdn.newsapi.com.au/image/v1/5707499d769db4b8ec76e8df61933f2a"
+
+jpg2013 <- readJPEG(readBin(web_img2013, "raw", 1e6))
+
+# Convert imagedata to raster
+rst_blue2013 <- raster(jpg2013[, , 1])
+rst_green2013 <- raster(jpg2013[, , 2])
+rst_red2013 <- raster(jpg2013[, , 3])
+
+img2013 <- brick(rst_red2013, rst_green2013, rst_blue2013)
+
+slideView(img2000, img2013, label1 = "before", label2 = "after")
+# f'in awesome...
+
+
+```
+
+
+
+
+
+
