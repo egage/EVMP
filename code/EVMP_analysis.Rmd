@@ -1519,8 +1519,9 @@ csv.all.lc.mcro.df %>%
   # mutate(q3.canopydiam = quatmedian(CANOPY_DIA_CM_avg))
   ggplot(aes(FENCED, CANOPY_DIA_CM_avg)) +
   # geom_point(aes(y = CANOPY_DIA_CM_avg, color = FENCED)) +
-  geom_jitter(aes(y = CANOPY_DIA_CM_avg, color = FENCED)) +
-  geom_point(aes(y = med.canopydiam),color = "black", shape = 3, size = 5) +
+  geom_boxplot() +
+  geom_jitter(aes(y = CANOPY_DIA_CM_avg, color = FENCED), alpha = .5) +
+  # geom_point(aes(y = med.canopydiam),color = "black", shape = 3, size = 5) +
   # geom_smooth(aes(x = )) +
   facet_grid(SPECIES_CODE~yr, scales = "free_y") +
   theme_bw() +
@@ -1529,9 +1530,9 @@ csv.all.lc.mcro.df %>%
 
 ```
 
-```{r}
+```{r, eval = FALSE}
 
-# 
+# The medians aren;t right. they seem to just be for the species/yr, not spp yr fenced
 csv.all.lc.mcro.df %>%
   filter(FENCED == "N" | FENCED == "Y") %>% 
   filter(yr == "2008" | yr == "2013" | yr == "2018") %>%
