@@ -136,7 +136,7 @@ library(mapview)
 
 Since its adoption in 2008, Rocky Mountain National Park (RMNP) has been implementing the Elk and Vegetation Management Plan (EVMP), which will guide management over a 20–yr period and aims to reduce the impacts of elk on vegetation and return systems to the natural range of variability for elk and vegetation in three target vegetation communities: aspen, montane riparian willow, and upland herbaceous. Relying on different conservation tools such as fencing, non-lethal redistribution of elk, vegetation-restoration, and culling of elk herds, the plan incorporates the principle of adaptive management to guide management actions. Adjusting management to achieve the EVMP’s objectives requires monitoring of target vegetation communities. 
 
-RMNP and the U.S. Geological Survey (USGS) developed a vegetation monitoring program to allow park managers to assess progress towards goals of the EVMP. Over 200 monitoring sites were established and baseline data collected from 2006-2009 in core winter range aspen, willow, and upland communities. Annual sampling of offtake by ungulates and a variety of structural and compositional metrics has occurred on a five-year basis, with a second five-year-round of sampling completed in 2018. 
+RMNP and the U.S. Geological Survey (USGS) developed a vegetation monitoring program to allow park managers to assess progress towards EVMP goals. Over 200 monitoring sites were established and baseline data collected from 2006-2009 in core winter range aspen, willow, and upland communities. Annual sampling of offtake by ungulates and a variety of structural and compositional metrics has occurred on a five-year basis, with a second five-year-round of sampling completed in 2018. 
 
 This document provides an overview of ongoing analyses of these data, comparing datasets collected in willow, aspen, and upland herbaceous plots in core and non-core elk winter range site on the east side of RMNP and the Kawunechee Valley. Results compare trends in attributes like stem count, diameter, and shrub height over time and in relation to factors like study site and whether plots were in fenced or unfenced areas. In addition, analyses evaluate effects of a 2012 wildfire that burned over Moraine Park, which provided a unique opportunity to study willow and aspen recovery after fire in both grazed and ungrazed conditions.
 
@@ -148,18 +148,16 @@ The goal of this project is to provide data analysis to RMNP for the 10-year int
 * Missing values
 * Data values outside of expected range or showing unusual patterns
 
-Cleaned and archivable data sets will be produced to facilitate future data analysis and sharing.
+Cleaned and archivable data sets will be produced to facilitate future data analysis and aid RMNP in their management goals.
+
+
 
 # Methods
-
-The following code cleans and analyzes data collected since the inception of the EVMP.
 
 
 ## Data Exploration and Wrangling
 
 Working with files in the 10 yr data folder, each tab in the included excel files were exported as separate CSV files. 
-
-Select among the tabs below to view data import steps and basic data characteristics.
 
 ### Import and overview   
 
@@ -176,7 +174,6 @@ file.listing <- dir_info(recursive = TRUE) %>%
   dplyr::select(path, size, modification_time)
 
 datatable(file.listing, rownames = FALSE, caption = "List of files provided by RMNP 2018-10-10")
-
 
 ```
 
@@ -1411,16 +1408,12 @@ BROWSED: (Y=Yes, N=No)
 
 # csv.all.lc %>% View()
 
-
 # unnest to get at field names
 # across all csv files
 csv.all.lc %>% 
   unnest(field_names) %>% 
   distinct(ffname,field_names) %>% 
   datatable()
-
-
-
 
 
 ```
