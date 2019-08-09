@@ -2,7 +2,7 @@
 
 ## Introduction 
 
-This github repo contains code analyzing data collected as part of the elk-vegetation monitoring program from 2006-2018. 
+This repository contains code for analyzing data from the Elk and Vegetation Monitoring Program collected from 2006-2018. 
 
 The final product of the project will be an NPS Natural Resources Report detailing: 
 
@@ -11,10 +11,6 @@ The final product of the project will be an NPS Natural Resources Report detaili
 3. Observed results and interpretation of these results in the context of the objectives of the EVMP. 
 
 In addition to annotated R code for all statistical analyses, CSU will provide training so that the analyses can be repeated by NPS managers and repeated using data collected in the future. A presentation of the results of the analysis will be made to park managers in late 2019 or early 2020. 
-
-Rocky Mountain National Park will be responsible for providing clean electronic copies (MS Excel or similar) of all data collected from 2006-2018, electronic copies of all site photos taken in 2018, and baseline photos and data from any sites added since 2013.
-
-All data shall be in the same format across years and be checked fully for data quality by checking electronic data against field data. All notes detailing circumstances that may affect data quality or consistency will be provided to CSU. RMNP shall also provide notes on any known major events (fires, floods, etc.) that have affected monitoring sites since their establishment and any relevant GIS data files necessary to complete the analysis.
 
 CSU will also consult with park biologists and resource managers to assist with creating appropriate strategies to deal with 1) establishing willow sites in the Kawuneeche Valley and 2) dealing with increased herbivory on the elk winter range resulting from range expansion by moose. 
 

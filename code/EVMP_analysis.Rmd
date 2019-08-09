@@ -1,12 +1,12 @@
 ---
-title: "EVMP Analysis"
+title: "Elk Vegetation Management Plan Analysis"
 author: ""
 date: ''
 output:
-  html_document:
-    theme: flatly
+  html_document: 
+    theme: sandstone
     toc: yes
-    toc_depth: 2
+    toc_depth: 4
 ---
 
 ```{r setup, include=FALSE}
@@ -20,7 +20,7 @@ opts_chunk$set(fig.path = "../output/figures/") # corrected path and added dev. 
 ```
 
 
-```{r, echo=FALSE, warning=FALSE,message=FALSE, comment=FALSE}
+```{r, utilityFuncDefn, echo=FALSE, warning=FALSE,message=FALSE, comment=FALSE}
 # define some utility functions...
 
 #--------------------
@@ -100,8 +100,8 @@ Contact: edgage@rams.colostate.edu
 
 **Updated: `r format(Sys.time(), '%Y %B %d')`**
 
-This code is a working document, aimed at facilitating data QA/QC and exploratory analysis. 
-It is not intended for distribution.
+This is a working document aimed at facilitating data QA/QC and exploratory analysis. 
+Please do not distribute.
 
 # Introduction
 
@@ -126,7 +126,7 @@ suppressPackageStartupMessages(library(readxl))
 suppressPackageStartupMessages(library(DT))
 # library(kableExtra)
 suppressPackageStartupMessages(library(lubridate))
-suppressPackageStartupMessages(library(skimr)) ## some useful functions
+suppressPackageStartupMessages(library(skimr)) 
 suppressPackageStartupMessages(library(dataMaid))
 # library(ggmap)
 library(lubridate)
@@ -134,11 +134,11 @@ library(mapview)
 
 ```
 
-Since its adoption in 2008, Rocky Mountain National Park (RMNP) has been implementing the Elk and Vegetation Management Plan (EVMP), which will guide management over a 20–yr period and aims to reduce the impacts of elk on vegetation and return systems to the natural range of variability for elk and vegetation in three target vegetation communities: aspen, montane riparian willow, and upland herbaceous. Relying on different conservation tools such as fencing, non-lethal redistribution of elk, vegetation-restoration, and culling of elk herds, the plan incorporates the principle of adaptive management to guide management actions. Adjusting management to achieve the EVMP’s objectives requires monitoring of target vegetation communities. 
+In 2008, Rocky Mountain National Park (RMNP) began implementation of the Elk and Vegetation Management Plan (EVMP), intended to guide management of elk and vegetation over a 20–yr period, reduce the impacts of elk on vegetation, and return improve condition, and bring  of target ecosystems into the natural range of variability for elk and vegetation in three target vegetation communities: aspen, montane riparian willow, and upland. Using fencing, non-lethal redistribution and culling of elk herds, and active vegetation restoration, the plan incorporates the principle of adaptive management to guide management actions. Achieving the goals of the EVMP requires monitoring of target vegetation communities. 
 
-RMNP and the U.S. Geological Survey (USGS) developed a vegetation monitoring program to allow park managers to assess progress towards EVMP goals. Over 200 monitoring sites were established and baseline data collected from 2006-2009 in core winter range aspen, willow, and upland communities. Annual sampling of offtake by ungulates and a variety of structural and compositional metrics has occurred on a five-year basis, with a second five-year-round of sampling completed in 2018. 
+RMNP and the U.S. Geological Survey (USGS) developed a vegetation monitoring program focused on EVMP goals. Monitoring sites were established and baseline data collected from 2006-2009 in core winter range aspen, willow, and upland communities. sites have been annually sampled  vegetation offtake by ungulates and various structural and compositional metrics have been montoeied on a five-year basis, with a second five-year-round of sampling completed in 2018. 
 
-This document provides an overview of ongoing analyses of these data, comparing datasets collected in willow, aspen, and upland herbaceous plots in core and non-core elk winter range site on the east side of RMNP and the Kawunechee Valley. Results compare trends in attributes like stem count, diameter, and shrub height over time and in relation to factors like study site and whether plots were in fenced or unfenced areas. In addition, analyses evaluate effects of a 2012 wildfire that burned over Moraine Park, which provided a unique opportunity to study willow and aspen recovery after fire in both grazed and ungrazed conditions.
+This document presents analyses of these data, evaluating datasets collected in willow, aspen, and upland herbaceous plots in core and non-core elk winter range sites on the east side of RMNP and the Kawunechee Valley. Data describing stem count, diameter, and shrub height over time are analyzed in relation to factors including study site location and whether plots were in fenced or unfenced areas. In addition, analyses evaluate effects of a 2012 wildfire that burned over Moraine Park, which provided a unique opportunity to study willow and aspen recovery after fire in both grazed and ungrazed conditions.
 
 ### Objectives 
 
@@ -154,35 +154,50 @@ Cleaned and archivable data sets will be produced to facilitate future data anal
 
 # Methods
 
+## Vegetation Collection
+
+### Willow
+
+### Upland
+
+### Aspen
+
+
+
 
 ## Data Exploration and Wrangling
 
-Working with files in the 10 yr data folder, each tab in the included excel files were exported as separate CSV files. 
+Raw data files provided by RMNP in October 2018 were processed using functions in various data manipulation and visualizations packages in the R statistical package.  
 
-### Import and overview   
 
-__List of files provided by RMNP (10/10/2018):__
+
+Raw data were provided as 4 multi-tabbed Excel files:   
 
 ```{r}
+# list of files, tidyverse approach: 
+# file.listing <- dir_info(path = "./data/EVMP_data/TenYearReview", recurse = TRUE) %>%
+#   filter(type == "file", permissions == "u+r", size > "10KB") %>%
+#   arrange(desc(size)) %>%
+#   View()
+#   dplyr::select(path, size)
 
-# list of files 
-# fs::dir_ls(recursive = TRUE) 
+# datatable(file.listing, rownames = FALSE, caption = "List of files provided by RMNP 2018-10-10")
 
-file.listing <- dir_info(recursive = TRUE) %>%
-  filter(type == "file", permissions == "u+r", size > "10KB") %>%
-  arrange(desc(size)) %>%
-  dplyr::select(path, size, modification_time)
 
-datatable(file.listing, rownames = FALSE, caption = "List of files provided by RMNP 2018-10-10")
+## base R approach
+file.listing <- list.files(path = "./data/EVMP_data/TenYearReview") %>% 
+  enframe() %>% 
+  select(value) %>% 
+  rename(fileName = value)
+
+knitr::kable(file.listing, rownames = FALSE, row.names = FALSE, col.names = "file name")
 
 ```
 
 
 ```{r}
-
 # xls_example <- readxl_example("datasets.xls")
 # excel_sheets(xls_example)
-
 
 # willow.off <- read_xlsx("data/EVMP_data/provisional_data_20180920/Willow Offtake Data 2009-2018.xlsx")
 # read_excel(willow.off, sheet = "chickwts")
@@ -199,7 +214,7 @@ datatable(file.listing, rownames = FALSE, caption = "List of files provided by R
 
 # Create a cache of workbook tabs as CSV files
 
-## cache csv. This creates a csv cache of each tab in the workbook. Prett cool...
+## cache csv. This creates a csv cache of each tab in the workbook.
 read_then_csv <- function(sheet, path) {
   pathbase <- path %>%
     basename() %>%
@@ -218,7 +233,7 @@ path %>%
 
 
 ```{r}
-
+##### READ IN CSV FILES FROM 
 ## list all the csv - as vector
 # csv.all <- fs::dir_ls("data/EVMP_data/csv",glob = "*.csv")
 
@@ -240,10 +255,7 @@ csv.all.lc <- csv.all %>%
 
 # site info
 sinfo <- csv.all.lc %>%
-  # View()
-  # filter(str_detect(ffname, "Site")) 
   filter(str_detect(ffname, "z2018 Site Info.csv"))
-
 
 sinfo.df <- sinfo %>% 
   pluck(2) %>% 
@@ -320,6 +332,14 @@ site.info.all.sf <- site.info.all %>%
 
 ```
 
+
+```{r}
+# site.info.all.sf %>% 
+#   View()
+#   names()
+```
+
+
 ```{r}
 
 site.info.all %>% 
@@ -375,30 +395,12 @@ site.info.all.sf %>%
   filter(BURNED != 'Not burned') %>%
   mapview(zcol='BURNED')
 
+# >What is "N Y"?  
+# >How does "Y" compare to the other, more specific classes?
 ```
 
->What is "N Y"?  
->How does "Y" compare to the other, more specific classes?
-
-```{r, eval=FALSE, echo=FALSE}
-#### EXAMPLE ####
-## plotly
-
-library(ggplot2)
-library(plotly)
-library(gapminder)
- 
-p <- gapminder %>%
-  filter(year==1977) %>%
-  ggplot( aes(gdpPercap, lifeExp, size = pop, color=continent)) +
-  geom_point() +
-  scale_x_log10() +
-  theme_bw()
- 
-ggplotly(p)
 
 
-```
 
 **Count of features by valley **
 
@@ -439,7 +441,7 @@ pl.cnt1 <- site.info.all.sf %>%
   geom_point(color="white", size = 6) +
   geom_pointrange(ymin=0, aes(ymax=n)) +
    geom_point(color="ivory3", size = 10) +
-  geom_text(aes(label=n), size=6) +
+  geom_text(aes(label=n), size=4) +
   # scale_x_log10() +
   theme_minimal() +
   labs(x="Valley", y = "Count", title = "Count of EVMP sampling sites") +
@@ -453,21 +455,31 @@ pl.cnt2 <- site.info.all.sf %>%
   # na.omit() %>%  ### NEED TO ATTRIBUTE THESE. BUT FOR TESTING....
   ggplot(aes(reorder(RANGE_TYPE, n),n)) +
   # ggplot( aes(VALLEY, n, size = n, color=VALLEY)) +
-  geom_point(color="white", size = 6) +
+  geom_point(color="white", size = 4) +
   geom_pointrange(ymin=0, aes(ymax=n)) +
    geom_point(color="ivory3", size = 10) +
-  geom_text(aes(label=n), size=5) +
+  geom_text(aes(label=n), size=3) +
   # scale_x_log10() +
   theme_minimal() +
   # coord_flip() +
   theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
   labs(x="Count", y = "Range type", title = "Count of EVMP sampling sites by 'Range type'")
 
-cowplot::plot_grid(pl.cnt1, pl.cnt2, labels = "AUTO")
+pl.cnt2
+
+
+
+pl.cnt1.cnt2 <- cowplot::plot_grid(pl.cnt1, pl.cnt2, labels = "AUTO")
+
+# ggsave(plot = pl.cnt1.cnt2, filename = "./output/figures/twoPanel_valleyCnt_rangeCnt.png", width = 8, height = 5, dpi = 300)
+
+## Note how many na! Need to fix
+
+
+
 
 ```
 
-> Note how many na! Need to fix
 
 **Counts of fenced and unfenced**
 ```{r}
@@ -615,6 +627,8 @@ site.info.all.sf.nest <- site.info.all.sf.nest %>%
 
 ```
 
+
+##
 ### East-side Core Winter Range (WC) Map
 
 ```{r, fig.align='center'}
@@ -638,7 +652,7 @@ site.info.all.sf.nest %>%
 ```
 
 
-### West-side Kawuneechee Valley (WK) Map
+### West-side Kawuneeche Valley (WK) Map
 ```{r, fig.align='center'}
 
 ## map: KV
@@ -646,9 +660,16 @@ site.info.all.sf.nest %>%
   pluck(2) %>% pluck(2) %>% 
   mapview(zcol="FENCED")
 
+# site.info.all.sf.nest %>% 
+#   pluck(2) %>% 
+#   pluck(2) %>%
+#   ggplot() +
+#   geom_sf(aes(color = FENCED)) +
+#   theme_minimal()
+
 ```
 
-## Willow QA/QC {.tabset}
+### Willow QA/QC {.tabset}
 
 
 ```{r}
@@ -676,9 +697,7 @@ csv.all.lc <- csv.all.lc %>%
                           )
          )
 
-
 ```
-
 
 
 ```{r}
@@ -703,7 +722,7 @@ csv.all.lc %>%
 ```
 
 
-### Line intercept Analysis
+#### Line intercept Analysis
 
 >Distinct variable names across all input csv files for just line intercept plot
 
@@ -828,7 +847,7 @@ csv.all.lc.li.df %>%
 
 
 
-### Macroplot Inventory Analysis
+#### Macroplot Inventory Analysis
 
 
 ```{r}
@@ -1061,14 +1080,6 @@ bl.sel %>%
 ```
 
 
-## Translation of Past Analyses from SAS 
-
-### Willow
-
-### Upland
-
-### Aspen
-
 ```{r, eval=FALSE}
 csv.all.lc.asp <- csv.all.lc %>% 
   filter(vType == "Macroplot") 
@@ -1116,7 +1127,7 @@ csv.all.lc.asp <- csv.all.lc.mcro %>%
 #   datapasta::dpasta()
 
 
-## badass purrr ninja move:
+## combine all using purrr, ninja-style:
 csv.all.lc.asp.df <- csv.all.lc.asp %>% 
   pluck(1) %>%
   map(FunSelAsp) %>% 
@@ -1132,17 +1143,21 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
 
 ```
 
+### Statistical analyses
+
+
 
 
 # Results 
 
+## Willow
 
-## Shrub Line Intercept Datataset: Shrub Height
+### Shrub height
 
-### Max shrub height
+**Max shrub height: Core winter range**
 
 ```{r}
-#
+#Shrub Line Intercept Datataset 
 csv.all.lc.li.df %>% 
   filter(!is.na(FENCED)) %>% 
   filter(!is.na(MAX_HEIGHT_CM)) %>%
@@ -1150,12 +1165,15 @@ csv.all.lc.li.df %>%
   filter(SITE_TYPE == "WC") %>% 
   group_by(yr,SITE_TYPE, FENCED, SPECIES_CODE) %>%
   summarise(mean.max.ht = mean(MAX_HEIGHT_CM, na.rm=TRUE)) %>% 
+  filter(FENCED != "Y_but_fence_down_since_2013") %>% 
   ggplot(aes(yr, SPECIES_CODE)) +
   geom_tile(aes(fill=mean.max.ht),color = 'white') +
   scale_fill_viridis(option = "A") +
   theme_bw() +
-  labs(title = "Maximum shrub height", subtitle = "Mean of shrub height pooled by site", x = "Year", y = "Species") +
-  facet_wrap(~FENCED, ncol= 3)
+  labs(title = "Maximum shrub height", subtitle = "Mean of shrub height pooled by fenced status", x = "Year", y = "Species", fill = "") +
+  facet_wrap(~FENCED, ncol= 2)
+
+ggsave("./output/figures/maxShrubHy_by_spp_WC_heatmap.png", width = 6.5, height = 6.5, dpi = 300)
 
 ```
 
@@ -1180,7 +1198,7 @@ csv.all.lc.li.df %>%
     theme_bw() +
   labs(title = "Maximum shrub height", x = "Year", y = "Max shrub height (cm)") +
   facet_grid(LOCATION~SPECIES_CODE)
-  facet_wrap(~SPECIES_CODE, ncol= 5)
+  # facet_wrap(~SPECIES_CODE, ncol= 5)
 
 ```
 
@@ -1204,10 +1222,7 @@ csv.all.lc.li.df %>%
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
-
-
 ```
-
 
 
 SITE_TYPE: WC=Willow Core, WNC=Willow Noncore, WK=Willow Kawuneeche Valley
@@ -1569,12 +1584,6 @@ csv.all.lc.mcro.df %>%
 ```
 
 
-```{r}
-
-```
-
-
-
 ----
 
 ```{r,eval=FALSE}
@@ -1603,18 +1612,18 @@ View(Willow_Cumulative_Data_Baseline_Through_2018_2008_09_Line_Intercept_Baselin
 
 ```
 
-## Macroplot
 
+### Aspen 
+
+### Baseline 2013-2018
 
 ```{r}
-## macroplot
 
+
+
+#  data/EVMP_20181010/TenYearReview/Aspen_Data_Baseline_through_2018.xlsx
 
 ```
-
-
-## Aspen Baseline 2013-2018
-
 
 
 Tally of Live Aspen Stems per Plot >2.5 m in Height (DBH=diameter at breast height [1.4 m])		
@@ -1626,22 +1635,29 @@ Tally of Dead Aspen Stems per Plot >2.5 m in Height (DBH=diameter at breast heig
 
 Cleaned data to make readable as csv
 
-Site Type: AC=core, ANC=non-core, AK=Kawuneechee Valley
-
-```{r}
-
-#  data/EVMP_20181010/TenYearReview/Aspen_Data_Baseline_through_2018.xlsx
-
-```
+Site Type: AC=core, ANC=non-core, AK=Kawuneeche Valley
 
 
+Rewrite the SAS program used to create figs. 3,4,5, and 7 of Zeigenfuss and Johnson (2015)--Distribution of aspen tree (height greater than 2.5 meters) stem diameters in monitoring sites. 
 
-#### Quality checks
+**Steps:** 
+1. Read in data from a file with tallies of live aspen stems by dbh size class  
+2. Read in a file with information for each aspen monitoring site  
+3. Merge these two files, remove saplings 
+4. Reclass trees into groups of small (2-10 cm dbh), medium (10-20 cm dbh) and large (20+ dbh) trees.
+
+
+**See: **  
+
+>aspen sapling table 4.sas  
+>aspen sapling table 5.sas  
 
 
 
+## Upland
 
-## Willow Offtake 2009-2018 
+
+### Willow Offtake 2009-2018 
 
 **Data import** using excel files.
 
@@ -1673,7 +1689,6 @@ wo.d <- path %>%
 # [15] "2017 Macroplot Inventory"        "2017 Line Intercept"            
 # [17] "2018 Site Info"                  "2018 Macroplot Inventory"       
 # [19] "2018 Line Intercept"  
-
 
 
 ###### Get the names of the macroplot tabs as vector with datapasta
@@ -1725,11 +1740,12 @@ df.names %>%
 
 ```
 
->Create a cache of workbook tabs as CSV files
+
 
 ```{r, eval=FALSE}
+# Create a cache of workbook tabs as CSV files
+## cache csv. This creates a csv cache of each tab in the workbook. 
 
-## cache csv. This creates a csv cache of each tab in the workbook. Prett cool...
 read_then_csv <- function(sheet, path) {
   pathbase <- path %>%
     basename() %>%
@@ -1744,13 +1760,10 @@ path %>%
   set_names() %>% 
   map(read_then_csv, path = path)
 
-
 map_df(.x = mp.list,.f = bind_rows)
 
 mp.list2 <- mp.list %>% 
-  # map(as.character)
   map_if(is.numeric, as.character) 
-
 
 bind_rows(mp.list, .id = "id")
 
@@ -1764,12 +1777,6 @@ path %>%
   excel_sheets() %>%
   set_names() %>% 
   map_df(~ read_excel(path = path, sheet = .x, range = "A2:F15"), .id = "sheet")
-
-# # #  fail
-# ss <- data.table::rbindlist(mp.list, use.names=TRUE, fill=TRUE) %>% as.data.frame()
-
-
-######
 
 ######
 name.lineInt <- wo.d 
@@ -1806,19 +1813,6 @@ bl.list <- purrr::map(c("2008-09 Line Intercept Baseline",
 # 
 # purrr::map(c("a", "b"), ~ l[.]) %>% unlist()
 # ####
-
-
-
-
-## not working. unpack
-# data_xlsx_df <- map_df(set_names(files), function(file) {
-#   file %>% 
-#     excel_sheets() %>% 
-#     set_names() %>% 
-#     map_df(
-#       ~ read_xlsx(path = file, sheet = .x1),
-#       .id = "sheet")
-# }, .id = "file")
 
 
 # library(readxl)    
@@ -1890,26 +1884,15 @@ Rewrite the SAS program used to analyze willow height data as found in table 9 o
 >willow shrub height table 9.txt  
 
 
-## Upland Line Intercept 2007-2018
-
-Rewrite the SAS program used to create figs. 3,4,5, and 7 of Zeigenfuss and Johnson (2015)--Distribution of aspen tree (height greater than 2.5 meters) stem diameters in monitoring sites. 
-
-**Steps:** 
-1. Read in data from a file with tallies of live aspen stems by dbh size class  
-2. Read in a file with information for each aspen monitoring site  
-3. Merge these two files, remove saplings 
-4. Reclass trees into groups of small (2-10 cm dbh), medium (10-20 cm dbh) and large (20+ dbh) trees.
 
 
-**See: **  
 
->aspen sapling table 4.sas  
->aspen sapling table 5.sas  
-
-
-## Recreation of Figures from Past Publications  
 
 # Discussion
+
+Targets from Ziegenfuss and Johnson 2015:
+
+1.Progressive increase in aspen regeneration above the baseline level of 13 percent to at least 45 percent of winter range stands (presence of stems less than 2 cm dbh reaching 1.5–2.5 m tall).
 
 # References  
 

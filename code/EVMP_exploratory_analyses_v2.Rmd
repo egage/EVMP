@@ -113,7 +113,7 @@ Site Type: AC=core, ANC=non-core, AK=Kawuneechee Valley
 
 ```{r}
 
-fs::dir_ls("data/EVMP_20181010/TenYearReview")
+# fs::dir_ls("data/EVMP_20181010/TenYearReview")
 
 #  data/EVMP_20181010/TenYearReview/Aspen_Data_Baseline_through_2018.xlsx
 
@@ -135,7 +135,7 @@ fs::dir_ls("data/EVMP_20181010/TenYearReview")
 
 # data/EVMP_20181010/TenYearReview/Willow_Cumulative_Data_Baseline_Through_2018.xlsx
 wo <- readxl::excel_sheets("data/EVMP_20181010/TenYearReview/Willow_Cumulative_Data_Baseline_Through_2018.xlsx")
-wo
+
 
 path <- ("data/EVMP_20181010/TenYearReview/Willow_Cumulative_Data_Baseline_Through_2018.xlsx")
 
