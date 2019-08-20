@@ -1,17 +1,21 @@
 ---
-title: "Elk Vegetation Management Plan Analysis"
-author: ""
+title: "Elk Vegetation Management Plan Analysis: Baseline-2018 Data"
+author: ''
 date: ''
 output:
   html_document: 
-    theme: sandstone
+    fig_caption: yes
+    theme: yeti
     toc: yes
-    toc_depth: 4
+    toc_depth: 3
+  word_document:
+    toc: yes
+    toc_depth: '2'
 ---
 
 ```{r setup, include=FALSE}
 library(knitr)
-opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.align = 'center')
+opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align = 'center')
 opts_knit$set(root.dir=normalizePath('../')) # this is required if Rmd is nested below the project directory
 opts_chunk$set(fig.path = "../output/figures/") # corrected path and added dev. Needed to specify a subdirectory for figs
 
@@ -91,8 +95,7 @@ theme_CowsMod1 <- theme_cowplot() +
 
 ```
 
-
-Author: E. Gage  
+  
 
 Contact: edgage@rams.colostate.edu
 
@@ -103,7 +106,6 @@ Contact: edgage@rams.colostate.edu
 This is a working document aimed at facilitating data QA/QC and exploratory analysis. 
 Please do not distribute.
 
-# Introduction
 
 ```{r,echo=FALSE}
 # library(here)
@@ -134,21 +136,13 @@ library(mapview)
 
 ```
 
-In 2008, Rocky Mountain National Park (RMNP) began implementation of the Elk and Vegetation Management Plan (EVMP), intended to guide management of elk and vegetation over a 20–yr period, reduce the impacts of elk on vegetation, and bring  of target ecosystems into the natural range of variability for elk and vegetation in three target vegetation communities: aspen, montane riparian willow, and upland. Using fencing, non-lethal redistribution and culling of elk herds, and active vegetation restoration, the plan incorporates the principle of adaptive management to guide management actions. Achieving the goals of the EVMP requires monitoring of target vegetation communities. 
+# Introduction
+
+In 2008, Rocky Mountain National Park (RMNP) began implementation of the Elk and Vegetation Management Plan (EVMP), intended to guide management of elk and vegetation over a 20–yr period, reduce the impacts of elk on vegetation, and bring  target ecosystems into the natural range of variability for elk and vegetation in three target vegetation communities: aspen, montane riparian willow, and upland. Management includes fencing, non-lethal redistribution and culling of elk herds, and active vegetation restoration, the plan incorporates the principle of adaptive management to guide management. Achieving the goals of the EVMP requires monitoring of target vegetation communities. 
 
 RMNP and the U.S. Geological Survey (USGS) developed a vegetation monitoring program focused on EVMP goals. Monitoring sites were established and baseline data collected from 2006-2009 in core winter range aspen, willow, and upland communities. sites have been annually sampled  vegetation offtake by ungulates and various structural and compositional metrics have been montoeied on a five-year basis, with a second five-year-round of sampling completed in 2018. 
 
-This document presents analyses of these data, evaluating datasets collected in willow, aspen, and upland herbaceous plots in core and non-core elk winter range sites on the east side of RMNP and the Kawunechee Valley. Data describing stem count, diameter, and shrub height over time are analyzed in relation to factors including study site location and whether plots were in fenced or unfenced areas. In addition, analyses evaluate effects of a 2012 wildfire that burned over Moraine Park, which provided a unique opportunity to study willow and aspen recovery after fire in both grazed and ungrazed conditions.
-
-### Objectives 
-
-This report analyzes data from the first 10 years of monitoring and will be used to assess progress towards the goals in the EVMP. Monitoring in the EVMP program is focused on assessing several community attributes (Zeigenfuss et al. 2011) including:
-
-1.Vegetation offtake by herbivores in riparian shrub (primarily willow) and upland herbaceous communities, assessed through annual subsampling of sites  
-2.Willow height and cover resampled every 5 years  
-3.Aspen stem density and stem size distribution, assessed every 5 years through a full resampling of sites. 
-
-The focus of the EVMP is the elk winter range. However, data are also collected in the Kawuneeche Valley, which is primarily summer range, to provide information on this important area of the park.
+This document presents analyses of these data, evaluating datasets collected in willow, aspen, and upland herbaceous plots in core and non-core elk winter range sites on the east side of RMNP and the Kawunechee Valley. Data describing stem count, diameter, and shrub height over time are analyzed in relation to factors including study site location and whether plots were in fenced or unfenced areas. In addition, analyses evaluate effects of a 2012 wildfire that burned over Moraine Park. This event provided a unique opportunity to study willow and aspen recovery after fire in both grazed and ungrazed conditions. EVMP measurements are focused on the core elk winter range, but non-core areas are also included. Data collected in the Kawuneeche Valley (primarily summer range) was collected to provide information on this critical and changing area of the park.
 
 
 ```{r, eval=FALSE}
@@ -168,37 +162,19 @@ The focus of the EVMP is the elk winter range. However, data are also collected 
 
 ## Vegetation Collection
 
-Protocols detailed in the RMNP EVMP monitoring plan (Zeigenfuss et al. 2011) were used to collect vegetation data at study plots. A round of baseline measurements made from 2006–2009 were made (Zeigenfuss et al. 2011), with RMNP staff collecting subsequent data. A subsample of plots were visited annually beginning in 2007 for upland plots and 2009 willow plots and conducted through 2014 (Zeigenfuss et al. 2011). Offtake measures on willows were usually in May and June, but were delayed some to mid-July in some years due to weather. Other variables were assessed the year of plot establishment and during June through September in 2013and 2018.
+This report analyzes data from the first 10 years of monitoring aspart of the EVMP and will be used to assess progress towards program goals. Monitoring in the EVMP program is focused on assessing several community attributes (Zeigenfuss et al. 2011) including:
 
-## Data Exploration and Wrangling
-
-Raw data files provided by RMNP in October 2018 were processed using functions in various data manipulation and visualizations packages in the R statistical package.  
-
-
-
-Raw data were provided as 4 multi-tabbed Excel files:   
-
-```{r}
-# list of files, tidyverse approach: 
-# file.listing <- dir_info(path = "./data/EVMP_data/TenYearReview", recurse = TRUE) %>%
-#   filter(type == "file", permissions == "u+r", size > "10KB") %>%
-#   arrange(desc(size)) %>%
-#   View()
-#   dplyr::select(path, size)
-
-# datatable(file.listing, rownames = FALSE, caption = "List of files provided by RMNP 2018-10-10")
+1. Vegetation offtake by herbivores in riparian shrub (primarily willow) and upland herbaceous communities, assessed through annual subsampling of sites  
+2. Willow height and cover resampled every 5 years  
+3. Aspen stem density and stem size distribution, assessed every 5 years through a full resampling of sites. 
 
 
-## base R approach
-file.listing <- list.files(path = "./data/EVMP_data/TenYearReview") %>% 
-  enframe() %>% 
-  select(value) %>% 
-  rename(fileName = value)
 
-knitr::kable(file.listing, rownames = FALSE, row.names = FALSE, col.names = "file name")
+Protocols detailed in the EVMP monitoring plan (Zeigenfuss et al. 2011) were used to collect vegetation data at study plots. A round of baseline measurements collected between 2006–2009 were made, with RMNP staff collecting subsequent data. A subsample of plots were visited annually beginning in 2007 for upland plots and 2009 willow plots and conducted through 2018. Offtake measures on willows were usually made in May and June, but delayed to mid-July in some years due to weather. Other variables were assessed the year of plot establishment and during June through September in 2013 and 2018.
 
-```
+Upland line intercept transect data were collected in core upland (UC) and upland noncore areas (UNC) along a 30m transect line. Observations included the presence of tracks, scat, burrows, plant damage, or browse. In addition, observation of animal sign were made for elk, deer, moose, ground squirrells, tent catippilars, big horn sheep, and raptors.
 
+[add more...]
 
 ```{r}
 # xls_example <- readxl_example("datasets.xls")
@@ -208,10 +184,6 @@ knitr::kable(file.listing, rownames = FALSE, row.names = FALSE, col.names = "fil
 # read_excel(willow.off, sheet = "chickwts")
 # excel_sheets(willow.off)
 # 
-# asp.bl <- read_excel("data/EVMP_data/provisional_data_20180920/Aspen_Baseline_2013_2018_5_Year_Msmts_Including_Burn_Data.xlsx") 
-# 
-# excel_sheets(asp.bl)
-
 ```
 
 
@@ -234,6 +206,7 @@ path %>%
   set_names() %>% 
   map(read_then_csv, path = path)
 ```
+
 
 
 
@@ -324,10 +297,6 @@ site.info.all <- site.info.all %>%
   filter(!is.na(UTM_E_NAD83)) %>% # only keeping points with coordinates
   left_join(., site.att, by = "SITE_ID") # join by site id
 
-### need to fill in this
-# site.info.all %>% 
-#   filter(is.na(RANGE_TYPE))
-
 #### create SF from coordinates
 site.info.all.sf <- site.info.all %>%
   mutate_at(2:3, as.numeric) %>% 
@@ -337,15 +306,7 @@ site.info.all.sf <- site.info.all %>%
 
 ```
 
-
-```{r}
-# site.info.all.sf %>% 
-#   View()
-#   names()
-```
-
-
-```{r}
+```{r, eval = FALSE}
 
 site.info.all %>% 
   skimr::skim() %>% 
@@ -353,16 +314,16 @@ site.info.all %>%
 
 ```
 
+## Study Area
 
-**Overview Map of EVMP sampling**
+Change basemap or pan and zoom.  
 
+### Overview Map of EVMP sampling
 
-Change basemap or pan and zoom.
-
-**Figure 1. Map of fenced and unfenced areas All plots**
+#### Map of fenced and unfenced areas - all plots
 
 ```{r}
-# mapviewOptions(basemaps = c("Esri.WorldShadedRelief"), # "Esri.WorldImagery"
+# mapviewOptions(basemaps = c("Esri.WorldImagery"), # Esri.WorldShadedRelief "Esri.WorldImagery"
 #                vector.palette = colorRampPalette(c("snow", "cornflowerblue", "grey10")),
 #                na.color = "magenta",
 #                layers.control.pos = "topright")
@@ -375,10 +336,11 @@ site.info.all.sf %>%
 
 ```
 
-**Core winter range**
 
 
+"location" and "valley" exist in different workbooks/datasets, differ in attributes, and are incompletely attributed.
 
+**Table of records with NA for "VALLEY"**
 ```{r}
 # Note that "location" and "valley" exist in different workbooks/datasets, differ in attributes, and are incompletely attributed. 
 
@@ -389,9 +351,8 @@ site.info.all.sf %>%
 
 ```
 
-> To do: attribute these.
 
-**Burned plots map**
+#### Map of burned plots
 
 ```{r}
 site.info.all.sf %>%
@@ -404,10 +365,7 @@ site.info.all.sf %>%
 # >How does "Y" compare to the other, more specific classes?
 ```
 
-
-
-
-**Count of features by valley **
+#### Count of features by valley
 
 ```{r}
 ### note this is still missing as na
@@ -425,14 +383,14 @@ site.info.all.sf %>%
   # scale_x_log10() +
   theme_minimal() +
   coord_flip() +
-  labs(x="Count", y = "Valley", title = "Count of EVMP sampling sites")
+  labs(x="Valley", y = "Count", title = "Count of EVMP sampling sites")
   
 # ggplotly(plotly1)
 ```
 
 
 
-**Counts by "range type"**
+#### Counts by "range type"
 
 ```{r}
 
@@ -449,7 +407,7 @@ pl.cnt1 <- site.info.all.sf %>%
   geom_text(aes(label=n), size=4) +
   # scale_x_log10() +
   theme_minimal() +
-  labs(x="Valley", y = "Count", title = "Count of EVMP sampling sites") +
+  labs(x="Range type", y = "Count", title = "Count of EVMP sampling sites") +
   coord_flip()
 
 ##
@@ -480,13 +438,27 @@ pl.cnt1.cnt2 <- cowplot::plot_grid(pl.cnt1, pl.cnt2, labels = "AUTO")
 
 ## Note how many na! Need to fix
 
-
-
-
 ```
 
+#### Records with "NA" for "VALLEY"
 
-**Counts of fenced and unfenced**
+```{r}
+site.info.all.sf %>%
+  filter(is.na(VALLEY)) %>% 
+  mapview()
+```
+
+```{r}
+site.info.all.sf %>%
+  filter(is.na(VALLEY)) %>%
+  as.tibble() %>% 
+  datatable()
+```
+
+** Records for which there is "NA" for "VALLEY"**
+
+#### Counts of fenced and unfenced
+
 ```{r}
 
 
@@ -509,6 +481,7 @@ pl.cnt1.cnt2 <- cowplot::plot_grid(pl.cnt1, pl.cnt2, labels = "AUTO")
 
 
 pl.hm1 <- site.info.all.sf %>%
+  filter(!is.na(FENCED)) %>% 
   group_by(FENCED,VALLEY) %>% 
   tally() %>% 
   # na.omit() %>%  ### NEED TO ATTRIBUTE THESE. BUT FOR TESTING....
@@ -527,6 +500,7 @@ pl.hm1 <- site.info.all.sf %>%
 
 
 pl.hm2 <- site.info.all.sf %>%
+  filter(!is.na(FENCED)) %>% 
   group_by(FENCED,pType) %>% 
   tally() %>% 
   # na.omit() %>%  ### NEED TO ATTRIBUTE THESE. BUT FOR TESTING....
@@ -556,7 +530,7 @@ cowplot::plot_grid(pl.hm1, pl.hm2, labels = "AUTO", ncol=2)
 
 
 
-**Individual Site Maps**
+_**Individual Site Maps**_
 ```{r, eval = FALSE}
 ## scrap: creat functions to create basemaps with ggplot
 library(ggmap)  # you may have to use install.packages to install it first
@@ -633,8 +607,8 @@ site.info.all.sf.nest <- site.info.all.sf.nest %>%
 ```
 
 
-##
-### East-side Core Winter Range (WC) Map
+
+**East-side Core Winter Range (WC) map**
 
 ```{r, fig.align='center'}
 
@@ -646,7 +620,7 @@ site.info.all.sf.nest %>%
 
 ```
 
-### East-side Non-core Winter Range (WC) Map
+**East-side Non-core Winter Range (WC) map**
 ```{r, fig.align='center'}
 
 ## map: KV
@@ -657,7 +631,7 @@ site.info.all.sf.nest %>%
 ```
 
 
-### West-side Kawuneeche Valley (WK) Map
+**West-side Kawuneeche Valley (WK) map**
 ```{r, fig.align='center'}
 
 ## map: KV
@@ -674,8 +648,35 @@ site.info.all.sf.nest %>%
 
 ```
 
-### Willow QA/QC {.tabset}
+## Data cleaning and wrangling
 
+Raw data files provided by RMNP in October 2018 were processed using functions in various data manipulation and visualizations packages in the R statistical package.  
+
+Raw data were provided as 4 multi-tabbed Excel files:   
+
+```{r}
+# list of files, tidyverse approach: 
+# file.listing <- dir_info(path = "./data/EVMP_data/TenYearReview", recurse = TRUE) %>%
+#   filter(type == "file", permissions == "u+r", size > "10KB") %>%
+#   arrange(desc(size)) %>%
+#   View()
+#   dplyr::select(path, size)
+
+# datatable(file.listing, rownames = FALSE, caption = "List of files provided by RMNP 2018-10-10")
+
+## base R approach
+file.listing <- list.files(path = "./data/EVMP_data/TenYearReview") %>% 
+  enframe() %>% 
+  select(value) %>% 
+  rename(fileName = value)
+
+knitr::kable(file.listing, rownames = FALSE, row.names = FALSE, col.names = "file name")
+
+```
+
+
+
+### Willow cumulative data baseline through 2018
 
 ```{r}
 #### There are to duplicate sets of files, one with a 'z' in the name, one without, but otherwise seeming the same. In this chunk, picking one set (the zed set)
@@ -727,7 +728,7 @@ csv.all.lc %>%
 ```
 
 
-#### Line intercept Analysis
+#### Line intercept
 
 >Distinct variable names across all input csv files for just line intercept plot
 
@@ -852,7 +853,7 @@ csv.all.lc.li.df %>%
 
 
 
-#### Macroplot Inventory Analysis
+#### Macroplot
 
 
 ```{r}
@@ -926,12 +927,10 @@ csv.all.lc.mcro.df <- left_join(csv.all.lc.mcro.df, sp.lu, by = "SITE_ID")
 ```
 
 
-### Data cleaning {.tabset .tabset-fade .tabset-pills}
 
 The following plots are used to assess patterns of "missingness" in data sets. 
 
-_Click on tabs to view different plots._
-
+**Missing data: line intercept by year.**
 
 ```{r, eval=FALSE}
 #### Missing observations across variables and years
@@ -941,9 +940,8 @@ naniar::vis_miss(csv.all.lc.li.df)
 
 
 #### Missingness across years 
-
 ```{r}
-
+#### Missingness across years 
 mplot1 <- csv.all.lc.li.df %>% 
   mutate(yr = year(DATE)) %>% 
   mutate(yr = as.factor(yr)) %>% 
@@ -955,8 +953,10 @@ mplot1
 
 ```
 
-```{r, eval=FALSE}
 
+
+```{r, eval=FALSE}
+## line intercept: missing data analysis
 csv.all.lc.li.df %>% 
   group_by(yr) %>% 
   nest() %>% 
@@ -966,9 +966,11 @@ naniar::vis_miss(csv.all.lc.li.df) %>%
   facet_wrap(~)
 ```
 
-#### Missingness across months 
+**Missing data: line intercept by month.** 
 
 ```{r}
+## line intercept: missing data analysis
+#### Missingness across months 
 csv.all.lc.li.df %>% 
   mutate(mo = month(DATE)) %>% 
   naniar::gg_miss_fct(mo) +
@@ -978,7 +980,7 @@ csv.all.lc.li.df %>%
 ```
 
 
-### Upland QA/QC
+#### Upland QA/QC
 
 ```{r}
 
@@ -997,7 +999,6 @@ csv.all.lc.li.df %>%
 
 ### Upland Line Intercept 2007-2018
 
-Upland line intercept transect data were collected in core upland (UC) and upland noncore areas (UNC) along a 30m transect line. Observations included the presence of tracks, scat, burrows, plant damage, or browse. In addition, observation of animal sign were made for elk, deer, moose, ground squirrells, tent catippilars, big horn sheep, and raptors.
 
 
 
@@ -1065,16 +1066,14 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
 
 ```
 
-### Statistical analyses
+## Statistical analyses
 
 
 
 
 # Results 
 
-## Willow
-
-### Shrub height
+## Willow height
 
 **Max shrub height: Core winter range**
 
@@ -1086,20 +1085,22 @@ csv.all.lc.li.df %>%
   # group_by(yr,SITE_TYPE, FENCED, SITE_ID, SPECIES_CODE) %>%
   filter(SITE_TYPE == "WC") %>% 
   group_by(yr,SITE_TYPE, FENCED, SPECIES_CODE) %>%
-  summarise(mean.max.ht = mean(MAX_HEIGHT_CM, na.rm=TRUE)) %>% 
+  summarise(mean.max.ht = round(mean(MAX_HEIGHT_CM, na.rm=TRUE),0)) %>% 
   filter(FENCED != "Y_but_fence_down_since_2013") %>% 
+  filter(SPECIES_CODE != "SAXX") %>% 
   ggplot(aes(yr, SPECIES_CODE)) +
   geom_tile(aes(fill=mean.max.ht),color = 'white') +
   scale_fill_viridis(option = "A") +
+  geom_text(aes(label=mean.max.ht), color = 'white', size = 3.75) +
   theme_bw() +
-  labs(title = "Maximum shrub height", subtitle = "Mean of shrub height pooled by fenced status", x = "Year", y = "Species", fill = "") +
+  labs(title = "Maximum shrub height", subtitle = "Mean of shrub height pooled by fenced status", x = "Year", y = "Species", fill = "cm") +
   facet_wrap(~FENCED, ncol= 2)
 
-ggsave("./output/figures/maxShrubHy_by_spp_WC_heatmap.png", width = 6.5, height = 6.5, dpi = 300)
+# ggsave("./output/figures/maxShrubHy_by_spp_WC_heatmap_lbl.png", width = 6.5, height = 6.5, dpi = 300)
 
 ```
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval = FALSE}
 
 ## theres a problem with the spatial join. MAny records without attributes like "FENCED"
 # csv.all.lc.li.df %>% 
@@ -1115,11 +1116,11 @@ csv.all.lc.li.df %>%
   filter(str_detect(SPECIES_CODE, "^SA")) %>%
   filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR"& SPECIES_CODE !="SAER") %>% 
   ggplot(aes(yr,MAX_HEIGHT_CM)) +
-  geom_boxplot(aes(fill = FENCED)) +
+  geom_boxplot(aes(fill = LOCATION)) +
   # scale_fill_viridis(option = "A") +
     theme_bw() +
   labs(title = "Maximum shrub height", x = "Year", y = "Max shrub height (cm)") +
-  facet_grid(LOCATION~SPECIES_CODE)
+  facet_grid(FENCED~SPECIES_CODE)
   # facet_wrap(~SPECIES_CODE, ncol= 5)
 
 ```
@@ -1131,6 +1132,8 @@ csv.all.lc.li.df %>%
 ```{r}
 csv.all.lc.li.df %>% 
   filter(!is.na(MAX_HEIGHT_CM)) %>%
+  filter(SPECIES_CODE != "SAXX") %>%
+  filter(SPECIES_CODE != "NONE") %>%
   # names() %>% 
   group_by(yr,SITE_TYPE, SPECIES_CODE, MAX_HEIGHT_CM) %>%
   summarise(mean.max.ht = mean(MAX_HEIGHT_CM,na.rm=TRUE)) %>% 
@@ -1170,12 +1173,29 @@ csv.all.lc.li.df %>%
 
 ```
 
-### Willow height: _Salix monitcola_ 
+Note that because of panel design, different set of plots may be represented in different years.
+
+#### Willow height: _Salix moniticola_ 
 ```{r}
 
 ## Panel plot: Willow species
+# csv.all.lc.li.df %>%
+#   filter(yr !=2009 & yr != 2015 & yr !=2017) %>% 
+#   filter(SPECIES_CODE == "SAMO") %>%   filter(!is.na(MAX_HEIGHT_CM)) %>%
+#   filter(str_detect(SPECIES_CODE, "^SA")) %>% 
+#   filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR"& SPECIES_CODE !="SAER") %>%
+#   filter(str_detect(SPECIES_CODE, "^SA")) %>%
+#   ggplot() +
+#   ggridges::geom_density_ridges(aes(x = MAX_HEIGHT_CM, y =  yr, fill = SITE_TYPE), alpha = 0.45, ) +
+#   viridis::scale_fill_viridis(discrete = TRUE, option = "D") +
+#   theme_minimal() +
+#   facet_wrap(~SITE_TYPE, ncol = 1) +
+#   labs(x = "Max height (cm)", y = "Year", caption = "Salix monticola")
+
+
 csv.all.lc.li.df %>%
   filter(yr !=2009 & yr != 2015 & yr !=2017) %>% 
+  filter(SITE_TYPE != "WK") %>%
   filter(SPECIES_CODE == "SAMO") %>%   filter(!is.na(MAX_HEIGHT_CM)) %>%
   filter(str_detect(SPECIES_CODE, "^SA")) %>% 
   filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR"& SPECIES_CODE !="SAER") %>%
@@ -1185,16 +1205,51 @@ csv.all.lc.li.df %>%
   viridis::scale_fill_viridis(discrete = TRUE, option = "D") +
   theme_minimal() +
   facet_wrap(~SITE_TYPE, ncol = 1) +
-  labs(x = "Max height (cm)", y = "Year", caption = "Salix monticola")
-  
-  # names() %>% 
-  # group_by(yr,SITE_TYPE, SPECIES_CODE, MAX_HEIGHT_CM) %>%
-  # summarise(mean.max.ht = mean(MAX_HEIGHT_CM,na.rm=TRUE))
+  labs(x = "Max height (cm)", y = "Year", caption = "SAMO") +
+  coord_flip()
+
+```
+
+#### Willow height: _Salix planifolia_
+
+```{r}
+## another species: SAPL
+csv.all.lc.li.df %>%
+  filter(yr !=2009 & yr != 2015 & yr !=2017) %>%
+  # distinct(SPECIES_CODE)
+  filter(SITE_TYPE != "WK") %>% # leave out KW
+  filter(SPECIES_CODE == "SAPL") %>%   filter(!is.na(MAX_HEIGHT_CM)) %>%
+  filter(str_detect(SPECIES_CODE, "^SA")) %>% 
+  filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR"& SPECIES_CODE !="SAER") %>%
+  filter(str_detect(SPECIES_CODE, "^SA")) %>%
+  ggplot() +
+  ggridges::geom_density_ridges(aes(x = MAX_HEIGHT_CM, y =  yr, fill = SITE_TYPE), alpha = 0.45, ) +
+  viridis::scale_fill_viridis(discrete = TRUE, option = "D") +
+  theme_minimal() +
+  facet_wrap(~SITE_TYPE, ncol = 1) +
+  labs(x = "Max height (cm)", y = "Year", caption = "SAPL") +
+  coord_flip()
 
 ```
 
 
-```{r, fig.height=9, fig.width=8}
+```{r, eval=FALSE, fig.height=9, fig.width=8}
+
+csv.all.lc.li.df %>% 
+  filter(!is.na(MAX_HEIGHT_CM)) %>%
+  filter(str_detect(SPECIES_CODE, "^SA")) %>% 
+  filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER") %>%
+  group_by(yr, SPECIES_CODE) %>% 
+  summarise_if(is.numeric, median, na.rm = TRUE) %>% 
+  ungroup() %>% 
+  mutate(yr = as.character(yr)) %>% 
+  mutate(yr = as.numeric(yr)) %>%
+  ggplot(aes(x = yr, y = MAX_HEIGHT_CM)) +
+  geom_point(aes(color = SPECIES_CODE))  +
+  geom_line(aes(color = SPECIES_CODE))# +
+  # geom_smooth(aes(color = SPECIES_CODE))
+
+
 ### Max shrub height
 
 csv.all.lc.li.df %>% 
@@ -1220,7 +1275,9 @@ csv.all.lc.li.df %>%
 ```{r}
 
 csv.all.lc.li.df %>% 
-  filter(yr != "2015" & yr != "2009" & yr != "") %>% 
+  filter(!is.na(FENCED)) %>%
+  filter(FENCED != "Y_but_fence_down_since_2013") %>%
+  filter(yr != "2015" & yr != "2009" & yr != "" & yr != "2017") %>% 
   filter(!is.na(MAX_HEIGHT_CM)) %>%
   filter(str_detect(SPECIES_CODE, "^SA")) %>% 
   filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER") %>%
@@ -1270,7 +1327,7 @@ csv.all.lc.li.df %>%
 
 ```
 
-```{r}
+```{r, eval=FALSE}
 
 csv.all.lc.li.df %>% 
   filter(!is.na(MAX_HEIGHT_CM)) %>%
@@ -1385,6 +1442,62 @@ csv.all.lc.li.df %>%
   # scale_fill_manual(values = c("ivory2","lightblue")) +
   labs(title = "Core winter range sites: maximum shrub height by year, fencing", x = "Year", y = "Height (cm)", subtitle = "All willow species combined.") 
 
+
+```
+
+
+#### Observations of beaver presence noted in plots 
+
+> How best to use these obserations? 
+
+**Variable: BEAVER_PRESENCE**
+```{r}
+csv.all.lc.mcro.df %>% 
+  # filter(!is.na(BEAVER_PRESENCE)) %>% 
+  filter(BEAVER_PRESENCE != "Absence_") %>%
+  # distinct(SITE_ID)
+  group_by(SITE_ID, BEAVER_PRESENCE, yr) %>% 
+  tally() %>% 
+  dplyr::select(-n) %>% 
+  datatable()
+
+```
+
+
+#### Observations of moose presence noted in plots
+
+> How best to use these obserations? 
+
+**Variable: MOOSE_PRESENCE**
+
+
+```{r}
+
+csv.all.lc.mcro.df %>% 
+  # distinct(MOOSE_PRESENCE)
+  group_by(SITE_ID, MOOSE_PRESENCE, yr) %>% 
+  filter(MOOSE_PRESENCE != "Absence_") %>%
+  tally() %>% 
+  dplyr::select(-n) %>% 
+  datatable()
+
+
+csv.all.lc.mcro.df %>% 
+  # distinct(MOOSE_PRESENCE)
+  group_by(SITE_ID, MOOSE_PRESENCE, yr, LOCATION) %>% 
+  filter(MOOSE_PRESENCE != "Absence_") %>%
+  tally() %>% 
+  dplyr::select(-n) %>% 
+  ungroup() %>%
+  group_by(yr, MOOSE_PRESENCE, LOCATION) %>% 
+  tally() %>% 
+  ungroup() %>%
+  mutate(yr = as.character(yr)) %>% 
+  ggplot(aes(yr, MOOSE_PRESENCE)) +
+  geom_tile(aes(fill = n)) +
+  facet_wrap(~LOCATION)
+
+  # datatable()
 
 ```
 
@@ -1516,7 +1629,7 @@ csv.all.lc.mcro.df %>%
   # geom_smooth(aes(x = )) +
   facet_grid(SPECIES_CODE~yr, scales = "free_y") +
   theme_bw() +
-  labs(title = "Core Elk Winter Range Canopy Width", x = "Fenced", y = "Canopy height (cm)") 
+  labs(title = "Core Elk Winter Range Canopy Width", x = "Fenced", y = "Canopy diameter (cm)") 
   # labs(title = "Core Elk Winter Range Canopy Width", subtitle = "The black '+' indicates median value for group", x = "Fenced", y = "Canopy height (cm)")
 
 ```
@@ -1552,6 +1665,7 @@ csv.all.lc.mcro.df %>%
 ```{r}
 
 ```
+
 
 
 #### Count of Observations by Species  
@@ -1596,130 +1710,34 @@ View(Willow_Cumulative_Data_Baseline_Through_2018_2008_09_Line_Intercept_Baselin
 ```
 
 
-### Aspen 
-
-### Baseline 2013-2018
+## Aspen 
 
 ```{r}
 
 
 
-#  data/EVMP_20181010/TenYearReview/Aspen_Data_Baseline_through_2018.xlsx
-
-```
-
-
-Tally of Live Aspen Stems per Plot >2.5 m in Height (DBH=diameter at breast height [1.4 m])		
-
-Tally of Live Aspen Stems per Plot <2.5 m in Height				
-
-
-Tally of Dead Aspen Stems per Plot >2.5 m in Height (DBH=diameter at breast height [1.4 m])
-
-Cleaned data to make readable as csv
-
-Site Type: AC=core, ANC=non-core, AK=Kawuneeche Valley
-
-
-Rewrite the SAS program used to create figs. 3,4,5, and 7 of Zeigenfuss and Johnson (2015)--Distribution of aspen tree (height greater than 2.5 meters) stem diameters in monitoring sites. 
-
-**Steps:** 
-1. Read in data from a file with tallies of live aspen stems by dbh size class  
-2. Read in a file with information for each aspen monitoring site  
-3. Merge these two files, remove saplings 
-4. Reclass trees into groups of small (2-10 cm dbh), medium (10-20 cm dbh) and large (20+ dbh) trees.
-
-
-**See: **  
-
->aspen sapling table 4.sas  
->aspen sapling table 5.sas  
-
-
-
-## Upland
-
-**Data import** 
-
-```{r, eval=TRUE}
-
-uli <- readxl::excel_sheets("data/EVMP_data/TenYearReview/Upland_Line_Intercept_2007_2013_2018.xlsx")
-# uli
-
-b2007 <- readxl::read_excel("data/EVMP_data/TenYearReview/Upland_Line_Intercept_2007_2013_2018.xlsx",sheet = 2) %>% 
-  mutate(yr = 2007)
-
-b2013 <- readxl::read_excel("data/EVMP_data/TenYearReview/Upland_Line_Intercept_2007_2013_2018.xlsx",sheet = 3) %>% 
-  mutate(yr = 2013)
-
-
-b2018 <- readxl::read_excel("data/EVMP_data/TenYearReview/Upland_Line_Intercept_2007_2013_2018.xlsx",sheet = 4) %>% 
-  mutate(yr = 2018) %>% 
-  mutate(SHRUB_HEIGHT_CM = as.character(SHRUB_HEIGHT_CM))
-
-# combine 07 and 13
-baseline <- bind_rows(b2007,b2013) 
-
-## bring in the 2018
-baseline <- baseline %>% 
-  bind_rows(., b2018)
-
-# View(baseline)
-
-# janitor::excel_numeric_to_date()
-
-######### DEAL WITH NA #############
-na_strings <- c("NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt available")
-
-baseline <- baseline %>%
-  naniar::replace_with_na_all(condition = ~.x %in% na_strings) %>%
-  mutate(DATE = as.numeric(DATE)) 
-
-# baseline %>%
-#   excel_numeric_to_date(DATE, date_system = "modern")
-
-```
-
-
-
-```{r, eval=TRUE}
-
-# Examine the file
-baseline <- baseline %>% 
-  filter(!is.na(UTM_E_NAD83))
-
-baseline %>% 
-  visdat::vis_dat() +
-  labs(title = "Upland Vegetation -- Missing Values")
-# + 
-# coord_flip()
-
-
-```
-
 ```{r, eval=FALSE}
-bl.sel <- baseline %>%
-  select(
-  ELEVATION_M,
-  starts_with("UTM"),
-  DATE,
-  SITE_ID,
-  SITE_NUMBER,
-  SITE_TYPE,
-  SHRUB_SPECIES,
-  SHRUB_HEIGHT_CM,
-  yr
-  ) 
 
-####
+# Create a cache of workbook tabs as CSV files
 
-bl.sel %>% 
-  na.omit() 
+## cache csv. This creates a csv cache of each tab in the workbook.
+read_then_csv <- function(sheet, path) {
+  pathbase <- path %>%
+    basename() %>%
+    tools::file_path_sans_ext()
+  path %>%
+    read_excel(sheet = sheet) %>% 
+    write_csv(paste0(pathbase, "-", sheet, ".csv"))
+}
 
+path %>%
+  excel_sheets() %>%
+  set_names() %>% 
+  map(read_then_csv, path = path)
 ```
 
 
-### Willow Offtake
+## Willow Offtake
 
 
 ```{r, eval=FALSE}
@@ -1910,19 +1928,6 @@ baseline <- baseline %>%
 
 ```
 
-
-## Aspen Baseline 2013-2018
-
-
-```{r}
-
-
-
-```
-
-
-## Willow Offtake 2009-2018
-
 Rewrite the SAS program used to analyze willow height data as found in table 9 of Zeigenfuss and Johnson (2015)--Least squares means of average and maximum willow height and percent willow cover on burned sites compared to unburned sites using the macroplot method at EVMP willow monitoring sites in Rocky Mountain National Park, Colorado. 
 
 **Steps:** 
@@ -1931,6 +1936,9 @@ Rewrite the SAS program used to analyze willow height data as found in table 9 o
 2. Calculate canopy area for each plot and assigns the baseline year (2008) to these data 
 3. Sort data down to willow and non-willow species groups and calculates mean for the variables "average height" and "maximum ht" for each group.
 
+
+
+[follow up]
 **See: **  
 
 >willow shrub cover macro table 8.sas  
@@ -1939,6 +1947,126 @@ Rewrite the SAS program used to analyze willow height data as found in table 9 o
 >willow shrub height table 9.txt  
 
 
+
+
+
+```{r}
+asp1 <- read_excel("data/EVMP_data/TenYearReview/Aspen_Data_Baseline_through_2018.xlsx")
+# View(Aspen_Data_Baseline_through_2018)
+
+```
+
+
+Percent of aspen monitoring sites on elk winter range and Kawuneeche Valley of Rocky Mountain National Park, Colorado, that had a recruiting sapling cohort (at least 400 stems per hectare of height between 1.5 and 2.5 meters) at baseline sampling and in 2013. Entire winter range numbers are weighted by the percent area in each location.
+
+Tally of Live Aspen Stems per Plot >2.5 m in Height (DBH=diameter at breast height [1.4 m])		
+
+Tally of Live Aspen Stems per Plot <2.5 m in Height				
+
+
+Tally of Dead Aspen Stems per Plot >2.5 m in Height (DBH=diameter at breast height [1.4 m])
+
+Cleaned data to make readable as csv
+
+Site Type: AC=core, ANC=non-core, AK=Kawuneeche Valley
+
+
+Rewrite the SAS program used to create figs. 3,4,5, and 7 of Zeigenfuss and Johnson (2015)--Distribution of aspen tree (height greater than 2.5 meters) stem diameters in monitoring sites. 
+
+**Steps:** 
+1. Read in data from a file with tallies of live aspen stems by dbh size class  
+2. Read in a file with information for each aspen monitoring site  
+3. Merge these two files, remove saplings 
+4. Reclass trees into groups of small (2-10 cm dbh), medium (10-20 cm dbh) and large (20+ dbh) trees.
+
+
+**See: **  
+
+>aspen sapling table 4.sas  
+>aspen sapling table 5.sas  
+
+
+
+## Upland
+
+**Data import** 
+
+```{r, eval=TRUE}
+
+uli <- readxl::excel_sheets("data/EVMP_data/TenYearReview/Upland_Line_Intercept_2007_2013_2018.xlsx")
+# uli
+
+b2007 <- readxl::read_excel("data/EVMP_data/TenYearReview/Upland_Line_Intercept_2007_2013_2018.xlsx",sheet = 2) %>% 
+  mutate(yr = 2007)
+
+b2013 <- readxl::read_excel("data/EVMP_data/TenYearReview/Upland_Line_Intercept_2007_2013_2018.xlsx",sheet = 3) %>% 
+  mutate(yr = 2013)
+
+
+b2018 <- readxl::read_excel("data/EVMP_data/TenYearReview/Upland_Line_Intercept_2007_2013_2018.xlsx",sheet = 4) %>% 
+  mutate(yr = 2018) %>% 
+  mutate(SHRUB_HEIGHT_CM = as.character(SHRUB_HEIGHT_CM))
+
+# combine 07 and 13
+baseline <- bind_rows(b2007,b2013) 
+
+## bring in the 2018
+baseline <- baseline %>% 
+  bind_rows(., b2018)
+
+# View(baseline)
+
+# janitor::excel_numeric_to_date()
+
+######### DEAL WITH NA #############
+na_strings <- c("NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt available")
+
+baseline <- baseline %>%
+  naniar::replace_with_na_all(condition = ~.x %in% na_strings) %>%
+  mutate(DATE = as.numeric(DATE)) 
+
+# baseline %>%
+#   excel_numeric_to_date(DATE, date_system = "modern")
+
+```
+
+
+
+```{r, eval=TRUE}
+
+# Examine the file
+baseline <- baseline %>% 
+  filter(!is.na(UTM_E_NAD83))
+
+baseline %>% 
+  visdat::vis_dat() +
+  labs(title = "Upland Vegetation -- Missing Values")
+# + 
+# coord_flip()
+
+
+```
+
+```{r, eval=FALSE}
+bl.sel <- baseline %>%
+  select(
+  ELEVATION_M,
+  starts_with("UTM"),
+  DATE,
+  SITE_ID,
+  SITE_NUMBER,
+  SITE_TYPE,
+  SHRUB_SPECIES,
+  SHRUB_HEIGHT_CM,
+  yr
+  ) 
+
+####
+
+bl.sel %>% 
+  na.omit() 
+
+```
 
 
 
