@@ -23,7 +23,6 @@ opts_chunk$set(fig.path = "../output/figures/") # corrected path and added dev. 
 
 ```
 
-
 ```{r, utilityFuncDefn, echo=FALSE, warning=FALSE,message=FALSE, comment=FALSE}
 # define some utility functions...
 
@@ -103,7 +102,7 @@ Contact: edgage@rams.colostate.edu
 
 **Updated: `r format(Sys.time(), '%Y %B %d')`**
 
-This is a working document aimed at facilitating data QA/QC and exploratory analysis. 
+This is a working document aimed at facilitating data QA/QC and analysis. 
 Please do not distribute.
 
 
@@ -134,6 +133,13 @@ suppressPackageStartupMessages(library(dataMaid))
 library(lubridate)
 library(mapview)
 
+library(flextable)
+# remotes::install_github("rstudio/gt") # Rstudio alternaitive to flextable?
+library(gt)
+
+# devtools::install_github("dkahle/ggmap")
+library(ggmap)
+
 ```
 
 # Introduction
@@ -151,12 +157,9 @@ This document presents analyses of these data, evaluating datasets collected in 
 # * Inconsistently named/typed factors    
 # * Missing values
 # * Data values outside of expected range or showing unusual patterns
-
 # Cleaned and archivable data sets will be produced to facilitate future data analysis and aid RMNP in their management goals.
 
 ```
-
-
 
 # Methods
 
@@ -168,30 +171,18 @@ This report analyzes data from the first 10 years of monitoring aspart of the EV
 2. Willow height and cover resampled every 5 years  
 3. Aspen stem density and stem size distribution, assessed every 5 years through a full resampling of sites. 
 
-
-
 Protocols detailed in the EVMP monitoring plan (Zeigenfuss et al. 2011) were used to collect vegetation data at study plots. A round of baseline measurements collected between 2006–2009 were made, with RMNP staff collecting subsequent data. A subsample of plots were visited annually beginning in 2007 for upland plots and 2009 willow plots and conducted through 2018. Offtake measures on willows were usually made in May and June, but delayed to mid-July in some years due to weather. Other variables were assessed the year of plot establishment and during June through September in 2013 and 2018.
 
 Upland line intercept transect data were collected in core upland (UC) and upland noncore areas (UNC) along a 30m transect line. Observations included the presence of tracks, scat, burrows, plant damage, or browse. In addition, observation of animal sign were made for elk, deer, moose, ground squirrells, tent catippilars, big horn sheep, and raptors.
 
 [add more...]
 
-```{r}
-# xls_example <- readxl_example("datasets.xls")
-# excel_sheets(xls_example)
-
-# willow.off <- read_xlsx("data/EVMP_data/provisional_data_20180920/Willow Offtake Data 2009-2018.xlsx")
-# read_excel(willow.off, sheet = "chickwts")
-# excel_sheets(willow.off)
-# 
-```
-
 
 ```{r, eval=FALSE}
 
 # Create a cache of workbook tabs as CSV files
-
 ## cache csv. This creates a csv cache of each tab in the workbook.
+
 read_then_csv <- function(sheet, path) {
   pathbase <- path %>%
     basename() %>%
@@ -206,8 +197,6 @@ path %>%
   set_names() %>% 
   map(read_then_csv, path = path)
 ```
-
-
 
 
 ```{r}
@@ -242,14 +231,7 @@ sinfo.df <- sinfo %>%
 ```
 
 ```{r, site_info_01}
-
-####### instead, lets look at the master 
-# C:\Users\Ed\Git_repos\EVMP\data\EVMP_data\VEG_SITES_MSTR_DATABASE.xlsx
-
-# data/EVMP_20181010/TenYearReview/Willow_Cumulative_Data_Baseline_Through_2018.xlsx
-# si <- readxl::excel_sheets("data/EVMP_data/VEG_SITES_MSTR_DATABASE.xlsx")
-# si
-
+# define path to the veg site master file
 path.si <- ("data/EVMP_data/VEG_SITES_MSTR_DATABASE.xlsx")
 
 #### Read in the worksheets and create list of df
@@ -264,6 +246,7 @@ si.d <- path.si %>%
 site.info.willow <- si.d$'WILLOW SITES MASTER'
 site.info.aspen <- si.d$'ASPEN SITES MASTER'
 site.info.upland <- si.d$'UPLAND SITES MASTER'
+## note: each of the tabs call the UTM coordinate columns something different! For simplicity, I changed them to be consistent in the source file
 
 # and the active master tab. 
 site.info.active <- si.d$'ACTIVE VEG SITE LOCATION MASTER'
@@ -274,7 +257,8 @@ site.info.active <- si.d$'ACTIVE VEG SITE LOCATION MASTER'
 # site.info.upland %>% names()
 
 ## they don't have the same column names. The following vector is a subset in common
-csel <- c("SITE_ID","UTM_E_NAD83","UTM_N_NAD83","FENCED","VALLEY","UTM_N_NAD83","BURNED")
+# csel <- c("SITE_ID","UTM_E_NAD83","UTM_N_NAD83","FENCED","VALLEY","UTM_N_NAD83","BURNED")
+csel <- c("SITE_ID","UTM_E_NAD83","UTM_N_NAD83","FENCED","BURNED","REMOVED")
 
 site.info.willow <- select(site.info.willow,csel) %>% 
   mutate(pType = "willow")
@@ -283,36 +267,286 @@ site.info.aspen <- select(site.info.aspen,csel) %>%
 site.info.upland <- select(site.info.upland,csel) %>% 
   mutate(pType = "upland")
 
-## combine
-site.info.all <- rbind(site.info.willow, site.info.aspen,site.info.upland)
+## combine the aspen, willow, and upland plots
+site.info.all <- rbind(site.info.willow, site.info.aspen, site.info.upland)
+
+# join in the range type from site.info.active tab
+rtype <- site.info.active %>% 
+  dplyr::select(SITE_ID, WILDERNESS, RANGE_TYPE)
+
+## join in the info
+site.info.all <- left_join(site.info.all, rtype, by = "SITE_ID")
+
+```
 
 
-site.att <- site.info.active %>%
-  dplyr::select(SITE_ID,RANGE_TYPE, WILDERNESS) 
+```{r gtbl_sites}
 
+#### Change the NA range types fields
+site.info.all <- site.info.all %>%
+  # distinct(RANGE_TYPE)
+  mutate(RANGE_TYPE = case_when(grepl("WC", SITE_ID) ~ "core winter range",
+                          grepl("WNC", SITE_ID) ~ "non-core winter range",
+                          grepl("AC", SITE_ID) ~ "core winter range",
+                          grepl("ANC", SITE_ID) ~ "non-core winter range",
+                          grepl("UNC", SITE_ID) ~ "non-core winter range",
+                          grepl("UC", SITE_ID) ~ "core winter range",
+                          grepl("K", SITE_ID) ~ "Kawuneeche Valley"
+                          )
+         ) 
 
-# set NA and filter out columns lacking coordinates 
-site.info.all <- site.info.all %>% 
+### Tables 
+# Problem records lacking coordinates 
+site.info.all %>% 
   dplyr::na_if(.,"NA") %>%  # nice clean way of replacing all the text NA with real NA
   filter(!is.na(UTM_E_NAD83)) %>% # only keeping points with coordinates
-  left_join(., site.att, by = "SITE_ID") # join by site id
+  filter(!is.na(UTM_N_NAD83)) %>%
+  filter(!is.na(REMOVED)) %>% # filter out plots notes as "removed"
+  select(-WILDERNESS) %>% 
+  gt::gt() %>%
+  tab_header(title = "EVMP plots listed as 'Removed' or lacking valid coordinates")
 
+# site.info.all %>% 
+#   dplyr::na_if(.,"NA") %>%  # nice clean way of replacing all the text NA with real NA
+#   filter(!is.na(UTM_E_NAD83)) %>% # only keeping points with coordinates
+#   filter(!is.na(UTM_N_NAD83)) %>% 
+#   filter(!is.na(REMOVED)) %>% 
+#   gt::gt() %>%
+#   tab_header(title = md("**EVMP plots listed as 'Removed'**"))
+
+####################### Clean #########################
+#### Remove records with "NA" for coordinates or ones with
+#### Any non-NA for the "REMOVE" field 
+
+site.info.clean <- site.info.all %>% 
+  dplyr::na_if(.,"NA") %>%  # replacing all the text NA with real NA
+  filter(!is.na(UTM_E_NAD83)) %>% # only keeping points with coordinates
+  filter(!is.na(UTM_N_NAD83)) %>% 
+  filter(is.na(REMOVED)) 
+
+```
+
+
+```{r}
+
+## read in the file with the manually attributed valley type field (this was not fully filled in in the provided data)
+## I attributed the empty values visually in ArcGIS.  
+vt <- st_read("./data/EVMP_derived/site_info_all_sf.shp")
+vt <- vt %>% 
+  rename(SITE_ID = SITE_) %>% 
+  rename(VALLEY = VALLE) %>% 
+  as_tibble() %>% 
+  select(SITE_ID, VALLEY)
+
+site.info.clean <- left_join(site.info.clean, vt, by = "SITE_ID")
+
+## recode some of the valley ids
+site.info.clean <- site.info.clean %>% 
+  mutate(VALLEY = recode(VALLEY, 
+                         'FRE' = "HSP")) %>% 
+  mutate(VALLEY = recode(VALLEY, 
+                         'LHP' = "HSP")) 
+
+## add more valley info from a lookup table
+valley_lu <- read_csv("./data/EVMP_derived/VALLEY_lu.csv")
+
+## join in the valley info
+site.info.clean <- left_join(site.info.clean, valley_lu, by = "VALLEY") 
+
+## write csv
+# write_csv(site.info.clean, "./data/EVMP_derived/site_info_clean.csv")
+
+```
+
+
+```{r}
+## create some tables
+
+gt.siteinfo <- site.info.clean %>%
+  dplyr::select(-REMOVED) %>% 
+  gt::gt() %>%
+  tab_header(title = md("**Valid EVMP plots from 'site_info' worksheet**")) 
+
+gt.siteinfo <- gt.siteinfo %>% 
+  tab_style(
+    style = list(
+      cell_fill(color = "lightcyan"),
+      cell_text(weight = "bold")
+      ),
+    locations = cells_data(
+      columns = vars(FENCED),
+      rows = FENCED == "Y")
+  ) %>% 
+  tab_style(
+    style = list(
+      cell_fill(color = "ivory")),
+    locations = cells_data(
+      columns = vars(FENCED),
+      rows = FENCED == "N")
+  ) 
+
+## add color for pType
+gt.siteinfo %>% 
+    tab_style(
+    style = list(
+      cell_fill(color = "lightgreen"),
+      cell_text(weight = "bold")
+      ),
+    locations = cells_data(
+      columns = vars(pType),
+      rows = pType == "willow")
+  ) %>% 
+  tab_style(
+    style = list(
+      cell_fill(color = "ivory2"),
+      cell_text(weight = "bold")
+    ),
+    locations = cells_data(
+      columns = vars(pType),
+      rows = pType == "aspen")
+  ) %>% 
+  tab_style(
+    style = list(
+      cell_fill(color = "pink"),
+      cell_text(weight = "bold")
+      ),
+    locations = cells_data(
+      columns = vars(pType),
+      rows = pType == "upland")
+  )
+
+```
+
+
+```{r}
 #### create SF from coordinates
-site.info.all.sf <- site.info.all %>%
+site.info.clean.sf <- site.info.clean %>%
   mutate_at(2:3, as.numeric) %>% 
   st_as_sf(coords = c("UTM_E_NAD83", "UTM_N_NAD83"), crs = 26913)
-
-# plot(site.info.all.sf)
 
 ```
 
 ```{r, eval = FALSE}
+## ggmap: us
+# us <- c(left = -125, bottom = 25.75, right = -67, top = 49)
+# get_stamenmap(us, zoom = 5, maptype = "toner-lite") %>% ggmap() 
 
-site.info.all %>% 
-  skimr::skim() %>% 
-  kable(caption = "Basic information on 'site info' imported dataset.")
+us <- c(left = -105.99, bottom = 40.134, right = -105.4, top = 40.55)
+get_stamenmap(us, zoom = 10, maptype = "toner-lite") %>% ggmap() 
+
+## google maps just wants the center
+rmnpc <- c(-105.696185, 40.304694)
+
+ggmap::get_googlemap(center = rmnpc, zoom = 10, scale = 2, format = "png8", maptype = "terrain")
+
+ggmap::get_googlemap(c(-97.14667, 31.5493))
+ggmap(map)
+40.288983, -105.682452
+
+get_googlemap(us, zoom = 10, maptype = "roadmap") %>% ggmap() 
 
 ```
+
+
+```{r, eval=FALSE}
+## gt: grouped example
+
+site.info.clean.sf %>%
+  dplyr::select(-REMOVED) %>%
+  group_by(pType) %>% 
+  tally() %>% 
+  gt::gt() 
+
+site.info.all %>%
+  dplyr::select(-REMOVED) %>%
+  group_by(VALLEY, pType) %>% 
+  tally() %>% 
+  gt::gt() %>% 
+  tab_header(title = md("**EVMP plots with an 'NA' in the 'Removed' field**")) 
+gt.siteinfo
+
+tab_3 <-
+  pizzaplace %>%
+  dplyr::filter(
+    name %in% c("soppressata", "peppr_salami")
+  ) %>%
+  dplyr::group_by(name, size) %>%
+  dplyr::summarize(
+    `Pizzas Sold` = n()
+  ) %>%
+  gt(rowname_col = "size") %>%
+  summary_rows(
+    groups = TRUE,
+    columns = vars("Pizzas Sold"),
+    fns = list(TOTAL = "sum"),
+    formatter = fmt_number,
+    decimals = 0,
+    use_seps = TRUE
+  ) %>%
+  tab_footnote(
+    footnote = "The Pepper-Salami.",
+    cells_group(groups = "peppr_salami")
+  )
+
+
+```
+
+
+### Map of Kawuneeche Valley EVMP sites
+
+
+```{r}
+
+site.info.clean.sf %>% 
+  filter(VALLEY == "KV") %>% 
+  mapview::mapview(., zcol = 'pType')
+
+```
+
+```{r, eval=FALSE, echo=FALSE}
+## list column approach
+## note quite working yet :)
+
+
+site.info.clean.sf.nest <- site.info.clean.sf %>% 
+  group_by(VALLEY) %>% 
+  nest()
+
+zz <- site.info.clean.sf.nest %>%
+  mutate(gtable = map(.x = data, .f = gt::gt)) #%>%
+  # mutate(vnames = map(.x = data, .f = DT::datatable))
+
+zz[[2]][[2]]
+
+site.info.clean.sf.nest %>% 
+  mutate(plot = map2(data, VALLEY, ~ggplot(data = .x) + theme_tufte() +
+       geom_sf(aes(color =FENCED))))
+       
+       ggtitle(.y) +
+       ylab("Year") +
+       xlab("Average annual hours worked by persons engaged")))
+
+```
+
+
+### Raw data in "Site info" tabs from RMNP 
+```{r}
+site.info.willow %>% 
+  DT::datatable()
+
+site.info.aspen %>% 
+  DT::datatable()
+
+site.info.upland %>% 
+  DT::datatable()
+
+# site.info.all %>% 
+#   skimr::skim() %>% 
+#   gt::gt()
+
+```
+
+
 
 ## Study Area
 
@@ -328,8 +562,9 @@ Change basemap or pan and zoom.
 #                na.color = "magenta",
 #                layers.control.pos = "topright")
 
-site.info.all.sf %>%
-  filter(!is.na(RANGE_TYPE)) %>%
+site.info.clean.sf %>%
+  # filter(is.na(valley_full)) %>% 
+  # filter(!is.na(RANGE_TYPE)) %>%
   mapview(zcol='FENCED')
 
 ## write this to file and enter in Arc?
@@ -337,15 +572,15 @@ site.info.all.sf %>%
 ```
 
 
+```{r, eval=FALSE}
+# **Table of records with NA for "VALLEY"**
 
-"location" and "valley" exist in different workbooks/datasets, differ in attributes, and are incompletely attributed.
-
-**Table of records with NA for "VALLEY"**
-```{r}
 # Note that "location" and "valley" exist in different workbooks/datasets, differ in attributes, and are incompletely attributed. 
 
-site.info.all.sf %>% 
-  filter(is.na(VALLEY)) %>%
+# "location" and "valley" exist in different workbooks/datasets, differ in attributes, and are incompletely attributed.
+
+site.info.clean.sf %>% 
+  filter(!is.na(VALLEY)) %>%
   datatable(caption = "Records missing VALLEY attributes.")
 
 
@@ -355,7 +590,7 @@ site.info.all.sf %>%
 #### Map of burned plots
 
 ```{r}
-site.info.all.sf %>%
+site.info.clean.sf %>%
   filter(!is.na(BURNED)) %>% 
   filter(BURNED != 'N') %>%
   filter(BURNED != 'Not burned') %>%
@@ -370,11 +605,11 @@ site.info.all.sf %>%
 ```{r}
 ### note this is still missing as na
 
-site.info.all.sf %>%
-  group_by(VALLEY) %>% 
+site.info.clean.sf %>%
+  group_by(valley_full) %>% 
   tally() %>% 
   # na.omit() %>%  ### NEED TO ATTRIBUTE THESE. BUT FOR TESTING....
-  ggplot(aes(reorder(VALLEY, n),n)) +
+  ggplot(aes(reorder(valley_full, n),n)) +
   # ggplot( aes(VALLEY, n, size = n, color=VALLEY)) +
   geom_point(color="white", size = 6) +
   geom_pointrange(ymin=0, aes(ymax=n)) +
@@ -679,7 +914,7 @@ knitr::kable(file.listing, rownames = FALSE, row.names = FALSE, col.names = "fil
 ### Willow cumulative data baseline through 2018
 
 ```{r}
-#### There are to duplicate sets of files, one with a 'z' in the name, one without, but otherwise seeming the same. In this chunk, picking one set (the zed set)
+#### There are two duplicate sets of files, one with a 'z' in the name, one without, but otherwise seeming the same. In this chunk, picking one set (the zed set)
 
 csv.all.lc <- csv.all.lc %>% 
   filter(str_detect(ffname, "z")) 
@@ -691,7 +926,7 @@ csv.all.lc <- csv.all.lc %>%
 ## this will make parsing variables in into groups easier  
 
 csv.all.lc <- csv.all.lc %>% 
-  mutate(file_name_abr = str_replace(string = ffname, pattern = "data/EVMP_data/csv/Willow_Cumulative_Data_Baseline_Through", replacement = "F"))
+  mutate(file_name_abr = str_replace(string = ffname, pattern = "data/EVMP_data/csv/Willow_Cumulative_Data_Baseline_Through_2018-", replacement = ""))
 
 ## case when into type
 csv.all.lc <- csv.all.lc %>% 
@@ -980,33 +1215,11 @@ csv.all.lc.li.df %>%
 ```
 
 
-#### Upland QA/QC
-
-```{r}
-
-
-# ######### DEAL WITH NA #############
-# na_strings <- c("NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt available")
-# 
-# baseline <- baseline %>%
-#   naniar::replace_with_na_all(condition = ~.x %in% na_strings) %>%
-
-
-
-```
-
-
-
-### Upland Line Intercept 2007-2018
-
-
-
 
 
 ```{r, eval=FALSE}
 csv.all.lc.asp <- csv.all.lc %>% 
   filter(vType == "Macroplot") 
-
 #
 csv.all.lc.asp %>% 
   unnest(field_names) %>% 
@@ -1066,16 +1279,65 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
 
 ```
 
+
+### Master excel file: Willow_Offtake_Data_2009_Through_2018.xlsx
+
+```{r}
+# Looking for baseline data?  	
+# 	Baseline data was collected over 2 seasons: 2008 and 2009.  
+# 	The baseline data is located in an Excel spreadsheet at:
+# 	EVMP > Vegetation > Analysis > 5 Year Review > Baseline Data from Linda
+# 	
+# Where is the Kawuneeche Baseline data?	
+# 	The Kawuneeche Baseline data is in a worksheet in the Baseline.xls workbook as described above.    
+# 	The Kawuneeche willow plots (KW 1 thru 8) were established in August/Sept 2011, just prior to the installation of the exclosure near Timber Creek CG.
+# 	
+# KEY	
+# SITE_TYPE (WC=Willow core, WNC= Willow noncore, WK= Willow Kawuneeche Valley)	
+# COLOR_OF_STEM_MARKER (BR=brown, G=green, BL=black, Y=yellow, GR=gray, BR-N=brown notched, W=white)	
+# NUMBER_BROWSED_CAG_SHOOTS (# Browsed Current Annual Growth Shoots)	
+# NUMBER_UNBROWSED_CAG_SHOOTS (# Unbrowsed Current Annual Growth Shoots)	
+# BROWSED_OR_UNBROWSED (Measured shoot browsed (B) or unbrowsed (U)?)	
+# ADDITIONAL_SHOOT (Additional shoot 1=yes, 0=no)	
+
+```
+
+Baseline data was collected over 2 seasons: 2008 and 2009.  
+The baseline data is located in an Excel spreadsheet at:
+EVMP > Vegetation > Analysis > 5 Year Review > Baseline Data from Linda
+	
+The Kawuneeche Baseline data is in a worksheet in the Baseline.xls workbook as described above.    
+The Kawuneeche willow plots (KW 1 thru 8) were established in August/Sept 2011, just prior to the installation of the exclosure near Timber Creek CG.
+	
+Variable Key:
+	
+SITE_TYPE (WC=Willow core, WNC= Willow noncore, WK= Willow Kawuneeche Valley)	
+COLOR_OF_STEM_MARKER: (BR=brown, G=green, BL=black, Y=yellow, GR=gray, BR-N=brown notched, W=white)	
+NUMBER_BROWSED_CAG_SHOOTS: (# Browsed Current Annual Growth Shoots)	
+NUMBER_UNBROWSED_CAG_SHOOTS: (# Unbrowsed Current Annual Growth Shoots)	
+BROWSED_OR_UNBROWSED: (Measured shoot browsed (B) or unbrowsed (U)?)	
+ADDITIONAL_SHOOT: Additional shoot 1=yes, 0=no	
+
+```{r}
+## export to 
+```
+
+
+
+
+### Master excel file: Upland_Line_Intercept_2007_2013_2018.xlsx
+
 ## Statistical analyses
-
-
-
 
 # Results 
 
-## Willow height
+### Line-intercept data
 
-**Max shrub height: Core winter range**
+### Shrub height [line intercept]
+
+> From discussions with HA in the field, the orientation of line-intercept transects may not have had a consistent orientation from sampling interval to interval.
+
+**Max shrub height in-line intercept: Core winter range**
 
 ```{r}
 #Shrub Line Intercept Datataset 
@@ -1099,6 +1361,42 @@ csv.all.lc.li.df %>%
 # ggsave("./output/figures/maxShrubHy_by_spp_WC_heatmap_lbl.png", width = 6.5, height = 6.5, dpi = 300)
 
 ```
+
+# FIX NA for fenced
+```{r, eval=FALSE}
+### Elk winter range by individual site
+## tracking the individual SITE_ID
+csv.all.lc.li.df %>% 
+  mutate(yr = lubridate::year(DATE)) %>% 
+  # distinct(yr)
+  # glimpse() %>% 
+  # distinct(SITE_TYPE,SITE_ID, FENCED) %>%
+  filter(!is.na(FENCED)) %>% 
+  filter(!is.na(MAX_HEIGHT_CM)) %>%
+  filter(FENCED != "Y_but_fence_down_since_2013") %>% 
+  filter(SPECIES_CODE != "SAXX") %>%
+  group_by(yr,SITE_TYPE, FENCED, SITE_ID, SPECIES_CODE) %>%
+  filter(SITE_TYPE == "WC") %>% 
+  group_by(yr,SITE_TYPE, FENCED, SPECIES_CODE) %>%
+  # summarise(mean.max.ht = round(mean(MAX_HEIGHT_CM, na.rm=TRUE),0)) %>% 
+  ggplot(aes(yr, FENCED)) +
+  geom_tile(aes(fill = MAX_HEIGHT_CM)) +
+  geom_text(aes(label = MAX_HEIGHT_CM)) +
+  # geom_point(aes(color = FENCED)) +
+  facet_grid(SITE_ID~SPECIES_CODE)
+  facet_wrap(~SITE_ID)
+  # geom_tile(aes(fill=mean.max.ht),color = 'white') +
+  scale_fill_viridis(option = "A") +
+  geom_text(aes(label=mean.max.ht), color = 'white', size = 3.75) +
+  theme_bw() +
+  labs(title = "Maximum shrub height", subtitle = "Mean of shrub height pooled by fenced status", x = "Year", y = "Species", fill = "cm") +
+  facet_wrap(~FENCED, ncol= 2)
+
+
+```
+
+
+
 
 ```{r, echo=FALSE, eval = FALSE}
 
@@ -1704,22 +2002,12 @@ View(c.line.dat)
 Willow_Cumulative_Data_Baseline_Through_2018_2013_Line_Intercept <- read_csv("data/EVMP_data/csv/Willow_Cumulative_Data_Baseline_Through_2018-2013 Line Intercept.csv")
 View(Willow_Cumulative_Data_Baseline_Through_2018_2013_Line_Intercept)
 
-Willow_Cumulative_Data_Baseline_Through_2018_2008_09_Line_Intercept_Baseline <- read_csv("data/EVMP_data/csv/Willow_Cumulative_Data_Baseline_Through_2018-2008-09 Line Intercept Baseline.csv")
-View(Willow_Cumulative_Data_Baseline_Through_2018_2008_09_Line_Intercept_Baseline)
-
 ```
-
 
 ## Aspen 
 
-```{r}
-
-
-
-```{r, eval=FALSE}
-
+```{r, eval = FALSE}
 # Create a cache of workbook tabs as CSV files
-
 ## cache csv. This creates a csv cache of each tab in the workbook.
 read_then_csv <- function(sheet, path) {
   pathbase <- path %>%
@@ -1734,7 +2022,110 @@ path %>%
   excel_sheets() %>%
   set_names() %>% 
   map(read_then_csv, path = path)
+
 ```
+
+### Master excel file: Aspen_Data_Baseline_through_2018.xlsx
+
+The excel datafile provided by RMNP (Aspen_Data_Baseline_Through_2018.xlsx) includes 10 tabs.
+
+```{r}
+## **Data import** 
+asp <- readxl::excel_sheets("./data/EVMP_data/TenYearReview/Aspen_Data_Baseline_Through_2018.xlsx")
+
+path <- ("data/EVMP_data/TenYearReview/Aspen_Data_Baseline_Through_2018.xlsx")
+
+
+#### Read in the worksheets and create list of df
+# each tab is a df in the list object
+asp.d <- path %>% 
+  excel_sheets() %>% 
+  set_names() %>% 
+  map(read_excel, path = path, na = "NA")  
+
+
+```
+
+
+
+```{r}
+
+### it gets real
+
+### keep amd discard
+# asp.d %>% keep(.x = .,)
+# asp.d %>% map(., discard("Aspen 2013 Site Info"))
+
+#### INDEXXX
+asp.d %>% 
+  names()
+
+## select
+asp.d.sel <- asp.d[c(3,4,5,6,10)] 
+asp.d.sel %>% 
+  names()
+
+asp.d.sel %>% 
+  map(.x = .,.f = glimpse)
+
+asp.d.sel.comb <- bind_rows(asp.d.sel, .id = "tab") 
+  
+asp.d.sel.comb %>% 
+  names()
+
+
+asp.d.sel.comb %>%
+  DT::datatable()
+  flextable()
+
+```
+
+aspen combined variable names
+```{r}
+asp.d.sel.comb %>% 
+  names() %>% 
+  enframe() %>% 
+  flextable()
+```
+
+```{r}
+asp.d.sel.comb %>% 
+  janitor::tabyl(tab,SITE_TYPE) %>% 
+  flextable()
+```
+
+# return here
+```{r}
+
+asp.d.sel.comb %>% 
+  janitor::tabyl(SITE_NUMBER, tab) %>% 
+  knitr::kable()
+
+tl1 <- asp.d.sel.comb %>%
+  janitor::tabyl(SITE_NUMBER, tab) %>% 
+  flextable() 
+
+colkeys = datapasta::
+
+tl1 %>% 
+  colformat_num(.,col_keys = names(digits = 1)
+
+```
+
+
+```{r}
+
+# asp.d %>% 
+#   # names()
+#   pluck("Aspen Baseline Stem Tallies") %>% 
+#   # pluck("Aspen 2017 Stem Tallies (burn)") %>% 
+#   names() %>% 
+#   enframe() %>% 
+#   flextable()
+
+```
+
+----
 
 
 ## Willow Offtake

@@ -127,17 +127,16 @@ Site Type: AC=core, ANC=non-core, AK=Kawuneechee Valley
 **Missing data**  
 
 
-### Willow Offtake 2009-2018 
+### Masterfile: Willow_Cumulative_Data_Baseline_Through_2018.xlsx
 
 **Data import** 
 ```{r}
 
-
 # data/EVMP_20181010/TenYearReview/Willow_Cumulative_Data_Baseline_Through_2018.xlsx
-wo <- readxl::excel_sheets("data/EVMP_20181010/TenYearReview/Willow_Cumulative_Data_Baseline_Through_2018.xlsx")
+wo <- readxl::excel_sheets("./data/EVMP_data/TenYearReview/Willow_Cumulative_Data_Baseline_Through_2018.xlsx")
 
 
-path <- ("data/EVMP_20181010/TenYearReview/Willow_Cumulative_Data_Baseline_Through_2018.xlsx")
+path <- ("data/EVMP_data/TenYearReview/Willow_Cumulative_Data_Baseline_Through_2018.xlsx")
 
 
 #### Read in the worksheets and create list of df
@@ -203,8 +202,6 @@ path %>%
   map(read_then_csv, path = path)
 
 
-
-
 map_df(.x = mp.list,.f = bind_rows)
 
 mp.list2 <- mp.list %>% 
@@ -214,29 +211,29 @@ mp.list2 <- mp.list %>%
 
 bind_rows(mp.list, .id = "id")
 
-
-za <- path %>%
-  excel_sheets() %>%
-  set_names() %>% 
-  map_df(~ read_excel(path = path, sheet = .x), .id = "sheet")
-
-path %>%
-  excel_sheets() %>%
-  set_names() %>% 
-  map_df(~ read_excel(path = path, sheet = .x, range = "A2:F15"), .id = "sheet")
-
-# # #  fail
-# ss <- data.table::rbindlist(mp.list, use.names=TRUE, fill=TRUE) %>% as.data.frame()
-
-
-######
+# 
+# za <- path %>%
+#   excel_sheets() %>%
+#   set_names() %>% 
+#   map_df(~ read_excel(path = path, sheet = .x), .id = "sheet")
+# 
+# path %>%
+#   excel_sheets() %>%
+#   set_names() %>% 
+#   map_df(~ read_excel(path = path, sheet = .x, range = "A2:F15"), .id = "sheet")
+# 
+# # # #  fail
+# # ss <- data.table::rbindlist(mp.list, use.names=TRUE, fill=TRUE) %>% as.data.frame()
+# 
 
 ######
-name.lineInt <- wo.d 
-# %>% 
-  # names() %>% 
-  # as.tibble() %>% 
-  # filter(str_detect(value, 'Line'))
+
+######
+name.lineInt <- wo.d
+%>%
+names() %>%
+as.tibble() %>%
+filter(str_detect(value, 'Line'))
 
 wo.d %>%
   names() %>%
@@ -268,31 +265,7 @@ bl.list <- purrr::map(c("2008-09 Line Intercept Baseline",
 # ####
 
 
-
-
-## not working. unpack
-# data_xlsx_df <- map_df(set_names(files), function(file) {
-#   file %>% 
-#     excel_sheets() %>% 
-#     set_names() %>% 
-#     map_df(
-#       ~ read_xlsx(path = file, sheet = .x1),
-#       .id = "sheet")
-# }, .id = "file")
-
-
-# library(readxl)    
-# read_excel_allsheets <- function(filename) {
-#     sheets <- readxl::excel_sheets(filename)
-#     x <-    lapply(sheets, function(X) readxl::read_excel(filename, sheet = X))
-#     names(x) <- sheets
-#     x
-# }
-# 
-# mysheets <- read_excel_allsheets("data/EVMP_20181010/TenYearReview/Willow_Cumulative_Data_Baseline_Through_2018.xlsx")
-
-
-b2007 <- readxl::read_excel("data/EVMP_20181010/TenYearReview/Upland_Line_Intercept_2007_2013_2018.xlsx",sheet = 2) %>% 
+b2007 <- readxl::read_excel("data/EVMP_data/TenYearReview/Upland_Line_Intercept_2007_2013_2018.xlsx",sheet = 2) %>% 
   mutate(yr = 2007)
 
 b2013 <- readxl::read_excel("data/EVMP_20181010/TenYearReview/Upland_Line_Intercept_2007_2013_2018.xlsx",sheet = 3) %>% 
