@@ -228,6 +228,45 @@ sinfo.df <- sinfo %>%
   pluck(2) %>% 
   pluck(1)
 
+#### Fix inconsistent labeling of some SITE_ID values
+sinfo.df <- sinfo.df %>% 
+  mutate(SITE_ID = case_when(SITE_ID == "WC1" ~ "WC01",
+                       SITE_ID == "WC2" ~ "WC02",
+                       SITE_ID == "WC3" ~ "WC03", 
+                       SITE_ID == "WC4" ~ "WC04", 
+                       SITE_ID == "WC4" ~ "WC04",
+                       SITE_ID == "WC5" ~ "WC05",
+                       SITE_ID == "WC6" ~ "WC06", 
+                       SITE_ID == "WC7" ~ "WC07", 
+                       SITE_ID == "WC8" ~ "WC08",
+                       SITE_ID == "WC9" ~ "WC09",
+                       SITE_ID == "WNC1" ~ "WNC01",
+                       SITE_ID == "WNC1" ~ "WNC01",
+                       SITE_ID == "WNC2" ~ "WNC02",
+                       SITE_ID == "WNC3" ~ "WNC03", 
+                       SITE_ID == "WNC4" ~ "WNC04", 
+                       SITE_ID == "WNC4" ~ "WNC04",
+                       SITE_ID == "WNC5" ~ "WNC05",
+                       SITE_ID == "WNC6" ~ "WNC06", 
+                       SITE_ID == "WNC7" ~ "WNC07", 
+                       SITE_ID == "WNC8" ~ "WNC08",
+                       SITE_ID == "WNC9" ~ "WNC09",
+                       SITE_ID == "WK1" ~ "WK01",
+                       SITE_ID == "WK2" ~ "WK02",
+                       SITE_ID == "WK3" ~ "WK03", 
+                       SITE_ID == "WK4" ~ "WK04", 
+                       SITE_ID == "WK4" ~ "WK04",
+                       SITE_ID == "WK5" ~ "WK05",
+                       SITE_ID == "WK6" ~ "WK06", 
+                       SITE_ID == "WK7" ~ "WK07", 
+                       SITE_ID == "WK8" ~ "WK08",
+                       SITE_ID == "WK9" ~ "WK09",
+                       TRUE ~ as.character(SITE_ID))
+  )
+
+
+
+
 ```
 
 ```{r, site_info_01}
@@ -324,6 +363,17 @@ site.info.clean <- site.info.all %>%
   filter(!is.na(UTM_N_NAD83)) %>% 
   filter(is.na(REMOVED)) 
 
+# UNC61 is "NA" for fenced. Making fenced = FALSE
+# reclass the FENCED == NA to FENCED == N 
+# reclass the BURNED == NA to BURNED == N 
+site.info.clean <- site.info.clean %>% 
+  mutate(FENCED = if_else(is.na(FENCED),
+                          "N", FENCED)) %>% 
+  mutate(BURNED = if_else(is.na(BURNED),
+                          "N", BURNED))
+
+# UNC61
+
 ```
 
 
@@ -352,6 +402,34 @@ valley_lu <- read_csv("./data/EVMP_derived/VALLEY_lu.csv")
 
 ## join in the valley info
 site.info.clean <- left_join(site.info.clean, valley_lu, by = "VALLEY") 
+
+# site.info.clean %>% 
+#   group_by(BURNED) %>% 
+#   tally()
+
+#   BURNED                       n
+#   <chr>                    <int>
+# 1 Completely                  16
+# 2 Moderately                   1
+# 3 Moderately to Completely    10
+# 4 N                          192
+# 5 N Y                          1
+# 6 Not burned                  13
+# 7 Y                            8
+
+# I'm going to convert all these into y and n until I get guidance from Hanem
+# I'm also eliminating all the vague burned categories, collapsing them to a binary burned/not-burned category
+
+site.info.clean <- 
+  site.info.clean %>% 
+  mutate(BURNED = case_when(BURNED == "Not burned" ~ "Not burned",
+                            BURNED == "N Y" ~ "Not burned",
+                            BURNED == "Completely" ~ "Burned",
+                            BURNED == "Moderately" ~ "Burned",
+                            BURNED == "Moderately to Completely" ~ "Burned",
+                            BURNED == "Y" ~ "Burned",
+                            BURNED == "N" ~ "Not burned")
+         )
 
 ## write csv
 # write_csv(site.info.clean, "./data/EVMP_derived/site_info_clean.csv")
@@ -424,12 +502,15 @@ site.info.clean.sf <- site.info.clean %>%
   mutate_at(2:3, as.numeric) %>% 
   st_as_sf(coords = c("UTM_E_NAD83", "UTM_N_NAD83"), crs = 26913)
 
+## write the site info to shapefile
+# st_write(site.info.clean.sf, "./data/EVMP_derived/site_info_clean.shp")
+
 ```
 
 ```{r, eval = FALSE}
 ## ggmap: us
-# us <- c(left = -125, bottom = 25.75, right = -67, top = 49)
-# get_stamenmap(us, zoom = 5, maptype = "toner-lite") %>% ggmap() 
+## us <- c(left = -125, bottom = 25.75, right = -67, top = 49)
+## get_stamenmap(us, zoom = 5, maptype = "toner-lite") %>% ggmap() 
 
 us <- c(left = -105.99, bottom = 40.134, right = -105.4, top = 40.55)
 get_stamenmap(us, zoom = 10, maptype = "toner-lite") %>% ggmap() 
@@ -447,7 +528,6 @@ get_googlemap(us, zoom = 10, maptype = "roadmap") %>% ggmap()
 
 ```
 
-
 ```{r, eval=FALSE}
 ## gt: grouped example
 
@@ -457,43 +537,27 @@ site.info.clean.sf %>%
   tally() %>% 
   gt::gt() 
 
-site.info.all %>%
+gt.siteinfo <- site.info.clean %>%
   dplyr::select(-REMOVED) %>%
-  group_by(VALLEY, pType) %>% 
+  group_by(valley_full, pType) %>% 
   tally() %>% 
   gt::gt() %>% 
-  tab_header(title = md("**EVMP plots with an 'NA' in the 'Removed' field**")) 
+  tab_header(title = md("**EVMP plots by valley location**")) 
 gt.siteinfo
 
-tab_3 <-
-  pizzaplace %>%
-  dplyr::filter(
-    name %in% c("soppressata", "peppr_salami")
-  ) %>%
-  dplyr::group_by(name, size) %>%
-  dplyr::summarize(
-    `Pizzas Sold` = n()
-  ) %>%
-  gt(rowname_col = "size") %>%
+gt.siteinfo %>% 
   summary_rows(
-    groups = TRUE,
-    columns = vars("Pizzas Sold"),
+    #groups = TRUE,
+    columns = vars("n"),
     fns = list(TOTAL = "sum"),
     formatter = fmt_number,
     decimals = 0,
     use_seps = TRUE
-  ) %>%
-  tab_footnote(
-    footnote = "The Pepper-Salami.",
-    cells_group(groups = "peppr_salami")
   )
-
 
 ```
 
-
 ### Map of Kawuneeche Valley EVMP sites
-
 
 ```{r}
 
@@ -507,16 +571,15 @@ site.info.clean.sf %>%
 ## list column approach
 ## note quite working yet :)
 
-
 site.info.clean.sf.nest <- site.info.clean.sf %>% 
   group_by(VALLEY) %>% 
   nest()
 
-zz <- site.info.clean.sf.nest %>%
-  mutate(gtable = map(.x = data, .f = gt::gt)) #%>%
-  # mutate(vnames = map(.x = data, .f = DT::datatable))
-
-zz[[2]][[2]]
+# zz <- site.info.clean.sf.nest %>%
+#   mutate(gtable = map(.x = data, .f = gt::gt)) #%>%
+#   # mutate(vnames = map(.x = data, .f = DT::datatable))
+# 
+# zz[[2]][[2]]
 
 site.info.clean.sf.nest %>% 
   mutate(plot = map2(data, VALLEY, ~ggplot(data = .x) + theme_tufte() +
@@ -527,7 +590,6 @@ site.info.clean.sf.nest %>%
        xlab("Average annual hours worked by persons engaged")))
 
 ```
-
 
 ### Raw data in "Site info" tabs from RMNP 
 ```{r}
@@ -546,13 +608,11 @@ site.info.upland %>%
 
 ```
 
-
-
 ## Study Area
 
 Change basemap or pan and zoom.  
 
-### Overview Map of EVMP sampling
+#### Overview Map of EVMP sampling
 
 #### Map of fenced and unfenced areas - all plots
 
@@ -590,6 +650,7 @@ site.info.clean.sf %>%
 #### Map of burned plots
 
 ```{r}
+
 site.info.clean.sf %>%
   filter(!is.na(BURNED)) %>% 
   filter(BURNED != 'N') %>%
@@ -630,11 +691,11 @@ site.info.clean.sf %>%
 ```{r}
 
 ##
-pl.cnt1 <- site.info.all.sf %>%
-  group_by(VALLEY) %>% 
+pl.cnt1 <- site.info.clean.sf %>%
+  group_by(valley_full) %>% 
   tally() %>% 
   # na.omit() %>%  ### NEED TO ATTRIBUTE THESE. BUT FOR TESTING....
-  ggplot(aes(reorder(VALLEY, n),n)) +
+  ggplot(aes(reorder(valley_full, n),n)) +
   # ggplot( aes(VALLEY, n, size = n, color=VALLEY)) +
   geom_point(color="white", size = 6) +
   geom_pointrange(ymin=0, aes(ymax=n)) +
@@ -642,15 +703,16 @@ pl.cnt1 <- site.info.all.sf %>%
   geom_text(aes(label=n), size=4) +
   # scale_x_log10() +
   theme_minimal() +
-  labs(x="Range type", y = "Count", title = "Count of EVMP sampling sites") +
+  labs(x="", y = "Count", title = "Count of EVMP sampling sites") +
   coord_flip()
 
-##
+# pl.cnt1
+# ggsave("./output/figures/tally_plot_by_valley_type.png", width = 7, height = 5)
 
-pl.cnt2 <- site.info.all.sf %>%
+
+pl.cnt2 <- site.info.clean.sf %>%
   group_by(RANGE_TYPE) %>% 
   tally() %>% 
-  # na.omit() %>%  ### NEED TO ATTRIBUTE THESE. BUT FOR TESTING....
   ggplot(aes(reorder(RANGE_TYPE, n),n)) +
   # ggplot( aes(VALLEY, n, size = n, color=VALLEY)) +
   geom_point(color="white", size = 4) +
@@ -661,66 +723,63 @@ pl.cnt2 <- site.info.all.sf %>%
   theme_minimal() +
   # coord_flip() +
   theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
-  labs(x="Count", y = "Range type", title = "Count of EVMP sampling sites by 'Range type'")
+  labs(x="", y = "Count", title = "Count of EVMP sampling sites by 'Range type'")
 
-pl.cnt2
-
+# pl.cnt2
+# ggsave("./output/figures/tally_plot_by_rangeType.png", width = 7, height = 5)
 
 
 pl.cnt1.cnt2 <- cowplot::plot_grid(pl.cnt1, pl.cnt2, labels = "AUTO")
 
 # ggsave(plot = pl.cnt1.cnt2, filename = "./output/figures/twoPanel_valleyCnt_rangeCnt.png", width = 8, height = 5, dpi = 300)
 
-## Note how many na! Need to fix
-
 ```
 
-#### Records with "NA" for "VALLEY"
 
-```{r}
-site.info.all.sf %>%
+
+```{r, eval=FALSE}
+#### Records with "NA" for "VALLEY"
+site.info.clean.sf %>%
   filter(is.na(VALLEY)) %>% 
   mapview()
-```
 
-```{r}
-site.info.all.sf %>%
+site.info.clean.sf %>%
   filter(is.na(VALLEY)) %>%
   as.tibble() %>% 
   datatable()
+## cleaned above so none...
 ```
 
-** Records for which there is "NA" for "VALLEY"**
+
 
 #### Counts of fenced and unfenced
 
 ```{r}
 
 
-# site.info.all.sf %>%
-#   group_by(FENCED,pType) %>% 
-#   tally() %>% 
-#   # na.omit() %>%  ### NEED TO ATTRIBUTE THESE. BUT FOR TESTING....
-#   ggplot(aes(reorder(FENCED, n),n)) +
-#   # ggplot( aes(VALLEY, n, size = n, color=VALLEY)) +
-#   geom_point(color="white", size = 6) +
-#   geom_pointrange(ymin=0, aes(ymax=n)) +
-#    geom_point(color="ivory3", size = 10) +
-#   geom_text(aes(label=n), size=6) +
-#   # scale_x_log10() +
-#   theme_bw() +
-#   # theme_minimal() +
-#   coord_flip() +
-#   labs(x="Count", y = "Range type", title = "Count of EVMP sampling sites by 'Range type'") +
-#   facet_wrap(~pType)
-
-
-pl.hm1 <- site.info.all.sf %>%
-  filter(!is.na(FENCED)) %>% 
-  group_by(FENCED,VALLEY) %>% 
-  tally() %>% 
+site.info.clean.sf %>%
+  group_by(FENCED,pType) %>%
+  tally() %>%
   # na.omit() %>%  ### NEED TO ATTRIBUTE THESE. BUT FOR TESTING....
-  ggplot(aes(FENCED, VALLEY)) +
+  ggplot(aes(reorder(FENCED, n),n)) +
+  # ggplot( aes(VALLEY, n, size = n, color=VALLEY)) +
+  geom_point(color="white", size = 6) +
+  geom_pointrange(ymin=0, aes(ymax=n)) +
+   geom_point(color="ivory3", size = 10) +
+  geom_text(aes(label=n), size=6) +
+  # scale_x_log10() +
+  theme_bw() +
+  # theme_minimal() +
+  coord_flip() +
+  labs(y="Count", x = "Range type", title = "Count of EVMP sampling sites by 'Range type'") +
+  facet_wrap(~pType)
+
+pl.hm1 <- site.info.clean.sf %>%
+  filter(!is.na(FENCED)) %>%
+  group_by(FENCED,valley_full) %>%
+  tally() %>%
+  # na.omit() %>%  ### NEED TO ATTRIBUTE THESE. BUT FOR TESTING....
+  ggplot(aes(FENCED, valley_full)) +
   geom_tile(aes(fill = n), color= 'white') +
   # geom_point(color="white", size = 6) +
   geom_text(aes(label=n), size=8, color = 'white') +
@@ -731,10 +790,11 @@ pl.hm1 <- site.info.all.sf %>%
   scale_fill_viridis() +
   # theme_minimal() +
   # coord_flip() +
-  labs(x="Fenced", y = "Range type", title = "Count of EVMP sampling sites",subtitle = "By 'Range type' and and fenced status")
+  labs(x="Fenced", y = "", title = "Count of EVMP sampling sites",subtitle = "By valley and and fenced status")
 
+# ggsave(plot = pl.hm1, filename = "./output/figures/cnt_plot_valley_x_fenced.png", width = 5, height = 4, dpi = 300)
 
-pl.hm2 <- site.info.all.sf %>%
+pl.hm2 <- site.info.clean.sf %>%
   filter(!is.na(FENCED)) %>% 
   group_by(FENCED,pType) %>% 
   tally() %>% 
@@ -746,15 +806,19 @@ pl.hm2 <- site.info.all.sf %>%
   # scale_x_log10() +
   # theme_bw() +
   theme_minimal() +
-  scale_fill_gradient(low = "ivory4",high = "black") +
+  scale_fill_viridis() +
+  # scale_fill_gradient(low = "ivory4",high = "black") +
   # theme_minimal() +
   # coord_flip() +
   labs(x="Fenced", y = "", title = "Count of EVMP sampling sites", subtitle = "By plot type and fenced status")
 
-cowplot::plot_grid(pl.hm1, pl.hm2, labels = "AUTO", ncol=2)
+# ggsave(plot = pl.hm2, filename = "./output/figures/cnt_ptype_x_fenced.png", width = 5, height = 4, dpi = 300)
+
+cow1 <- cowplot::plot_grid(pl.hm1, pl.hm2, labels = "AUTO", ncol=2)
+cow1
+# ggsave(plot = cow1, filename = "./output/figures/cnt_ptype_valle_x_fenced.png", width = 5, height = 4, dpi = 300)
 
 ```
-
 
 
 ```{r}
@@ -763,9 +827,6 @@ cowplot::plot_grid(pl.hm1, pl.hm2, labels = "AUTO", ncol=2)
 
 ```
 
-
-
-_**Individual Site Maps**_
 ```{r, eval = FALSE}
 ## scrap: creat functions to create basemaps with ggplot
 library(ggmap)  # you may have to use install.packages to install it first
@@ -780,7 +841,7 @@ ggmap::bb2bbox()
 ```{r}
 ## nested by range type 
 
-site.info.all.sf.nest <- site.info.all.sf %>% 
+site.info.clean.sf.nest <- site.info.clean.sf %>% 
   filter(!is.na(RANGE_TYPE)) %>% 
   group_by(RANGE_TYPE) %>% 
   nest()
@@ -791,7 +852,7 @@ site.info.all.sf.nest <- site.info.all.sf %>%
 ```{r, eval=TRUE}
 ##ggmap site maps. Need base maps
 
-site.info.all.sf.nest <- site.info.all.sf.nest %>% 
+site.info.clean.sf.nest <- site.info.clean.sf.nest %>% 
   mutate(plot = map2(data,RANGE_TYPE, ~ggplot(data = .x) + theme_bw() +
                        geom_sf() +
                        labs(title = .y))) 
@@ -801,15 +862,15 @@ site.info.all.sf.nest <- site.info.all.sf.nest %>%
 
 ```{r, eval = FALSE}
 ## pring the ggmaps
-mm1 <- site.info.all.sf.nest %>% 
+mm1 <- site.info.clean.sf.nest %>% 
   pluck(3) %>% pluck(1) 
 mm1
 
-mm2 <- site.info.all.sf.nest %>% 
+mm2 <- site.info.clean.sf.nest %>% 
   pluck(3) %>% pluck(2)
 mm2
 
-mm3 <- site.info.all.sf.nest %>% 
+mm3 <- site.info.clean.sf.nest %>% 
   pluck(3) %>% pluck(3)
 mm3
 
@@ -828,15 +889,15 @@ mm3
 
 ```{r}
 
-site.info.all.sf.nest <- site.info.all.sf.nest %>% 
+site.info.clean.sf.nest <- site.info.clean.sf.nest %>% 
   mutate(plot2_MV = map(data,mapview)) 
 
 ### this prints them all out.
-# site.info.all.sf.nest %>%
+# site.info.clean.sf.nest %>%
 #   pluck(4)
 ## seemingly just to console, not when knit for mapview
 ## BUT it does work for ggplot objects...
-# site.info.all.sf.nest %>%
+# site.info.clean.sf.nest %>%
 #   pluck(3)
 
 ```
@@ -848,7 +909,7 @@ site.info.all.sf.nest <- site.info.all.sf.nest %>%
 ```{r, fig.align='center'}
 
 ## map: Core Winter Range
-site.info.all.sf.nest %>% 
+site.info.clean.sf.nest %>% 
   pluck(2) %>% pluck(1) %>% 
   # names()
   mapview(zcol = "FENCED")
@@ -859,7 +920,7 @@ site.info.all.sf.nest %>%
 ```{r, fig.align='center'}
 
 ## map: KV
-site.info.all.sf.nest %>% 
+site.info.clean.sf.nest %>% 
   pluck(2) %>% pluck(3) %>% 
   mapview(zcol = "FENCED")
 
@@ -870,11 +931,11 @@ site.info.all.sf.nest %>%
 ```{r, fig.align='center'}
 
 ## map: KV
-site.info.all.sf.nest %>% 
+site.info.clean.sf.nest %>% 
   pluck(2) %>% pluck(2) %>% 
   mapview(zcol="FENCED")
 
-# site.info.all.sf.nest %>% 
+# site.info.clean.sf.nest %>% 
 #   pluck(2) %>% 
 #   pluck(2) %>%
 #   ggplot() +
@@ -955,9 +1016,9 @@ csv.all.lc %>%
   datatable(rownames = FALSE, caption = "Distinct field names acrosss all csv files")
 
 #### Distinct field names via unnest()
-# csv.all.lc %>% 
-#   unnest(field_names) %>% 
-#   distinct(ffname,field_names) %>% 
+# csv.all.lc %>%
+#   unnest(field_names) %>%
+#   distinct(ffname,field_names) %>%
 #   datatable()
 
 ```
@@ -972,11 +1033,11 @@ csv.all.lc %>%
 csv.all.lc.li <- csv.all.lc %>% 
   filter(vType == "Line_int") 
 
-csv.all.lc.li %>% 
-  unnest(field_names) %>% 
-  distinct(file_name_abr,field_names) %>% 
-  # write_csv("output/temp_4_review/distinc_line_in_names.csv")
-  datatable(rownames = FALSE, caption = "Distinct variable names for line intercept files.")
+# csv.all.lc.li %>% 
+#   unnest(field_names) %>% 
+#   distinct(file_name_abr,field_names) %>% 
+#   # write_csv("output/temp_4_review/distinc_line_in_names.csv")
+#   datatable(rownames = FALSE, caption = "Distinct variable names for line intercept files.")
 
 ```
 
@@ -992,8 +1053,8 @@ filtFunSel <- function(x){
                       SITE_NUMBER,
                       SITE_ID,
                       SPECIES_CODE,
-                      #SHRUB_INTERCEPT_START_M,
-                      #SHRUB_INTERCEPT_STOP_M,
+                      # SHRUB_INTERCEPT_START_M,
+                      # SHRUB_INTERCEPT_STOP_M,
                       MAX_HEIGHT_CM,
                       #DEAD,
                       BROWSED,
@@ -1017,6 +1078,55 @@ csv.all.lc.li.df <- csv.all.lc.li %>%
   reduce(.f = rbind)
 # yay, pluck()!
 
+
+## Why can't anything be simple....
+# just discovered that SITE_ID columns are NOT CONSISTENTLY NAMED
+# eg WC1 and WC01
+
+# csv.all.lc.mcro.df %>% 
+#   filter(SITE_NUMBER <10) %>% 
+#   distinct(SITE_ID) %>% 
+#   datapasta::vector_paste()
+
+csv.all.lc.li.df <- csv.all.lc.li.df %>% 
+  mutate(SITE_ID = case_when(SITE_ID == "WC1" ~ "WC01",
+                       SITE_ID == "WC2" ~ "WC02",
+                       SITE_ID == "WC3" ~ "WC03", 
+                       SITE_ID == "WC4" ~ "WC04", 
+                       SITE_ID == "WC4" ~ "WC04",
+                       SITE_ID == "WC5" ~ "WC05",
+                       SITE_ID == "WC6" ~ "WC06", 
+                       SITE_ID == "WC7" ~ "WC07", 
+                       SITE_ID == "WC8" ~ "WC08",
+                       SITE_ID == "WC9" ~ "WC09",
+                       SITE_ID == "WNC1" ~ "WNC01",
+                       SITE_ID == "WNC1" ~ "WNC01",
+                       SITE_ID == "WNC2" ~ "WNC02",
+                       SITE_ID == "WNC3" ~ "WNC03", 
+                       SITE_ID == "WNC4" ~ "WNC04", 
+                       SITE_ID == "WNC4" ~ "WNC04",
+                       SITE_ID == "WNC5" ~ "WNC05",
+                       SITE_ID == "WNC6" ~ "WNC06", 
+                       SITE_ID == "WNC7" ~ "WNC07", 
+                       SITE_ID == "WNC8" ~ "WNC08",
+                       SITE_ID == "WNC9" ~ "WNC09",
+                       SITE_ID == "WK1" ~ "WK01",
+                       SITE_ID == "WK2" ~ "WK02",
+                       SITE_ID == "WK3" ~ "WK03", 
+                       SITE_ID == "WK4" ~ "WK04", 
+                       SITE_ID == "WK4" ~ "WK04",
+                       SITE_ID == "WK5" ~ "WK05",
+                       SITE_ID == "WK6" ~ "WK06", 
+                       SITE_ID == "WK7" ~ "WK07", 
+                       SITE_ID == "WK8" ~ "WK08",
+                       SITE_ID == "WK9" ~ "WK09",
+                       TRUE ~ as.character(SITE_ID))
+  )
+
+
+## join in site info from the master plot list
+csv.all.lc.li.df <- left_join(csv.all.lc.li.df, site.info.clean, by = 'SITE_ID')
+
 ```
 
 ```{r}
@@ -1031,18 +1141,53 @@ csv.all.lc.li.df <- csv.all.lc.li.df %>%
 #   # names() %>% 
 #   group_by(yr,SITE_TYPE, SITE_NUMBER, SITE_ID, MAX_HEIGHT_CM) %>% 
 #   summarize()
-  
 
 ```
 
-
+# hhhhhh
 ```{r}
 
-## Create a spatial lookup table for joining site info.
+## Create a spatial lookup table for joining site info [in workbook tab].
 sp.lu <- sinfo.df %>%
   dplyr::select(-c(SITE_TYPE,DATE,SITE_NUMBER, GPS_ACCURACY_M))
 
-csv.all.lc.li.df <- left_join(csv.all.lc.li.df, sp.lu, by= "SITE_ID")
+## make sure the 'SITE_ID' columns are consistent
+sp.lu <- sp.lu %>% 
+  mutate(SITE_ID = case_when(SITE_ID == "WC1" ~ "WC01",
+                       SITE_ID == "WC2" ~ "WC02",
+                       SITE_ID == "WC3" ~ "WC03", 
+                       SITE_ID == "WC4" ~ "WC04", 
+                       SITE_ID == "WC4" ~ "WC04",
+                       SITE_ID == "WC5" ~ "WC05",
+                       SITE_ID == "WC6" ~ "WC06", 
+                       SITE_ID == "WC7" ~ "WC07", 
+                       SITE_ID == "WC8" ~ "WC08",
+                       SITE_ID == "WC9" ~ "WC09",
+                       SITE_ID == "WNC1" ~ "WNC01",
+                       SITE_ID == "WNC1" ~ "WNC01",
+                       SITE_ID == "WNC2" ~ "WNC02",
+                       SITE_ID == "WNC3" ~ "WNC03", 
+                       SITE_ID == "WNC4" ~ "WNC04", 
+                       SITE_ID == "WNC4" ~ "WNC04",
+                       SITE_ID == "WNC5" ~ "WNC05",
+                       SITE_ID == "WNC6" ~ "WNC06", 
+                       SITE_ID == "WNC7" ~ "WNC07", 
+                       SITE_ID == "WNC8" ~ "WNC08",
+                       SITE_ID == "WNC9" ~ "WNC09",
+                       SITE_ID == "WK1" ~ "WK01",
+                       SITE_ID == "WK2" ~ "WK02",
+                       SITE_ID == "WK3" ~ "WK03", 
+                       SITE_ID == "WK4" ~ "WK04", 
+                       SITE_ID == "WK4" ~ "WK04",
+                       SITE_ID == "WK5" ~ "WK05",
+                       SITE_ID == "WK6" ~ "WK06", 
+                       SITE_ID == "WK7" ~ "WK07", 
+                       SITE_ID == "WK8" ~ "WK08",
+                       SITE_ID == "WK9" ~ "WK09",
+                       TRUE ~ as.character(SITE_ID))
+  )
+
+# csv.all.lc.li.df <- left_join(csv.all.lc.li.df, sp.lu, by= "SITE_ID")
 
 ```
 
@@ -1059,7 +1204,7 @@ csv.all.lc.li.df %>%
 
 ```{r, eval=FALSE, echo=FALSE}
 
-#  NOT run. Workin in progress
+#  NOT run. Work in in progress
 
 csv.all.lc.li.df %>% 
   filter(yr == 2013 | yr == 2018) %>% 
@@ -1071,19 +1216,20 @@ csv.all.lc.li.df %>%
 ## filter to 2013 and 2018
 csv.all.lc.li.df %>% 
   filter(yr == 2013 | yr == 2018) %>%
-  # group_by(SITE_ID,SPECIES_CODE,DATE) %>% 
-  group_by(SITE_ID,SPECIES_CODE,yr) %>% 
+  # group_by(SITE_ID,SPECIES_CODE,DATE) %>%
+  # names()
+  group_by(SITE_ID,SITE_TYPE, FENCED, SPECIES_CODE,yr) %>% 
   summarise(mean.max = mean(MAX_HEIGHT_CM, na.rm=TRUE), sd.max = sd(MAX_HEIGHT_CM, na.rm=TRUE), n.max = n()) %>% 
-  filter(SPECIES_CODE == "SAMO") %>% 
+  # filter(SPECIES_CODE == "SAMO") %>% 
   ungroup() %>%
   filter(n.max >1) %>% 
   ggplot(aes(yr,mean.max)) +
   geom_point() +
-  geom_line(aes(x=yr, y = mean.max))
-  
+  geom_line(aes(x=yr, y = mean.max)) +
+  facet_wrap(~SPECIES_CODE)
+
+plotly::ggplotly()
 # tidyr::spread(key = yr, value = MAX_HEIGHT_CM, convert = FALSE)
-
-
 ```
 
 
@@ -1096,11 +1242,12 @@ csv.all.lc.mcro <- csv.all.lc %>%
   filter(vType == "Macroplot") 
 
 #
-csv.all.lc.mcro %>% 
-  unnest(field_names) %>% 
-  distinct(file_name_abr,field_names) %>% 
-  # write_csv("output/temp_4_review/macroplot_fld_names.csv")
-  datatable(rownames = FALSE, caption = "Macroplot inventory variable names.")
+# csv.all.lc.mcro %>%
+#   # unnest(data)
+#   unnest(field_names) %>% 
+#   distinct(file_name_abr,field_names) %>% 
+#   # write_csv("output/temp_4_review/macroplot_fld_names.csv")
+#   datatable(rownames = FALSE, caption = "Macroplot inventory variable names.")
 
 ```
 
@@ -1140,11 +1287,49 @@ csv.all.lc.mcro <- csv.all.lc.mcro %>%
 #   datapasta::dpasta()
 
 
-## badass purrr ninja move:
+## purrr ninja move:
 csv.all.lc.mcro.df <- csv.all.lc.mcro %>% 
   pluck(1) %>%
   map(FunSelMacro) %>% 
   reduce(.f = rbind)
+
+# SITE_ID is not consistent.
+# recode
+csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>% 
+  mutate(SITE_ID = case_when(SITE_ID == "WC1" ~ "WC01",
+                       SITE_ID == "WC2" ~ "WC02",
+                       SITE_ID == "WC3" ~ "WC03", 
+                       SITE_ID == "WC4" ~ "WC04", 
+                       SITE_ID == "WC4" ~ "WC04",
+                       SITE_ID == "WC5" ~ "WC05",
+                       SITE_ID == "WC6" ~ "WC06", 
+                       SITE_ID == "WC7" ~ "WC07", 
+                       SITE_ID == "WC8" ~ "WC08",
+                       SITE_ID == "WC9" ~ "WC09",
+                       SITE_ID == "WNC1" ~ "WNC01",
+                       SITE_ID == "WNC1" ~ "WNC01",
+                       SITE_ID == "WNC2" ~ "WNC02",
+                       SITE_ID == "WNC3" ~ "WNC03", 
+                       SITE_ID == "WNC4" ~ "WNC04", 
+                       SITE_ID == "WNC4" ~ "WNC04",
+                       SITE_ID == "WNC5" ~ "WNC05",
+                       SITE_ID == "WNC6" ~ "WNC06", 
+                       SITE_ID == "WNC7" ~ "WNC07", 
+                       SITE_ID == "WNC8" ~ "WNC08",
+                       SITE_ID == "WNC9" ~ "WNC09",
+                       SITE_ID == "WK1" ~ "WK01",
+                       SITE_ID == "WK2" ~ "WK02",
+                       SITE_ID == "WK3" ~ "WK03", 
+                       SITE_ID == "WK4" ~ "WK04", 
+                       SITE_ID == "WK4" ~ "WK04",
+                       SITE_ID == "WK5" ~ "WK05",
+                       SITE_ID == "WK6" ~ "WK06", 
+                       SITE_ID == "WK7" ~ "WK07", 
+                       SITE_ID == "WK8" ~ "WK08",
+                       SITE_ID == "WK9" ~ "WK09",
+                       TRUE ~ as.character(SITE_ID))
+  )
+
 
 ```
 
@@ -1163,11 +1348,12 @@ csv.all.lc.mcro.df <- left_join(csv.all.lc.mcro.df, sp.lu, by = "SITE_ID")
 
 
 
-The following plots are used to assess patterns of "missingness" in data sets. 
-
-**Missing data: line intercept by year.**
 
 ```{r, eval=FALSE}
+# The following plots are used to assess patterns of "missingness" in data sets. 
+# 
+# **Missing data: line intercept by year.**
+
 #### Missing observations across variables and years
 naniar::vis_miss(csv.all.lc.li.df)
 
@@ -1201,84 +1387,224 @@ naniar::vis_miss(csv.all.lc.li.df) %>%
   facet_wrap(~)
 ```
 
-**Missing data: line intercept by month.** 
 
-```{r}
+
+```{r, eval=FALSE}
 ## line intercept: missing data analysis
 #### Missingness across months 
 csv.all.lc.li.df %>% 
   mutate(mo = month(DATE)) %>% 
-  naniar::gg_miss_fct(mo) +
+  naniar::gg_miss_fct(SITE_ID) +
   labs(title = "Variables: Missing data by month", x="Month") +
   scale_fill_viridis(discrete = FALSE, option = "A")
+
+## note the site info variables are not all present in the equiv var in the
+## li data. For example 'BURNED'  and 'UTM_N_NAD83'
 
 ```
 
 
-
-
 ```{r, eval=FALSE}
-csv.all.lc.asp <- csv.all.lc %>% 
+### macroplot
+
+csv.all.lc.mcro <- csv.all.lc %>% 
   filter(vType == "Macroplot") 
-#
-csv.all.lc.asp %>% 
+
+# fields not in all of the tabs
+csv.all.lc.mcro %>% 
   unnest(field_names) %>% 
-  distinct(file_name_abr,field_names) %>% 
+  group_by(field_names) %>%
+  tally() %>% 
+  arrange(n) %>% 
+  filter(n<6) %>% 
+  # distinct(file_name_abr,field_names) %>% 
   # write_csv("output/temp_4_review/macroplot_fld_names.csv")
-  datatable(rownames = FALSE, caption = "Macroplot inventory variable names.")
+  datatable(rownames = FALSE, caption = "Macroplot inventory variable NOT present in every year's tab")
 
+# csv.all.lc.mcro %>% 
+#   unnest(field_names) %>% 
+#   group_by(field_names) %>%
+#   tally() %>% 
+#   arrange(n) %>% 
+#   filter(n==6) %>% 
+#   select(field_names) %>% 
+#   datapasta::vector_paste_vertical()
 
-csv.all.lc.asp %>% 
+csv.all.lc.mcro %>% 
   unnest(field_names) %>% 
   # tabyl(file_name_abr)
   tabyl(file_name_abr,field_names) %>% 
   # write_csv("output/temp_4_review/macroplot_fld_names.csv")
   datatable(rownames = FALSE, caption = "Macroplot inventory variable names.")
 
-
 ```
 
+# macro here
+```{r, eval=TRUE}
+# use a custom function to select columns before rbinding
+# note these are different field names than li that need to be matched
+# this function snags only those fields in common between all of the tabs
+FunSelMcro <- function(x){
+  x %>% dplyr::select(c(CANOPY_DIA_1_CM, 
+                        CANOPY_DIA_2_CM, 
+                        DATE, 
+                        GENUS, 
+                        HT_TO_TALLEST_BUDSCAR_CM,
+                        PERCENT_PLANT_IN_PLOT, 
+                        PLANT_HT_CM, 
+                        SITE_ID, 
+                        SITE_NUMBER, 
+                        SITE_TYPE, 
+                        SPECIES_CODE))
+    }
 
-```{r, eval=FALSE}
 
-FunSelAsp <- function(x){
-  x %>% dplyr::select(c(DATE,
-                      SITE_TYPE,
-                      SITE_NUMBER,
-                      SITE_ID,
-                      SPECIES_CODE,
-                      PERCENT_PLANT_IN_PLOT,
-                      CANOPY_DIA_1_CM,
-                      CANOPY_DIA_2_CM,
-                      PLANT_HT_CM,
-                      HT_TO_TALLEST_BUDSCAR_CM))
-}
+## apply function to select variables in common between all csv
+csv.all.lc.mcro <- csv.all.lc.mcro %>% 
+  mutate(data.sel = map(.x = data, FunSelMcro)) %>% 
+  select(-field_names)
 
-csv.all.lc.asp <- csv.all.lc.mcro %>% 
-  mutate(data.sel = map(.x = data, FunSelMacro))
+csv.all.lc.mcro <- csv.all.lc.mcro %>% 
+  mutate(field_names = map(data.sel, names))
 
-# csv.all.lc.li %>% 
+# csv.all.lc.mcro %>% 
 #   unnest(field_names) %>% 
-#   distinct(field_names)%>% 
-#   datapasta::dpasta()
-
+#   # tabyl(file_name_abr)
+#   tabyl(file_name_abr,field_names) %>% 
+#   # write_csv("output/temp_4_review/macroplot_fld_names.csv")
+#   datatable(rownames = FALSE, caption = "Macroplot inventory variable names.")
 
 ## combine all using purrr, ninja-style:
-csv.all.lc.asp.df <- csv.all.lc.asp %>% 
-  pluck(1) %>%
-  map(FunSelAsp) %>% 
+csv.all.lc.mcro.df <- csv.all.lc.mcro %>% 
+  pluck(4) %>% # note the specific index position
   reduce(.f = rbind)
 
-```
-
-```{r}
-
+## add yr and month columns
 csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>% 
   mutate(yr = year(DATE)) %>% 
   mutate(mo = lubridate::month(DATE))
 
+## join the site info
+csv.all.lc.mcro.df <- left_join(csv.all.lc.mcro.df, site.info.clean, by = "SITE_ID")
+
 ```
 
+```{r, eval=FALSE, echo=FALSE}
+## species codes are a mess
+# create a lookup table
+csv.all.lc.mcro.df %>%
+  mutate(SPECIES_CODE = toupper(SPECIES_CODE)) %>%
+  distinct(SPECIES_CODE) # %>% 
+  # datapasta::tribble_paste()
+
+# sp.lu <- tibble::tribble(
+#                   ~SPECIES_CODE,
+#                          "DAFR",
+#                          "SAMO",
+#                          "SAPL",
+#                          "BEGL",
+#                          "SAGE",
+#                          "BEOC",
+#                          "SAXX",
+#                          "NONE",
+#                          "ACGL",
+#                          "ALIN",
+#                          "JUCO",
+#                          "PIPU",
+#                          "POTR",
+#                          "RICE",
+#                          "RIIN",
+#                          "RUID",
+#                          "RUXX",
+#                          "SABE",
+#                          "PICO",
+#                          "SADR",
+#                          "SALA",
+#                          "SAPE",
+#                          "ROWO",
+#                          "POAN",
+#                          "BEXX",
+#                          "RUDE",
+#                          "DAFL",
+#                          "LOIN",
+#                              NA,
+#                          "SALU",
+#                          "SAWO",
+#                          "SALE",
+#                          "RINN",
+#                          "RUIN",
+#                          "SABO",
+#                          "SABR",
+#                          "SAER"
+#                   )
+
+# create skeleton for populating a species lookup table
+# write_csv(sp.lu, "./data/EVMP_derived/species_code_lu.csv")  
+# manually enter codes in excel and bring back in for joining
+# note that there are some questionable species codes that will require 
+# more help from NPS to resolve
+
+## read in lu table
+
+
+
+```
+
+```{r}
+## more cleaning...
+## change case on species code (there is currently a mix of upper and lower cases)
+csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>% 
+  mutate(SPECIES_CODE = toupper(SPECIES_CODE))
+
+## add in the look up table
+spp.lu <- read_csv("./data/EVMP_derived/species_code_lu.csv")
+
+
+## problems with 'Fenced' status. Many NA
+## Presuming here that all NA are not fenced -- CONFIRM WITH NPS
+csv.all.lc.mcro.df %>% 
+  group_by(FENCED) %>% 
+  tally()
+
+
+```
+
+
+```{r write_macroplot2disk, eval=FALSE}
+## write this to disk
+# write_csv(csv.all.lc.mcro.df, "./data/EVMP_derived/macroplot_derived.csv")
+```
+
+
+# Results 
+
+### Macroplot
+
+
+```{r}
+# calculate the average canopy diameter
+csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>% 
+  mutate(CANOPY_DIAM_AVG = (CANOPY_DIA_1_CM + CANOPY_DIA_2_CM)/2) 
+
+### canopy diameter by species
+mcro.canopy.diam.sum <- csv.all.lc.mcro.df %>%
+  group_by(SITE_ID, yr, SPECIES_CODE, valley_full, FENCED) %>% 
+  summarise(cano_ht_med = median(CANOPY_DIAM_AVG)) 
+
+mcro.canopy.diam.sum %>%
+  ungroup() %>% 
+  ggplot(aes(yr, cano_ht_med)) + 
+  geom_line(aes(color = SPECIES_CODE)) +
+  facet_grid(FENCED~valley_full)
+  
+```
+
+
+### Line-intercept data
+
+### Shrub height [line intercept]
+
+> From discussions with HA in the field, the orientation of line-intercept transects may not have had a consistent orientation from sampling interval to interval.
 
 ### Master excel file: Willow_Offtake_Data_2009_Through_2018.xlsx
 
@@ -1322,25 +1648,15 @@ ADDITIONAL_SHOOT: Additional shoot 1=yes, 0=no
 ## export to 
 ```
 
-
-
-
 ### Master excel file: Upland_Line_Intercept_2007_2013_2018.xlsx
 
-## Statistical analyses
 
-# Results 
-
-### Line-intercept data
-
-### Shrub height [line intercept]
-
-> From discussions with HA in the field, the orientation of line-intercept transects may not have had a consistent orientation from sampling interval to interval.
 
 **Max shrub height in-line intercept: Core winter range**
 
 ```{r}
 #Shrub Line Intercept Datataset 
+
 csv.all.lc.li.df %>% 
   filter(!is.na(FENCED)) %>% 
   filter(!is.na(MAX_HEIGHT_CM)) %>%
@@ -1362,15 +1678,13 @@ csv.all.lc.li.df %>%
 
 ```
 
-# FIX NA for fenced
+
 ```{r, eval=FALSE}
+# FIX NA for fenced
 ### Elk winter range by individual site
 ## tracking the individual SITE_ID
 csv.all.lc.li.df %>% 
   mutate(yr = lubridate::year(DATE)) %>% 
-  # distinct(yr)
-  # glimpse() %>% 
-  # distinct(SITE_TYPE,SITE_ID, FENCED) %>%
   filter(!is.na(FENCED)) %>% 
   filter(!is.na(MAX_HEIGHT_CM)) %>%
   filter(FENCED != "Y_but_fence_down_since_2013") %>% 
@@ -1378,23 +1692,18 @@ csv.all.lc.li.df %>%
   group_by(yr,SITE_TYPE, FENCED, SITE_ID, SPECIES_CODE) %>%
   filter(SITE_TYPE == "WC") %>% 
   group_by(yr,SITE_TYPE, FENCED, SPECIES_CODE) %>%
-  # summarise(mean.max.ht = round(mean(MAX_HEIGHT_CM, na.rm=TRUE),0)) %>% 
   ggplot(aes(yr, FENCED)) +
   geom_tile(aes(fill = MAX_HEIGHT_CM)) +
-  geom_text(aes(label = MAX_HEIGHT_CM)) +
-  # geom_point(aes(color = FENCED)) +
-  facet_grid(SITE_ID~SPECIES_CODE)
+  # geom_text(aes(label = MAX_HEIGHT_CM)) +
+  # facet_grid(SITE_ID~SPECIES_CODE)
   facet_wrap(~SITE_ID)
-  # geom_tile(aes(fill=mean.max.ht),color = 'white') +
   scale_fill_viridis(option = "A") +
   geom_text(aes(label=mean.max.ht), color = 'white', size = 3.75) +
   theme_bw() +
   labs(title = "Maximum shrub height", subtitle = "Mean of shrub height pooled by fenced status", x = "Year", y = "Species", fill = "cm") +
   facet_wrap(~FENCED, ncol= 2)
 
-
 ```
-
 
 
 
@@ -2025,7 +2334,8 @@ path %>%
 
 ```
 
-### Master excel file: Aspen_Data_Baseline_through_2018.xlsx
+
+**Master excel file: Aspen_Data_Baseline_through_2018.xlsx**
 
 The excel datafile provided by RMNP (Aspen_Data_Baseline_Through_2018.xlsx) includes 10 tabs.
 
@@ -2043,6 +2353,8 @@ asp.d <- path %>%
   set_names() %>% 
   map(read_excel, path = path, na = "NA")  
 
+# asp.d$`Aspen Baseline Stem Tallies` %>% 
+#   View()
 
 ```
 
@@ -2050,80 +2362,87 @@ asp.d <- path %>%
 
 ```{r}
 
-### it gets real
-
-### keep amd discard
+### keep and discard
 # asp.d %>% keep(.x = .,)
 # asp.d %>% map(., discard("Aspen 2013 Site Info"))
 
-#### INDEXXX
-asp.d %>% 
-  names()
+######
+## site info tabs. read and clean
+asp.siteinfo2018 <- asp.d$'Aspen 2018 Site Info'
+asp.siteinfo2018 <- asp.siteinfo2018 %>% 
+  filter(!is.na(DATE))
+# write_csv(asp.siteinfo2018, "./data/EVMP_derived/asp_siteinfo2018.csv")
 
-## select
-asp.d.sel <- asp.d[c(3,4,5,6,10)] 
-asp.d.sel %>% 
-  names()
+asp.siteinfo_baseline <- asp.d$'Aspen Baseline Site Info'
+asp.siteinfo_baseline <- asp.siteinfo_baseline %>% 
+  filter(!is.na(DATE))
+# write_csv(asp.siteinfo_baseline, "./data/EVMP_derived/asp_siteinfoBaseline.csv")
 
-asp.d.sel %>% 
-  map(.x = .,.f = glimpse)
+######
 
-asp.d.sel.comb <- bind_rows(asp.d.sel, .id = "tab") 
-  
-asp.d.sel.comb %>% 
-  names()
+## select the tabs with tally data
+asp.d.sel <- asp.d[c(3,4,5,6,8,10)] 
 
 
-asp.d.sel.comb %>%
-  DT::datatable()
-  flextable()
+## combine
+asp.tally.all <- bind_rows(asp.d.sel, .id = "tab") 
+
+## join in site info
+asp.tally.all <- left_join(asp.tally.all, site.info.clean, by = "SITE_ID")
+
+### write table
+# write_csv(asp.tally.all, "./data/EVMP_derived/asp_tally_all.csv")
 
 ```
+
 
 aspen combined variable names
 ```{r}
-asp.d.sel.comb %>% 
+
+asp.tally.all %>% 
   names() %>% 
   enframe() %>% 
   flextable()
-```
-
-```{r}
-asp.d.sel.comb %>% 
-  janitor::tabyl(tab,SITE_TYPE) %>% 
-  flextable()
-```
-
-# return here
-```{r}
-
-asp.d.sel.comb %>% 
-  janitor::tabyl(SITE_NUMBER, tab) %>% 
-  knitr::kable()
-
-tl1 <- asp.d.sel.comb %>%
-  janitor::tabyl(SITE_NUMBER, tab) %>% 
-  flextable() 
-
-colkeys = datapasta::
-
-tl1 %>% 
-  colformat_num(.,col_keys = names(digits = 1)
 
 ```
 
-
 ```{r}
-
-# asp.d %>% 
-#   # names()
-#   pluck("Aspen Baseline Stem Tallies") %>% 
-#   # pluck("Aspen 2017 Stem Tallies (burn)") %>% 
-#   names() %>% 
-#   enframe() %>% 
+# asp.d.sel.comb %>% 
+#   janitor::tabyl(tab,SITE_TYPE) %>% 
 #   flextable()
 
+asp.tally.all %>% 
+  janitor::tabyl(tab,SITE_TYPE) %>% 
+  gt::gt()
+
+asp.tally.all %>% 
+  janitor::tabyl(YEAR,SITE_TYPE) %>% 
+  gt::gt()
+
+asp.tally.all %>% 
+  janitor::tabyl(SITE_TYPE, FENCED) %>% 
+  gt::gt()
+
 ```
+
+
+```{r}
+
+asp.tally.all %>% 
+  janitor::tabyl(SITE_ID, tab) %>% 
+  gt::gt()
+
+```
+
+```{r}
+
+
+
+
+```
+
+
+
 
 ----
 
@@ -2499,7 +2818,6 @@ The following are notes from E. Ertl recorded in an describing EVMP vegetation d
 
 #### Upland
 
-
 * Plots lost: UC09 (this plot was most likely lost in the 2013 flood), UC14 & UC24 (plots were lost to waterline construction that occurred from 2015-2018)
 
 * Plots added: UC37, UC38, UC39 to replace the three plots that were lost
@@ -2563,75 +2881,6 @@ The following are notes from E. Ertl recorded in an describing EVMP vegetation d
 * Uploaded all 4 iPads with new electronic datasheets for willow and upland, photo points and plot diagrams from 2018, willow ID keys, updated protocol from 2018, and new vegetation site maps.
 
 -----
-
-
-```{r, eval=FALSE, echo=FALSE}
-
-######## bin
-### mapview example
-library(leaflet)
-## default position is topleft next to zoom control
-
-img <- "https://www.r-project.org/logo/Rlogo.svg"
-leaflet() %>% addTiles() %>% addLogo(img, url = "https://www.r-project.org/logo/")
-
-## with local image
-library(png)
-
-img <- system.file("img", "Rlogo.png", package="png")
-leaflet() %>% addTiles() %>% addLogo(img, src = "local", alpha = 0.3)
-
-## dancing banana gif :-)
-m <- mapview(breweries91)
-
-addLogo(m, "https://jeroenooms.github.io/images/banana.gif",
-        position = "bottomleft",
-        offset.x = 5,
-        offset.y = 40,
-        width = 100,
-        height = 100)
-
-addLogo(m, img,
-        position = "bottomleft",
-        offset.x = 5,
-        offset.y = 40,
-        width = 100,
-        height = 100)
-
-#### slide view
-library(jpeg)
-library(raster)
-
-web_img2000 <- "http://cdn.newsapi.com.au/image/v1/68565a36c0fccb1bc43c09d96e8fb029"
-
-jpg2000 <- readJPEG(readBin(web_img2000, "raw", 1e6))
-
-# Convert imagedata to raster
-rst_blue2000 <- raster(jpg2000[, , 1])
-rst_green2000 <- raster(jpg2000[, , 2])
-rst_red2000 <- raster(jpg2000[, , 3])
-
-img2000 <- brick(rst_red2000, rst_green2000, rst_blue2000)
-
-web_img2013 <- "http://cdn.newsapi.com.au/image/v1/5707499d769db4b8ec76e8df61933f2a"
-
-jpg2013 <- readJPEG(readBin(web_img2013, "raw", 1e6))
-
-# Convert imagedata to raster
-rst_blue2013 <- raster(jpg2013[, , 1])
-rst_green2013 <- raster(jpg2013[, , 2])
-rst_red2013 <- raster(jpg2013[, , 3])
-
-img2013 <- brick(rst_red2013, rst_green2013, rst_blue2013)
-
-slideView(img2000, img2013, label1 = "before", label2 = "after")
-# f'in awesome...
-
-
-```
-
-
-
 
 
 
