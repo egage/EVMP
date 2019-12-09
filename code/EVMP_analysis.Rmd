@@ -7,15 +7,15 @@ output:
     fig_caption: yes
     theme: yeti
     toc: yes
-    toc_depth: 3
+    toc_depth: 2
   word_document:
     toc: yes
-    toc_depth: '2'
+    toc_depth: '1'
 ---
 
 ```{r setup, include=FALSE}
 library(knitr)
-opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align = 'center')
+opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.align = 'center')
 opts_knit$set(root.dir=normalizePath('../')) # this is required if Rmd is nested below the project directory
 opts_chunk$set(fig.path = "../output/figures/") # corrected path and added dev. Needed to specify a subdirectory for figs
 
@@ -102,7 +102,7 @@ Contact: edgage@rams.colostate.edu
 
 **Updated: `r format(Sys.time(), '%Y %B %d')`**
 
-This is a working document aimed at facilitating data QA/QC and analysis. 
+This is a working document. All analyses are provisional. 
 Please do not distribute.
 
 
@@ -144,11 +144,12 @@ library(ggmap)
 
 # Introduction
 
-In 2008, Rocky Mountain National Park (RMNP) began implementation of the Elk and Vegetation Management Plan (EVMP), intended to guide management of elk and vegetation over a 20–yr period, reduce the impacts of elk on vegetation, and bring  target ecosystems into the natural range of variability for elk and vegetation in three target vegetation communities: aspen, montane riparian willow, and upland. Management includes fencing, non-lethal redistribution and culling of elk herds, and active vegetation restoration, the plan incorporates the principle of adaptive management to guide management. Achieving the goals of the EVMP requires monitoring of target vegetation communities. 
+In 2008, Rocky Mountain National Park (RMNP) began implementation of the Elk and Vegetation Management Plan (EVMP). The EVMP is intended to guide management of elk and vegetation over a 20–yr period, reduce the impacts of elk on vegetation, and bring  target ecosystems into the natural range of variability for elk and vegetation in three target vegetation communities: aspen, montane riparian willow, and upland. The plan relies on the principle of adaptive management and includes management options such as fencing, non-lethal redistribution and culling of elk herds, and active vegetation restoration. Implementing the goals of the EVMP requires monitoring of target vegetation communities. 
 
-RMNP and the U.S. Geological Survey (USGS) developed a vegetation monitoring program focused on EVMP goals. Monitoring sites were established and baseline data collected from 2006-2009 in core winter range aspen, willow, and upland communities. sites have been annually sampled  vegetation offtake by ungulates and various structural and compositional metrics have been montoeied on a five-year basis, with a second five-year-round of sampling completed in 2018. 
+RMNP and the U.S. Geological Survey (USGS) developed a vegetation monitoring program focused on EVMP goals (Zeigenfuss et al. 2011
+). Monitoring sites were established and baseline data collected from 2006-2009 in core winter range aspen, willow, and upland communities. Subsets of sites have been annually sampled for vegetation offtake by ungulates, while more intensive and extensive sampling has been done on a five-year basis. A second five-year-round of sampling was completed in 2018 and is the focus of this document. Preliminary analyses of data collected in willow, aspen, and upland herbaceous plots in sites on the east side of RMNP and the Kawunechee Valley are presented. 
 
-This document presents analyses of these data, evaluating datasets collected in willow, aspen, and upland herbaceous plots in core and non-core elk winter range sites on the east side of RMNP and the Kawunechee Valley. Data describing stem count, diameter, and shrub height over time are analyzed in relation to factors including study site location and whether plots were in fenced or unfenced areas. In addition, analyses evaluate effects of a 2012 wildfire that burned over Moraine Park. This event provided a unique opportunity to study willow and aspen recovery after fire in both grazed and ungrazed conditions. EVMP measurements are focused on the core elk winter range, but non-core areas are also included. Data collected in the Kawuneeche Valley (primarily summer range) was collected to provide information on this critical and changing area of the park.
+In addition, we evaluate the effects of the 2012 Fern Lake wildfire that burned through Moraine Park providing a unique opportunity to study willow and aspen recovery after fire in both grazed and ungrazed conditions. EVMP measurements are focused on the core elk winter range, but non-core areas are also included. Data collected in the Kawuneeche Valley (primarily summer range) was collected to provide information on this critical and changing area of the park.
 
 
 ```{r, eval=FALSE}
@@ -163,22 +164,19 @@ This document presents analyses of these data, evaluating datasets collected in 
 
 # Methods
 
-## Vegetation Collection
+## Data collection
 
-This report analyzes data from the first 10 years of monitoring aspart of the EVMP and will be used to assess progress towards program goals. Monitoring in the EVMP program is focused on assessing several community attributes (Zeigenfuss et al. 2011) including:
+This report analyzes data from the first 10 years of EVMP monitoring to help assess progress towards program goals. Monitoring in the EVMP program is focused on assessing several community attributes (Zeigenfuss et al. 2011) including:
 
-1. Vegetation offtake by herbivores in riparian shrub (primarily willow) and upland herbaceous communities, assessed through annual subsampling of sites  
-2. Willow height and cover resampled every 5 years  
+1. Vegetation offtake by herbivores in riparian shrub (primarily willow, _Salix_ spp.) and upland herbaceous communities assessed through annual subsampling of sites  
+2. Willow height and cover resampled every 5 years across plots  
 3. Aspen stem density and stem size distribution, assessed every 5 years through a full resampling of sites. 
 
-Protocols detailed in the EVMP monitoring plan (Zeigenfuss et al. 2011) were used to collect vegetation data at study plots. A round of baseline measurements collected between 2006–2009 were made, with RMNP staff collecting subsequent data. A subsample of plots were visited annually beginning in 2007 for upland plots and 2009 willow plots and conducted through 2018. Offtake measures on willows were usually made in May and June, but delayed to mid-July in some years due to weather. Other variables were assessed the year of plot establishment and during June through September in 2013 and 2018.
+Protocols detailed in the EVMP monitoring plan were used to collect vegetation data at study plots (Zeigenfuss et al. 2011). Baseline measurements were collected from 2006–2009, with RMNP staff collecting subsequent data. Willow offtake measurements were usually made in May and June, but were delayed in some years to as late as mid-July due to weather.
 
-Upland line intercept transect data were collected in core upland (UC) and upland noncore areas (UNC) along a 30m transect line. Observations included the presence of tracks, scat, burrows, plant damage, or browse. In addition, observation of animal sign were made for elk, deer, moose, ground squirrells, tent catippilars, big horn sheep, and raptors.
+Upland line intercept transect data were collected in core upland (UC) and upland noncore areas (UNC) along a 30m transect line. Observations included the presence of tracks, scat, burrows, plant damage, or browse. In addition, observation of animal sign were made for elk, deer, moose, and other notable species.
 
-[add more...]
-
-
-```{r, eval=FALSE}
+```{r, eval=FALSE, echo=FALSE}
 
 # Create a cache of workbook tabs as CSV files
 ## cache csv. This creates a csv cache of each tab in the workbook.
@@ -200,14 +198,12 @@ path %>%
 
 
 ```{r}
-##### READ IN CSV FILES FROM 
-## list all the csv - as vector
-# csv.all <- fs::dir_ls("data/EVMP_data/csv",glob = "*.csv")
+##### READ IN CSV FILES EXPORTED FROM EXCEL TABS 
+## all the csv names and paths as list column
 
-## all the csv names and paths as tibble column
 csv.all <- tibble(ffname = fs::dir_ls("data/EVMP_data/csv",glob = "*.csv"))
 
-## list column approach. purrr to read csv into list column
+## purrr to read csv into list column
 csv.all.lc <- csv.all %>% 
   mutate(data = map(ffname,read_csv))
 
@@ -218,7 +214,7 @@ csv.all.lc <- csv.all %>%
 
 ```{r}
 #### maps
-### The following code extracts out the most recent 'site info' file, creates a sf object for plotting and further spatial analysis. Note this is different than below where a different source spreadsheet provided by the park is evaluated. Here, its the info tab within the spreadsheet
+### The following code extracts out the most recent 'site info' file, creates a sf object for plotting and further spatial analysis. Note this is different than below where a different file ('VEG_SITES_MSTR_DATABASE.xlsx') provided by the park is interogated. Here, it's the 'site info' tab within the spreadsheet
 
 # site info
 sinfo <- csv.all.lc %>%
@@ -264,12 +260,9 @@ sinfo.df <- sinfo.df %>%
                        TRUE ~ as.character(SITE_ID))
   )
 
-
-
-
 ```
 
-```{r, site_info_01}
+```{r site_info_02}
 # define path to the veg site master file
 path.si <- ("data/EVMP_data/VEG_SITES_MSTR_DATABASE.xlsx")
 
@@ -334,17 +327,6 @@ site.info.all <- site.info.all %>%
                           )
          ) 
 
-### Tables 
-# Problem records lacking coordinates 
-site.info.all %>% 
-  dplyr::na_if(.,"NA") %>%  # nice clean way of replacing all the text NA with real NA
-  filter(!is.na(UTM_E_NAD83)) %>% # only keeping points with coordinates
-  filter(!is.na(UTM_N_NAD83)) %>%
-  filter(!is.na(REMOVED)) %>% # filter out plots notes as "removed"
-  select(-WILDERNESS) %>% 
-  gt::gt() %>%
-  tab_header(title = "EVMP plots listed as 'Removed' or lacking valid coordinates")
-
 # site.info.all %>% 
 #   dplyr::na_if(.,"NA") %>%  # nice clean way of replacing all the text NA with real NA
 #   filter(!is.na(UTM_E_NAD83)) %>% # only keeping points with coordinates
@@ -361,16 +343,26 @@ site.info.clean <- site.info.all %>%
   dplyr::na_if(.,"NA") %>%  # replacing all the text NA with real NA
   filter(!is.na(UTM_E_NAD83)) %>% # only keeping points with coordinates
   filter(!is.na(UTM_N_NAD83)) %>% 
-  filter(is.na(REMOVED)) 
+  filter(is.na(REMOVED)) %>% 
+  filter(SITE_ID != "WK03-R")
+
+## I discovered further down that WK03-R was retained as it is NA for the 'REMOVED' attribute.
+## I'm manually removing now, but need to clarify with NPS
 
 # UNC61 is "NA" for fenced. Making fenced = FALSE
 # reclass the FENCED == NA to FENCED == N 
 # reclass the BURNED == NA to BURNED == N 
+
 site.info.clean <- site.info.clean %>% 
-  mutate(FENCED = if_else(is.na(FENCED),
-                          "N", FENCED)) %>% 
-  mutate(BURNED = if_else(is.na(BURNED),
-                          "N", BURNED))
+  mutate(FENCED = case_when(is.na(FENCED) ~ "N", 
+                            TRUE ~ as.character(FENCED)))
+
+## Reclassify 'NA' for fenced to 'N'
+# csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>% 
+#   mutate(FENCED = case_when(is.na(FENCED) ~ "N", 
+#                             TRUE ~ as.character(FENCED))) %>%  
+#   mutate(BURNED = if_else(is.na(BURNED),
+#                           "N", BURNED))
 
 # UNC61
 
@@ -381,7 +373,7 @@ site.info.clean <- site.info.clean %>%
 
 ## read in the file with the manually attributed valley type field (this was not fully filled in in the provided data)
 ## I attributed the empty values visually in ArcGIS.  
-vt <- st_read("./data/EVMP_derived/site_info_all_sf.shp")
+vt <- st_read("./data/EVMP_derived/site_info_all_sf.shp", quiet = TRUE)
 vt <- vt %>% 
   rename(SITE_ID = SITE_) %>% 
   rename(VALLEY = VALLE) %>% 
@@ -436,7 +428,24 @@ site.info.clean <-
 
 ```
 
+```{r}
+### Tables 
+# Problem records lacking coordinates 
+site.info.all %>% 
+  dplyr::na_if(.,"NA") %>%  # nice clean way of replacing all the text NA with real NA
+  filter(!is.na(UTM_E_NAD83)) %>% # only keeping points with coordinates
+  filter(!is.na(UTM_N_NAD83)) %>%
+  filter(!is.na(REMOVED)) %>% # filter out plots notes as "removed"
+  select(-WILDERNESS) %>% 
+  # tally()
+  gt::gt() %>%
+  tab_header(title = md("**EVMP plots listed as 'Removed'**"))
+```
 
+A total of 15 plots were removed from subsequent steps. Confirm the final status of these records. 
+
+
+**Site information:**
 ```{r}
 ## create some tables
 
@@ -507,27 +516,6 @@ site.info.clean.sf <- site.info.clean %>%
 
 ```
 
-```{r, eval = FALSE}
-## ggmap: us
-## us <- c(left = -125, bottom = 25.75, right = -67, top = 49)
-## get_stamenmap(us, zoom = 5, maptype = "toner-lite") %>% ggmap() 
-
-us <- c(left = -105.99, bottom = 40.134, right = -105.4, top = 40.55)
-get_stamenmap(us, zoom = 10, maptype = "toner-lite") %>% ggmap() 
-
-## google maps just wants the center
-rmnpc <- c(-105.696185, 40.304694)
-
-ggmap::get_googlemap(center = rmnpc, zoom = 10, scale = 2, format = "png8", maptype = "terrain")
-
-ggmap::get_googlemap(c(-97.14667, 31.5493))
-ggmap(map)
-40.288983, -105.682452
-
-get_googlemap(us, zoom = 10, maptype = "roadmap") %>% ggmap() 
-
-```
-
 ```{r, eval=FALSE}
 ## gt: grouped example
 
@@ -557,15 +545,6 @@ gt.siteinfo %>%
 
 ```
 
-### Map of Kawuneeche Valley EVMP sites
-
-```{r}
-
-site.info.clean.sf %>% 
-  filter(VALLEY == "KV") %>% 
-  mapview::mapview(., zcol = 'pType')
-
-```
 
 ```{r, eval=FALSE, echo=FALSE}
 ## list column approach
@@ -591,8 +570,10 @@ site.info.clean.sf.nest %>%
 
 ```
 
+
+```{r, eval = FALSE, echo = FALSE}
 ### Raw data in "Site info" tabs from RMNP 
-```{r}
+
 site.info.willow %>% 
   DT::datatable()
 
@@ -610,11 +591,52 @@ site.info.upland %>%
 
 ## Study Area
 
-Change basemap or pan and zoom.  
+Excluding plots removed from the data set due to issues like the 2013 flood, their were 241 plots in total. Aproximately 49% (n=118) were willow plots, followed in abundance by aspen and upland plots: 
 
-#### Overview Map of EVMP sampling
+```{r}
+site.info.clean.sf %>%
+  as_tibble() %>%
+  filter(!is.na(VALLEY)) %>%
+  tabyl(pType) %>% 
+  rename('Plot type' = pType) %>% 
+  gt::gt() %>% 
+  fmt_percent(
+    columns = vars(percent),
+    decimals = 1
+    )
+```
+
+Plots were most anundant in Moraine Park, followed by Horseshoe Park and Upper Beaver Meadows.
+
+```{r}
+site.info.clean.sf %>%
+  as_tibble() %>% 
+  filter(!is.na(VALLEY)) %>%
+  tabyl(valley_full) %>%
+  arrange(-n) %>% 
+  rename('Location' = valley_full) %>%
+  gt::gt() %>% 
+  fmt_percent(
+    columns = vars(percent),
+    decimals = 1
+    )
+```
+
+
+```{r}
+site.info.clean.sf %>%
+  as_tibble() %>% 
+  filter(!is.na(VALLEY)) %>%
+  tabyl(valley_full, pType) %>%
+  rename('Location' = valley_full) %>%
+  arrange(-willow) %>% 
+  gt::gt() 
+
+```
 
 #### Map of fenced and unfenced areas - all plots
+
+Change basemap or pan and zoom.  
 
 ```{r}
 # mapviewOptions(basemaps = c("Esri.WorldImagery"), # Esri.WorldShadedRelief "Esri.WorldImagery"
@@ -632,6 +654,35 @@ site.info.clean.sf %>%
 ```
 
 
+Approximately 21% of plots occur in fenced locations:
+
+```{r}
+site.info.clean.sf %>%
+  as_tibble() %>% 
+  filter(!is.na(VALLEY)) %>%
+  tabyl(FENCED) %>% 
+  gt::gt() %>%
+  fmt_percent(
+    columns = vars(percent),
+    decimals = 1
+    )
+
+```
+
+
+```{r}
+site.info.clean.sf %>%
+  as_tibble() %>% 
+  filter(!is.na(VALLEY)) %>%
+  tabyl(valley_full, FENCED) %>%
+  arrange(-(Y)) %>% 
+  rename('Location' = valley_full) %>%
+  gt::gt() %>% 
+  tab_header(title = "Fenced/non-fenced")
+
+```
+
+
 ```{r, eval=FALSE}
 # **Table of records with NA for "VALLEY"**
 
@@ -642,8 +693,6 @@ site.info.clean.sf %>%
 site.info.clean.sf %>% 
   filter(!is.na(VALLEY)) %>%
   datatable(caption = "Records missing VALLEY attributes.")
-
-
 ```
 
 
@@ -652,16 +701,41 @@ site.info.clean.sf %>%
 ```{r}
 
 site.info.clean.sf %>%
+  filter(EastWest == "East") %>%
   filter(!is.na(BURNED)) %>% 
-  filter(BURNED != 'N') %>%
-  filter(BURNED != 'Not burned') %>%
-  mapview(zcol='BURNED')
+  # filter(BURNED != 'N') %>%
+  # filter(BURNED != 'Not burned') %>%
+  mapview(zcol='BURNED',
+          map.types = c("Esri.WorldImagery", "Esri.WorldTopoMap"))
 
-# >What is "N Y"?  
-# >How does "Y" compare to the other, more specific classes?
 ```
 
-#### Count of features by valley
+
+#### Map of Kawuneeche Valley EVMP sites
+
+```{r}
+
+site.info.clean.sf %>% 
+  filter(VALLEY == "KV") %>% 
+  mapview::mapview(., zcol = 'pType',
+                  map.types = c("Esri.WorldImagery", "Esri.WorldTopoMap"))
+
+```
+
+A total of 17 plots occur in the Kawuneeche Valley: 
+```{r}
+
+site.info.clean.sf %>% 
+  as_tibble() %>% 
+  filter(VALLEY == "KV") %>%
+  select(-c(geometry, REMOVED, WILDERNESS, RANGE_TYPE)) %>%
+  rename('Valley code' = VALLEY) %>%
+  rename('Valley name' = valley_full) %>% 
+  gt::gt()
+
+```
+
+
 
 ```{r}
 ### note this is still missing as na
@@ -679,34 +753,37 @@ site.info.clean.sf %>%
   # scale_x_log10() +
   theme_minimal() +
   coord_flip() +
-  labs(x="Valley", y = "Count", title = "Count of EVMP sampling sites")
+  labs(x="Valley", y = "Count", title = "Count of EVMP sampling sites by location")
   
 # ggplotly(plotly1)
 ```
 
 
 
-#### Counts by "range type"
+#### Counts by location in Park
 
 ```{r}
 
 ##
 pl.cnt1 <- site.info.clean.sf %>%
-  group_by(valley_full) %>% 
+  group_by(pType, valley_full) %>% 
   tally() %>% 
   # na.omit() %>%  ### NEED TO ATTRIBUTE THESE. BUT FOR TESTING....
   ggplot(aes(reorder(valley_full, n),n)) +
   # ggplot( aes(VALLEY, n, size = n, color=VALLEY)) +
-  geom_point(color="white", size = 6) +
+  # geom_point(color="white", size = 6) +
+  geom_point(aes(color = pType), size = 6) +
   geom_pointrange(ymin=0, aes(ymax=n)) +
-   geom_point(color="ivory3", size = 10) +
+  geom_point(aes(color=pType), size = 8) +
+  # geom_point(color="ivory3", size = 10) +
   geom_text(aes(label=n), size=4) +
   # scale_x_log10() +
   theme_minimal() +
   labs(x="", y = "Count", title = "Count of EVMP sampling sites") +
-  coord_flip()
+  coord_flip() +
+  theme(legend.position = "bottom")
 
-# pl.cnt1
+pl.cnt1
 # ggsave("./output/figures/tally_plot_by_valley_type.png", width = 7, height = 5)
 
 
@@ -723,15 +800,25 @@ pl.cnt2 <- site.info.clean.sf %>%
   theme_minimal() +
   # coord_flip() +
   theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
-  labs(x="", y = "Count", title = "Count of EVMP sampling sites by 'Range type'")
+  labs(x="", y = "Count", title = "")
 
-# pl.cnt2
+pl.cnt2
 # ggsave("./output/figures/tally_plot_by_rangeType.png", width = 7, height = 5)
 
 
 pl.cnt1.cnt2 <- cowplot::plot_grid(pl.cnt1, pl.cnt2, labels = "AUTO")
+# pl.cnt1.cnt2
 
-# ggsave(plot = pl.cnt1.cnt2, filename = "./output/figures/twoPanel_valleyCnt_rangeCnt.png", width = 8, height = 5, dpi = 300)
+# ggsave(plot = pl.cnt1.cnt2, filename = "./output/figures/twoPanel_valleyCnt_rangeCnt2.png", width = 8, height = 5, dpi = 300)
+
+
+site.info.clean.sf %>%
+  as_tibble() %>% 
+  select(-geometry) %>% 
+  group_by(RANGE_TYPE, pType) %>% 
+  tally() %>% 
+  gt()
+
 
 ```
 
@@ -739,40 +826,37 @@ pl.cnt1.cnt2 <- cowplot::plot_grid(pl.cnt1, pl.cnt2, labels = "AUTO")
 
 ```{r, eval=FALSE}
 #### Records with "NA" for "VALLEY"
-site.info.clean.sf %>%
-  filter(is.na(VALLEY)) %>% 
-  mapview()
+# site.info.clean.sf %>%
+#   filter(is.na(VALLEY)) %>% 
+#   mapview()
 
 site.info.clean.sf %>%
-  filter(is.na(VALLEY)) %>%
-  as.tibble() %>% 
+  filter(!is.na(VALLEY)) %>%
+  as_tibble() %>% 
   datatable()
 ## cleaned above so none...
 ```
 
-
-
-#### Counts of fenced and unfenced
+#### Counts of plots in fenced and unfenced contexts
 
 ```{r}
 
-
-site.info.clean.sf %>%
-  group_by(FENCED,pType) %>%
-  tally() %>%
-  # na.omit() %>%  ### NEED TO ATTRIBUTE THESE. BUT FOR TESTING....
-  ggplot(aes(reorder(FENCED, n),n)) +
-  # ggplot( aes(VALLEY, n, size = n, color=VALLEY)) +
-  geom_point(color="white", size = 6) +
-  geom_pointrange(ymin=0, aes(ymax=n)) +
-   geom_point(color="ivory3", size = 10) +
-  geom_text(aes(label=n), size=6) +
-  # scale_x_log10() +
-  theme_bw() +
-  # theme_minimal() +
-  coord_flip() +
-  labs(y="Count", x = "Range type", title = "Count of EVMP sampling sites by 'Range type'") +
-  facet_wrap(~pType)
+# site.info.clean.sf %>%
+#   group_by(FENCED,pType) %>%
+#   tally() %>%
+#   # na.omit() %>%  ### NEED TO ATTRIBUTE THESE. BUT FOR TESTING....
+#   ggplot(aes(reorder(FENCED, n),n)) +
+#   # ggplot( aes(VALLEY, n, size = n, color=VALLEY)) +
+#   geom_point(color="white", size = 6) +
+#   geom_pointrange(ymin=0, aes(ymax=n)) +
+#    geom_point(color="ivory3", size = 10) +
+#   geom_text(aes(label=n), size=6) +
+#   # scale_x_log10() +
+#   theme_bw() +
+#   # theme_minimal() +
+#   coord_flip() +
+#   labs(y="Count", x = "Range type", title = "Count of EVMP sampling sites by 'Range type'") +
+#   facet_wrap(~pType)
 
 pl.hm1 <- site.info.clean.sf %>%
   filter(!is.na(FENCED)) %>%
@@ -944,13 +1028,13 @@ site.info.clean.sf.nest %>%
 
 ```
 
-## Data cleaning and wrangling
-
-Raw data files provided by RMNP in October 2018 were processed using functions in various data manipulation and visualizations packages in the R statistical package.  
-
-Raw data were provided as 4 multi-tabbed Excel files:   
+Raw data files entered by RMNP staff from field data forms were processed using functions in in the R statistical package. Raw data were provided as 4 Excel files, with data split by year and type into various tabs. Data were consolidated and to facilitate cleaning and comparisons.      
 
 ```{r}
+### Data cleaning and wrangling
+
+
+
 # list of files, tidyverse approach: 
 # file.listing <- dir_info(path = "./data/EVMP_data/TenYearReview", recurse = TRUE) %>%
 #   filter(type == "file", permissions == "u+r", size > "10KB") %>%
@@ -966,16 +1050,14 @@ file.listing <- list.files(path = "./data/EVMP_data/TenYearReview") %>%
   select(value) %>% 
   rename(fileName = value)
 
-knitr::kable(file.listing, rownames = FALSE, row.names = FALSE, col.names = "file name")
+knitr::kable(file.listing, rownames = FALSE, row.names = FALSE, col.names = "file name", caption = "Raw files provided by RMNP staff.")
 
 ```
 
 
-
-### Willow cumulative data baseline through 2018
-
 ```{r}
-#### There are two duplicate sets of files, one with a 'z' in the name, one without, but otherwise seeming the same. In this chunk, picking one set (the zed set)
+### Willow cumulative data baseline through 2018
+#### There are two duplicate sets of files, one with a 'z' in the name, one without, but otherwise the same. In this chunk, picking one set (the zed set)
 
 csv.all.lc <- csv.all.lc %>% 
   filter(str_detect(ffname, "z")) 
@@ -1013,7 +1095,7 @@ csv.all.lc <- csv.all.lc %>%
 csv.all.lc %>% 
   unnest(field_names) %>% 
   distinct(file_name_abr,field_names) %>% 
-  datatable(rownames = FALSE, caption = "Distinct field names acrosss all csv files")
+  datatable(rownames = FALSE, caption = "Distinct field names acrosss all csv files correponding to tabs in master workbooks provided by RMNP.")
 
 #### Distinct field names via unnest()
 # csv.all.lc %>%
@@ -1023,16 +1105,14 @@ csv.all.lc %>%
 
 ```
 
-
-#### Line intercept
-
->Distinct variable names across all input csv files for just line intercept plot
-
 ```{r}
 ## just line intercept
+
+#### Line intercept
 csv.all.lc.li <- csv.all.lc %>% 
   filter(vType == "Line_int") 
 
+# Distinct variable names across all input csv files for just line intercept plot
 # csv.all.lc.li %>% 
 #   unnest(field_names) %>% 
 #   distinct(file_name_abr,field_names) %>% 
@@ -1044,8 +1124,7 @@ csv.all.lc.li <- csv.all.lc %>%
 
 ```{r}
 #### FUNCTIONS 
-#### Select multiple columns. Note some key interecept ones don't work!
-# need to figure out  
+#### Select multiple columns. To combine, need the same fields to be present in each tab.
 
 filtFunSel <- function(x){
   x %>% dplyr::select(c(DATE,
@@ -1062,14 +1141,9 @@ filtFunSel <- function(x){
                       GENUS))
 }
 
-# now create new list column with the selected rows as specfied in the function
+# create new list column with the selected rows as specfied in the function
 csv.all.lc.li <- csv.all.lc.li %>% 
   mutate(data.sel = map(.x = data, filtFunSel))
-
-# csv.all.lc.li %>% 
-#   unnest(field_names) %>% 
-#   distinct(field_names)%>% 
-#   datapasta::dpasta()
 
 ## purrr ninja move:
 csv.all.lc.li.df <- csv.all.lc.li %>% 
@@ -1077,7 +1151,6 @@ csv.all.lc.li.df <- csv.all.lc.li %>%
   map(filtFunSel) %>% 
   reduce(.f = rbind)
 # yay, pluck()!
-
 
 ## Why can't anything be simple....
 # just discovered that SITE_ID columns are NOT CONSISTENTLY NAMED
@@ -1124,17 +1197,24 @@ csv.all.lc.li.df <- csv.all.lc.li.df %>%
   )
 
 
-## join in site info from the master plot list
+## join in additional site info from the master plot list
 csv.all.lc.li.df <- left_join(csv.all.lc.li.df, site.info.clean, by = 'SITE_ID')
 
 ```
 
 ```{r}
-##
+## add fields/convert types 
 csv.all.lc.li.df <- csv.all.lc.li.df %>%
   mutate(DATE = as.Date(DATE)) %>% 
   mutate(yr = as.factor(year(DATE))) %>%
   mutate(mo = month(DATE))
+
+## convert "NA" for fencing to "N". CHECK WITH PARK ON THIS
+
+csv.all.lc.li.df <- csv.all.lc.li.df %>% 
+  mutate(FENCED = case_when(is.na(FENCED) ~ "N",
+                            TRUE ~ as.character(FENCED)))
+
 
 # csv.all.lc.li.df %>% 
 #   filter(!is.na(MAX_HEIGHT_CM)) %>%
@@ -1144,7 +1224,7 @@ csv.all.lc.li.df <- csv.all.lc.li.df %>%
 
 ```
 
-# hhhhhh
+
 ```{r}
 
 ## Create a spatial lookup table for joining site info [in workbook tab].
@@ -1191,12 +1271,11 @@ sp.lu <- sp.lu %>%
 
 ```
 
-```{r}
+```{r, eval=FALSE}
 
 csv.all.lc.li.df %>% 
   skimr::skim() %>% 
   kable(caption = "Basic information on 'line intercept' imported dataset.")
-
 
 ```
 
@@ -1204,14 +1283,7 @@ csv.all.lc.li.df %>%
 
 ```{r, eval=FALSE, echo=FALSE}
 
-#  NOT run. Work in in progress
-
-csv.all.lc.li.df %>% 
-  filter(yr == 2013 | yr == 2018) %>% 
-  mutate(yr = as.double(yr)) %>%
-  ggplot(aes(yr, MAX_HEIGHT_CM)) +
-  geom_point() +
-  geom_line(color="black", aes(x=yr, y = MAX_HEIGHT_CM))
+#  NOT run. A work in in progress
 
 ## filter to 2013 and 2018
 csv.all.lc.li.df %>% 
@@ -1233,15 +1305,11 @@ plotly::ggplotly()
 ```
 
 
-
-#### Macroplot
-
-
 ```{r}
+#### Macroplot
 csv.all.lc.mcro <- csv.all.lc %>% 
   filter(vType == "Macroplot") 
 
-#
 # csv.all.lc.mcro %>%
 #   # unnest(data)
 #   unnest(field_names) %>% 
@@ -1263,7 +1331,6 @@ csv.all.lc.mcro %>%
 
 
 ```{r}
-
 FunSelMacro <- function(x){
   x %>% dplyr::select(c(DATE,
                       SITE_TYPE,
@@ -1330,16 +1397,15 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
                        TRUE ~ as.character(SITE_ID))
   )
 
-
 ```
 
-```{r}
+```{r, echo=FALSE}
 csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>% 
   mutate(yr = year(DATE)) %>% 
   mutate(mo = lubridate::month(DATE))
 ```
 
-```{r}
+```{r, echo=FALSE}
 
 ### join in the spatial/site info
 csv.all.lc.mcro.df <- left_join(csv.all.lc.mcro.df, sp.lu, by = "SITE_ID")
@@ -1347,20 +1413,6 @@ csv.all.lc.mcro.df <- left_join(csv.all.lc.mcro.df, sp.lu, by = "SITE_ID")
 ```
 
 
-
-
-```{r, eval=FALSE}
-# The following plots are used to assess patterns of "missingness" in data sets. 
-# 
-# **Missing data: line intercept by year.**
-
-#### Missing observations across variables and years
-naniar::vis_miss(csv.all.lc.li.df)
-
-```
-
-
-#### Missingness across years 
 ```{r}
 #### Missingness across years 
 mplot1 <- csv.all.lc.li.df %>% 
@@ -1373,7 +1425,6 @@ mplot1 <- csv.all.lc.li.df %>%
 mplot1
 
 ```
-
 
 
 ```{r, eval=FALSE}
@@ -1439,11 +1490,14 @@ csv.all.lc.mcro %>%
 
 ```
 
-# macro here
+
 ```{r, eval=TRUE}
+
+# Macroplot processing
 # use a custom function to select columns before rbinding
 # note these are different field names than li that need to be matched
 # this function snags only those fields in common between all of the tabs
+
 FunSelMcro <- function(x){
   x %>% dplyr::select(c(CANOPY_DIA_1_CM, 
                         CANOPY_DIA_2_CM, 
@@ -1545,9 +1599,6 @@ csv.all.lc.mcro.df %>%
 # more help from NPS to resolve
 
 ## read in lu table
-
-
-
 ```
 
 ```{r}
@@ -1562,10 +1613,15 @@ spp.lu <- read_csv("./data/EVMP_derived/species_code_lu.csv")
 
 ## problems with 'Fenced' status. Many NA
 ## Presuming here that all NA are not fenced -- CONFIRM WITH NPS
-csv.all.lc.mcro.df %>% 
-  group_by(FENCED) %>% 
-  tally()
 
+## Reclassify 'NA' for fenced to 'N'
+csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>% 
+  mutate(FENCED = case_when(is.na(FENCED) ~ "N", 
+                            TRUE ~ as.character(FENCED))) 
+
+# csv.all.lc.mcro.df %>% 
+#   group_by(SITE_ID, FENCED) %>% 
+#   tally()
 
 ```
 
@@ -1578,84 +1634,82 @@ csv.all.lc.mcro.df %>%
 
 # Results 
 
-### Macroplot
-
-
-```{r}
-# calculate the average canopy diameter
-csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>% 
-  mutate(CANOPY_DIAM_AVG = (CANOPY_DIA_1_CM + CANOPY_DIA_2_CM)/2) 
-
-### canopy diameter by species
-mcro.canopy.diam.sum <- csv.all.lc.mcro.df %>%
-  group_by(SITE_ID, yr, SPECIES_CODE, valley_full, FENCED) %>% 
-  summarise(cano_ht_med = median(CANOPY_DIAM_AVG)) 
-
-mcro.canopy.diam.sum %>%
-  ungroup() %>% 
-  ggplot(aes(yr, cano_ht_med)) + 
-  geom_line(aes(color = SPECIES_CODE)) +
-  facet_grid(FENCED~valley_full)
-  
-```
-
-
-### Line-intercept data
+## Willow line-intercept data
 
 ### Shrub height [line intercept]
 
-> From discussions with HA in the field, the orientation of line-intercept transects may not have had a consistent orientation from sampling interval to interval.
-
-### Master excel file: Willow_Offtake_Data_2009_Through_2018.xlsx
-
-```{r}
-# Looking for baseline data?  	
-# 	Baseline data was collected over 2 seasons: 2008 and 2009.  
-# 	The baseline data is located in an Excel spreadsheet at:
-# 	EVMP > Vegetation > Analysis > 5 Year Review > Baseline Data from Linda
-# 	
-# Where is the Kawuneeche Baseline data?	
-# 	The Kawuneeche Baseline data is in a worksheet in the Baseline.xls workbook as described above.    
-# 	The Kawuneeche willow plots (KW 1 thru 8) were established in August/Sept 2011, just prior to the installation of the exclosure near Timber Creek CG.
-# 	
-# KEY	
-# SITE_TYPE (WC=Willow core, WNC= Willow noncore, WK= Willow Kawuneeche Valley)	
-# COLOR_OF_STEM_MARKER (BR=brown, G=green, BL=black, Y=yellow, GR=gray, BR-N=brown notched, W=white)	
-# NUMBER_BROWSED_CAG_SHOOTS (# Browsed Current Annual Growth Shoots)	
-# NUMBER_UNBROWSED_CAG_SHOOTS (# Unbrowsed Current Annual Growth Shoots)	
-# BROWSED_OR_UNBROWSED (Measured shoot browsed (B) or unbrowsed (U)?)	
-# ADDITIONAL_SHOOT (Additional shoot 1=yes, 0=no)	
-
+```{r, echo=FALSE}
+# > From discussions with HA in the field, the orientation of line-intercept transects may not have had a consistent orientation from sampling interval to interval.
 ```
-
-Baseline data was collected over 2 seasons: 2008 and 2009.  
-The baseline data is located in an Excel spreadsheet at:
-EVMP > Vegetation > Analysis > 5 Year Review > Baseline Data from Linda
-	
-The Kawuneeche Baseline data is in a worksheet in the Baseline.xls workbook as described above.    
-The Kawuneeche willow plots (KW 1 thru 8) were established in August/Sept 2011, just prior to the installation of the exclosure near Timber Creek CG.
-	
-Variable Key:
-	
-SITE_TYPE (WC=Willow core, WNC= Willow noncore, WK= Willow Kawuneeche Valley)	
-COLOR_OF_STEM_MARKER: (BR=brown, G=green, BL=black, Y=yellow, GR=gray, BR-N=brown notched, W=white)	
-NUMBER_BROWSED_CAG_SHOOTS: (# Browsed Current Annual Growth Shoots)	
-NUMBER_UNBROWSED_CAG_SHOOTS: (# Unbrowsed Current Annual Growth Shoots)	
-BROWSED_OR_UNBROWSED: (Measured shoot browsed (B) or unbrowsed (U)?)	
-ADDITIONAL_SHOOT: Additional shoot 1=yes, 0=no	
-
-```{r}
-## export to 
-```
-
-### Master excel file: Upland_Line_Intercept_2007_2013_2018.xlsx
-
-
 
 **Max shrub height in-line intercept: Core winter range**
+```{r}
+csv.all.lc.li.df %>% 
+  filter(SITE_TYPE != "WNC") %>% 
+  mutate(yr = as.character(yr)) %>%
+  # mutate(yr = as.integer(yr)) %>%
+  # mutate(yr = as.character(yr)) %>% 
+  # filter(yr == 2013 | yr == 2018) %>%
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  # mutate(yr = as.double(yr)) %>%
+  ggplot(aes(yr, MAX_HEIGHT_CM)) +
+  geom_boxplot(aes(fill = FENCED), outlier.shape = NA) +
+  ylim(0,300) +
+  labs(x="Year", y= "Height (cm)", title = "Maximum shrub height", subtitle = "All shrub species in line intercept plots") +
+  theme_bw() +
+  theme(axis.text.x=element_text(angle = 45, hjust = 1)) +
+  facet_grid(.~SITE_TYPE)
+
+# ggsave("./output/figures_exported/all_shrub_LI_boxplot01.png", width = 6.5, height = 4.875)
+
+```
 
 ```{r}
-#Shrub Line Intercept Datataset 
+csv.all.lc.li.df %>% 
+  distinct(SPECIES_CODE) %>% gt::gt()
+
+## yr,FENCED, SPECIES_CODE
+tabl.li.meanht1 <- csv.all.lc.li.df %>% 
+  # distinct(SITE_TYPE)
+  # filter(SITE_TYPE != "WNC") %>%
+  filter(SITE_TYPE == "WC") %>% 
+  mutate(yr = as.character(yr)) %>%
+  # mutate(yr = as.integer(yr)) %>%
+  # mutate(yr = as.character(yr)) %>% 
+  # filter(yr == 2013 | yr == 2018) %>%
+  filter(SPECIES_CODE != "NONE" & SPECIES_CODE != "SAXX") %>% 
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  group_by(yr,FENCED, SPECIES_CODE) %>% 
+  summarise(mean.max.ht = round(mean(MAX_HEIGHT_CM, na.rm=TRUE),0)) %>% 
+  pivot_wider(names_from = yr, values_from = mean.max.ht)
+  
+tabl.li.meanht1 %>% 
+  datatable()
+
+tabl.li.meanht1 %>% 
+  gt::gt()
+
+```
+
+```{r}
+##
+csv.all.lc.li.df %>% 
+  filter(!is.na(FENCED)) %>% 
+  filter(!is.na(MAX_HEIGHT_CM)) %>%
+  # group_by(yr,SITE_TYPE, FENCED, SITE_ID, SPECIES_CODE) %>%
+  filter(SITE_TYPE == "WC") %>% 
+  group_by(yr,SITE_TYPE, FENCED, SPECIES_CODE) %>%
+  summarise(mean.max.ht = round(mean(MAX_HEIGHT_CM, na.rm=TRUE),0)) %>% 
+  filter(FENCED != "Y_but_fence_down_since_2013") %>% 
+  filter(SPECIES_CODE != "SAXX") %>% 
+  gt::gt()
+
+
+```
+
+
+```{r}
+# Shrub Line Intercept Datataset 
 
 csv.all.lc.li.df %>% 
   filter(!is.na(FENCED)) %>% 
@@ -1730,11 +1784,11 @@ csv.all.lc.li.df %>%
   facet_grid(FENCED~SPECIES_CODE)
   # facet_wrap(~SPECIES_CODE, ncol= 5)
 
+# >Need to determine how to properly deal with "NA" and "Y_but_fence_down_since_2013" in "FENCED" field.
+
 ```
 
->Need to determine how to properly deal with "NA" and "Y_but_fence_down_since_2013" in "FENCED" field.
-
-#### All shrub species and years by type
+### All shrub species and years by type
 
 ```{r}
 csv.all.lc.li.df %>% 
@@ -1782,7 +1836,7 @@ csv.all.lc.li.df %>%
 
 Note that because of panel design, different set of plots may be represented in different years.
 
-#### Willow height: _Salix moniticola_ 
+_Salix moniticola_ 
 ```{r}
 
 ## Panel plot: Willow species
@@ -1817,25 +1871,30 @@ csv.all.lc.li.df %>%
 
 ```
 
-#### Willow height: _Salix planifolia_
+_Salix planifolia_
 
 ```{r}
 ## another species: SAPL
 csv.all.lc.li.df %>%
   filter(yr !=2009 & yr != 2015 & yr !=2017) %>%
+  # filter(yr == 2018) %>%
   # distinct(SPECIES_CODE)
-  filter(SITE_TYPE != "WK") %>% # leave out KW
-  filter(SPECIES_CODE == "SAPL") %>%   filter(!is.na(MAX_HEIGHT_CM)) %>%
+  filter(SITE_TYPE == "WC") %>%
+  # filter(SITE_TYPE != "WK") %>% # leave out KW
+  # filter(SPECIES_CODE == "SAPL") %>%
+  filter(SPECIES_CODE == "SAMO" | SPECIES_CODE == "SAGE") %>%
+  filter(!is.na(MAX_HEIGHT_CM)) %>%
   filter(str_detect(SPECIES_CODE, "^SA")) %>% 
   filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR"& SPECIES_CODE !="SAER") %>%
   filter(str_detect(SPECIES_CODE, "^SA")) %>%
   ggplot() +
-  ggridges::geom_density_ridges(aes(x = MAX_HEIGHT_CM, y =  yr, fill = SITE_TYPE), alpha = 0.45, ) +
+  ggridges::geom_density_ridges(aes(x = MAX_HEIGHT_CM, y =  yr, fill = FENCED), alpha = 0.45, ) +
   viridis::scale_fill_viridis(discrete = TRUE, option = "D") +
   theme_minimal() +
-  facet_wrap(~SITE_TYPE, ncol = 1) +
-  labs(x = "Max height (cm)", y = "Year", caption = "SAPL") +
-  coord_flip()
+  # facet_wrap(~SITE_TYPE, ncol = 1) +
+  facet_grid(SPECIES_CODE~SITE_TYPE) +
+  labs(x = "Max height (cm)", y = "Year", caption = "Line intercept data")
+
 
 ```
 
@@ -1855,7 +1914,6 @@ csv.all.lc.li.df %>%
   geom_point(aes(color = SPECIES_CODE))  +
   geom_line(aes(color = SPECIES_CODE))# +
   # geom_smooth(aes(color = SPECIES_CODE))
-
 
 ### Max shrub height
 
@@ -1902,7 +1960,7 @@ csv.all.lc.li.df %>%
 
 > Make assumption that "NA" for fenced is not fenced?
 
-### Core winter range: fenced vs unfenced
+#### Core winter range: fenced vs unfenced
 ```{r}
 ## will want to be sure interannual comparisons are made on using the right sets of points
 ## if, for example, 1/3 of 2018 plots were sampled in 2017, a comparison made on all of the 2018 data wouldn't make too much sense. 
@@ -1914,54 +1972,150 @@ csv.all.lc.li.df %>%
 # SABE        
 # SADR
 ##
+# csv.all.lc.li.df %>% 
+#   filter(!is.na(MAX_HEIGHT_CM)) %>%
+#   filter(str_detect(SPECIES_CODE, "^SA")) %>% 
+#   filter(FENCED == "N" | FENCED == "Y") %>% 
+#   filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER") %>%
+#   filter(SITE_TYPE == "WC") %>% 
+#   ggplot(aes(yr, MAX_HEIGHT_CM)) +
+#   geom_boxplot(aes(fill=FENCED), color = 'black') +
+#   scale_fill_viridis(discrete = TRUE) +
+#   # theme_minimal() +
+#   theme_minimal() +
+#   scale_fill_manual(values = c("ivory2","lightblue")) +
+#   labs(x = "Year", y = "Max height (cm)", fill = "Fenced?", caption = "All plots and Salix species")
+#   # labs(title = "Salix monticola maximum shrub height by year, fencing", x = "Year", y = "Species")
+
+## all willow spp  
 csv.all.lc.li.df %>% 
   filter(!is.na(MAX_HEIGHT_CM)) %>%
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>% 
   filter(str_detect(SPECIES_CODE, "^SA")) %>% 
   filter(FENCED == "N" | FENCED == "Y") %>% 
-  filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER") %>%
+  # filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER") %>%
   filter(SITE_TYPE == "WC") %>% 
   ggplot(aes(yr, MAX_HEIGHT_CM)) +
-  geom_boxplot(aes(fill=FENCED), color = 'black') +
-  scale_fill_viridis(discrete = TRUE) +
+  geom_boxplot(aes(fill=FENCED), color = 'black', outlier.shape = NA) +
+  # scale_fill_viridis(discrete = TRUE) +
   # theme_minimal() +
   theme_minimal() +
+  ylim(0, 350) +
   scale_fill_manual(values = c("ivory2","lightblue")) +
-  labs(x = "Year", y = "Max height (cm)", fill = "Fenced?", caption = "All plots and Salix species")
+  labs(x = "Year", y = "Max height (cm)", fill = "Fenced?", title = "Core Winter Range Plots: All Willow Species", caption = "Line intercept data")
   # labs(title = "Salix monticola maximum shrub height by year, fencing", x = "Year", y = "Species")
 
-
-
+# ggsave("./output/figures/WC_all_willow_boxplot01.png", width = 6, height = 4.5, dpi= 300)
 
 ```
 
-```{r, eval=FALSE}
-
-csv.all.lc.li.df %>% 
+```{r, eval=TRUE}
+## salix monitcola
+csv.all.lc.li.df %>%
+  filter(pType == "willow") %>% 
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
   filter(!is.na(MAX_HEIGHT_CM)) %>%
   filter(str_detect(SPECIES_CODE, "^SA")) %>% 
   filter(FENCED == "N" | FENCED == "Y") %>% 
-  filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER") %>%
+  # filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER") %>%
+  # filter(SPECIES_CODE !="SAXX") %>% 
+  filter(SPECIES_CODE =="SAMO") %>% 
   # distinct(SPECIES_CODE)
   filter(SITE_TYPE == "WC") %>% 
   ggplot(aes(yr, MAX_HEIGHT_CM)) +
-  geom_boxplot(aes(fill=FENCED), color = 'black') +
+  geom_boxplot(aes(fill=FENCED), color = 'black', outlier.shape = NA) +
   scale_fill_viridis(discrete = TRUE) +
   # theme_minimal() +
   theme_minimal() +
-  scale_fill_manual(values = c("ivory2","lightblue")) +
-  labs(x = "Year", y = "Max height (cm)", fill = "Fenced?")
+  ylim(0,320) +
+  scale_fill_manual(values = c("ivory2","lightgreen")) +
+  labs(x = "Year", y = "Max height (cm)", fill = "Fenced?") +
+  labs(x = "Year", y = "Max height (cm)", fill = "Fenced?", title = "Core Winter Range Plots: SAMO only", caption = "Line intercept data")
   # labs(title = "Salix monticola maximum shrub height by year, fencing", x = "Year", y = "Species")
 
-
+# ggsave("./output/figures/WC_willLI_SAMO_bxplt01.png", width = 6, height = 4.5, dpi= 300)
 
 ```
 
 ```{r}
 
+## all shrub species
+csv.all.lc.li.df %>%
+  filter(pType == "willow") %>% 
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  filter(!is.na(MAX_HEIGHT_CM)) %>%
+  # filter(str_detect(SPECIES_CODE, "^SA")) %>% 
+  filter(FENCED == "N" | FENCED == "Y") %>% 
+  # filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER") %>%
+  # filter(SPECIES_CODE !="SAXX") %>% 
+  # filter(SPECIES_CODE =="SAMO") %>% 
+  # distinct(SPECIES_CODE)
+  filter(SITE_TYPE == "WC") %>% 
+  ggplot(aes(yr, MAX_HEIGHT_CM)) +
+  geom_boxplot(aes(fill=FENCED), color = 'black', outlier.shape = NA) +
+  scale_fill_viridis(discrete = TRUE) +
+  # theme_minimal() +
+  theme_minimal() +
+  ylim(0,320) +
+  scale_fill_manual(values = c("ivory2","slategray")) +
+  # labs(x = "Year", y = "Max height (cm)", fill = "Fenced?") +
+  labs(x = "Year", y = "Max height (cm)", fill = "Fenced?", title = "Core Winter Range Plots: All Shrub Species", caption = "Line intercept data")
+  # labs(title = "Salix monticola maximum shrub height by year, fencing", x = "Year", y = "Species")
+
+# ggsave("./output/figures/WC_willLI_allShrubSpp_bxplt01.png", width = 6, height = 4.5, dpi= 300)
+
 ```
 
-Maximum Core winter range sites, maximum shrub height by species, fencing treatment, and year in line interecept dataset.**
 ```{r}
+csv.all.lc.li.df %>%
+  filter(pType == "willow") %>% 
+  filter(SPECIES_CODE != "SAXX") %>% 
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  filter(!is.na(MAX_HEIGHT_CM)) %>%
+  # filter(str_detect(SPECIES_CODE, "^SA")) %>%
+  filter(FENCED == "N" | FENCED == "Y") %>% 
+  group_by(yr, SPECIES_CODE, FENCED) %>% 
+  # summarise(mean.ht = mean(MAX_HEIGHT_CM, na.rm = TRUE), sd.ht = sd(MAX_HEIGHT_CM, na.rm = TRUE)) %>%
+  summarise(mean.ht = mean(MAX_HEIGHT_CM, na.rm = TRUE)) %>% 
+  pivot_wider(names_from = yr, values_from = c(mean.ht)) %>% 
+  gt::gt() %>% 
+  fmt_number(
+    columns = vars('2008','2013','2018'),
+    decimals = 1,
+    use_seps = FALSE
+  ) %>% 
+  tab_header("Mean height by shrub species")
+
+```
+
+
+
+```{r}
+
+csv.all.lc.li.df %>%
+  filter(pType == "willow") %>% 
+  filter(SPECIES_CODE != "SAXX") %>% 
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  filter(!is.na(MAX_HEIGHT_CM)) %>%
+  filter(str_detect(SPECIES_CODE, "^SA")) %>%
+  filter(FENCED == "N" | FENCED == "Y") %>% 
+  group_by(yr, FENCED) %>% 
+  # summarise(mean.ht = mean(MAX_HEIGHT_CM, na.rm = TRUE), sd.ht = sd(MAX_HEIGHT_CM, na.rm = TRUE)) %>%
+  summarise(mean.ht = mean(MAX_HEIGHT_CM, na.rm = TRUE)) %>% 
+  pivot_wider(names_from = yr, values_from = c(mean.ht)) %>% 
+  gt::gt() %>% 
+  fmt_number(
+    columns = vars('2008','2013','2018'),
+    decimals = 1,
+    use_seps = FALSE
+  ) %>% 
+  tab_header("Mean height (cm) by all willow species")
+
+```
+
+
+```{r, eval=FALSE}
+# Maximum Core winter range sites, maximum shrub height by species, fencing treatment, and year in line interecept dataset.**
 
 csv.all.lc.li.df %>% 
   filter(!is.na(MAX_HEIGHT_CM)) %>%
@@ -1993,13 +2147,13 @@ csv.all.lc.li.df %>%
 
 **Core winter range sites, maximum shrub height by species, fencing treatment, and year in line interecept dataset.** 
 
-```{r}
+```{r, eval = FALSE}
 csv.all.lc.li.df %>% 
   filter(!is.na(MAX_HEIGHT_CM)) %>%
   # filter(str_detect(SPECIES_CODE, "^SA")) %>% 
   filter(FENCED == "N" | FENCED == "Y") %>% 
   filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER" | SPECIES_CODE !="ACGL" | SPECIES_CODE !="RUID") %>%
-  # filter(SITE_TYPE == "WC") %>% 
+  filter(SITE_TYPE == "WC") %>%
   group_by(yr,FENCED, SPECIES_CODE) %>% 
   dplyr::summarise(mean.max.ht = mean(MAX_HEIGHT_CM, na.rm = TRUE), sd.max.ht = sd(MAX_HEIGHT_CM, na.rm=TRUE)) %>%
   ungroup() %>% 
@@ -2025,61 +2179,223 @@ csv.all.lc.li.df %>%
 ```
 
 
-```{r}
-
-
+```{r, eval=FALSE}
+## reclass the burned NA
+csv.all.lc.li.df <- csv.all.lc.li.df %>% 
+  mutate(BURNED = case_when(is.na(BURNED) ~ "Not burned",
+                            TRUE ~ as.character(BURNED)))
 
 csv.all.lc.li.df %>% 
+  filter(BURNED != "BURNED") %>%
   filter(!is.na(MAX_HEIGHT_CM)) %>%
   filter(str_detect(SPECIES_CODE, "^SA")) %>%
+  filter(SPECIES_CODE != "SAXX") %>%
+  filter(yr == 2008 | yr == 2009 | yr == 2013 | yr == 2018) %>%
   filter(FENCED == "N" | FENCED == "Y") %>% 
   # filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER") %>%
-  filter(SITE_TYPE == "WC") %>% 
+  filter(SITE_TYPE == "WC") %>%
+  # distinct(SPECIES_CODE) %>% 
+  mutate(yr = as.character(yr)) %>% 
+  mutate(yr = anytime::anytime(yr)) %>% 
+  # mutate(yr = as.integer(yr)) %>% 
+  ggplot(aes(x = yr, y = MAX_HEIGHT_CM)) +
+  # geom_smooth(aes(color = FENCED), se = FALSE) +
+  geom_smooth(aes(color = FENCED), method = "lm", se = FALSE) +
+  geom_point(aes(color = FENCED, shape = FENCED)) +
+  # geom_boxplot(aes(fill=FENCED), color = 'black') +
+  # scale_fill_viridis(discrete = TRUE) +
+  # theme_minimal() +
+  theme_minimal() +
+  # scale_fill_manual(values = c("ivory2","lightblue")) +
+  labs(title = "Core winter range sites: maximum shrub height by year, fencing", x = "Year", color = "Fenced?", shape = "Fenced?", y = "Height (cm)", caption = "SAMO,SAPL, SAGE, SABE,SADR,SAPE,SAER")  +
+  facet_wrap(~BURNED)
+
+# ggsave("./output/figures/WC_Li_burned_v_unburned.png", width = 6.5, height = 4.5, dpi=300)
+
+```
+
+```{r}
+csv.all.lc.li.df %>% 
+  # distinct(BURNED) %>% 
+  filter(BURNED != "BURNED") %>% 
+  filter(!is.na(MAX_HEIGHT_CM)) %>%
+  filter(str_detect(SPECIES_CODE, "^SA")) %>%
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  filter(FENCED == "N" | FENCED == "Y") %>% 
+  filter(SPECIES_CODE != "SAXX") %>% 
+  # filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER") %>%
+  filter(SITE_TYPE == "WC") %>%
+  # distinct(SPECIES_CODE) %>% 
   mutate(yr = as.character(yr)) %>% 
   mutate(yr = anytime::anytime(yr)) %>% 
   # mutate(yr = as.integer(yr)) %>% 
   ggplot(aes(x = yr, y = MAX_HEIGHT_CM)) +
   # geom_line(aes(color = FENCED)) +
   geom_smooth(aes(color = FENCED), method = "lm", se = FALSE) +
-  geom_point(aes(color = FENCED)) +
+  geom_point(aes(color = FENCED, shape = FENCED)) +
   # geom_boxplot(aes(fill=FENCED), color = 'black') +
   # scale_fill_viridis(discrete = TRUE) +
   # theme_minimal() +
   theme_bw() +
   # scale_fill_manual(values = c("ivory2","lightblue")) +
-  labs(title = "Core winter range sites: maximum shrub height by year, fencing", x = "Year", y = "Height (cm)", subtitle = "All willow species combined.") 
-
+  labs(title = "Core winter range sites: maximum shrub height by year, fencing", x = "Year", color = "Fenced?", shape = "Fenced?", y = "Height (cm)", caption = "SAMO,SAPL, SAGE, SABE,SADR,SAPE,SAER") 
 
 ```
 
+```{r}
+
+# burned faceted
+csv.all.lc.li.df %>% 
+  filter(BURNED != "BURNED") %>%
+  filter(!is.na(MAX_HEIGHT_CM)) %>%
+  filter(str_detect(SPECIES_CODE, "^SA")) %>%
+  filter(SPECIES_CODE != "SAXX") %>%
+  filter(yr == 2008 | yr == 2009 | yr == 2013 | yr == 2018) %>%
+  filter(FENCED == "N" | FENCED == "Y") %>% 
+  # filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER") %>%
+  filter(SITE_TYPE == "WC") %>%
+  # distinct(SPECIES_CODE) %>% 
+  mutate(yr = as.character(yr)) %>% 
+  mutate(yr = anytime::anytime(yr)) %>% 
+  # mutate(yr = as.integer(yr)) %>% 
+  ggplot(aes(x = yr, y = MAX_HEIGHT_CM)) +
+  # geom_smooth(aes(color = FENCED), se = FALSE) +
+  geom_smooth(aes(color = FENCED), method = "lm", se = FALSE) +
+  geom_point(aes(color = FENCED, shape = FENCED)) +
+  # geom_boxplot(aes(fill=FENCED), color = 'black') +
+  # scale_fill_viridis(discrete = TRUE) +
+  # theme_minimal() +
+  theme_minimal() +
+  # scale_fill_manual(values = c("ivory2","lightblue")) +
+  labs(title = "Core winter range sites: maximum shrub height by year, fencing", x = "Year", color = "Fenced?", shape = "Fenced?", y = "Height (cm)", caption = "SAMO,SAPL, SAGE, SABE,SADR,SAPE,SAER")  +
+  facet_grid(~BURNED)
+facet_wrap(~BURNED)
+
+```
+
+
+## Willow macroplot data
+
+
+```{r}
+# calculate the average canopy diameter
+csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>% 
+  mutate(CANOPY_DIAM_AVG = (CANOPY_DIA_1_CM + CANOPY_DIA_2_CM)/2) 
+
+### canopy diameter by species
+mcro.canopy.diam.sum <- csv.all.lc.mcro.df %>%
+  group_by(SITE_ID, yr, SPECIES_CODE, valley_full, FENCED) %>% 
+  summarise(cano_diam_med = median(CANOPY_DIAM_AVG)) 
+
+# mcro.canopy.diam.sum %>%
+#   ungroup() %>% 
+#   ggplot(aes(yr, cano_ht_med)) + 
+#   geom_line(aes(color = SPECIES_CODE)) +
+#   facet_grid(FENCED~valley_full)
+  
+```
+
+
+
+#### Beaver and Moose Presence in 2018
+```{r beaver18, eval=FALSE}
 
 #### Observations of beaver presence noted in plots 
+# How best to use these obserations? 
+# 
+# **Variable: BEAVER_PRESENCE**
 
-> How best to use these obserations? 
+sinfo.df %>%
+  mutate(BEAVER_PRESENCE = recode(BEAVER_PRESENCE, 
+                         "Absence_" = "Absence",
+                         "Food_cache_cuttings"="Cuttings")) %>% 
+  tabyl(BEAVER_PRESENCE) %>% 
+  gt::gt() %>% 
+  fmt_number(
+    columns = vars(percent),
+    decimals = 2
+    )
 
-**Variable: BEAVER_PRESENCE**
-```{r}
-csv.all.lc.mcro.df %>% 
-  # filter(!is.na(BEAVER_PRESENCE)) %>% 
-  filter(BEAVER_PRESENCE != "Absence_") %>%
-  # distinct(SITE_ID)
-  group_by(SITE_ID, BEAVER_PRESENCE, yr) %>% 
-  tally() %>% 
-  dplyr::select(-n) %>% 
-  datatable()
 
 ```
 
 
-#### Observations of moose presence noted in plots
-
-> How best to use these obserations? 
-
-**Variable: MOOSE_PRESENCE**
-
-
 ```{r}
 
+# sinfo.df %>% 
+#   distinct(MOOSE_PRESENCE)
+
+# inconsistent encoding of MOOSE_PRESENCE 
+
+# # A tibble: 10 x 1
+#    MOOSE_PRESENCE             
+#    <chr>                      
+#  1 Absence_                   
+#  2 Browse                     
+#  3 Browse/Tracks              
+#  4 Browse_tracks              
+#  5 Tracks                     
+#  6 Scat_beds_                 
+#  7 Browse_scat_tracks         
+#  8 Browse_scat                
+#  9 Scat                       
+# 10 Browse_scat_tracks_sighting
+
+sinfo.df <- sinfo.df %>%
+  mutate(MOOSE_PRESENCE2 = recode(MOOSE_PRESENCE, 
+                         "Absence_" = "Absence",
+                         "Browse_tracks"="Presence",
+                         "Browse/Tracks"="Presence",
+                         "Browse_scat"="Presence",
+                         "Browse_scat_tracks"="Presence",
+                         "Browse_scat_tracks_sighting" = "Presence",
+                         "Scat_beds_" = "Presence"
+                         )) %>% 
+  mutate(MOOSE_PRESENCE = recode(MOOSE_PRESENCE, 
+                         "Absence_" = "Absence",
+                         "Browse_tracks"="Browse/tracks",
+                         "Browse/Tracks"="Browse/tracks",
+                         "Browse_scat"="Browse/scat",
+                         "Browse_scat_tracks"="Browse/scat/tracks",
+                         "Browse_scat_tracks_sighting" = "Browse/scat/tracks/sighting",
+                         "Scat_beds_" = "Scat/beds"
+                         )) 
+
+sinfo.df %>% 
+  tabyl(MOOSE_PRESENCE) %>%
+  rename('Moose presence' = 'MOOSE_PRESENCE') %>% 
+  gt::gt() %>% 
+  fmt_number(
+    columns = vars(percent),
+    decimals = 2
+    ) %>% 
+  tab_header(
+    title = "Moose presence in 2018"
+  )
+
+# sinfo.df %>%
+#   tabyl(MOOSE_PRESENCE2) %>%
+#   rename('Moose presence' = 'MOOSE_PRESENCE2') %>% 
+#   gt::gt() %>% 
+#   fmt_number(
+#     columns = vars(percent),
+#     decimals = 2
+#     ) %>% 
+#   tab_header(
+#     title = "Moose presence in 2018"
+#   )
+
+```
+
+
+
+```{r Moose, eval=FALSE}
+#### Observations of moose presence noted in plots
+# 
+# > How best to use these obserations? 
+# 
+# **Variable: MOOSE_PRESENCE**
+  
 csv.all.lc.mcro.df %>% 
   # distinct(MOOSE_PRESENCE)
   group_by(SITE_ID, MOOSE_PRESENCE, yr) %>% 
@@ -2108,18 +2424,6 @@ csv.all.lc.mcro.df %>%
 
 ```
 
-
-```{r}
-## regression
-
-
-```
-
-
-FENCED: (Y=Yes, N=No, P=Planned)
-
-BROWSED: (Y=Yes, N=No)
-
 ----
 
 ```{r, eval=FALSE}
@@ -2137,8 +2441,6 @@ csv.all.lc %>%
 ```
 
 
-
-
 ```{r}
 
 csv.all.lc.mcro %>% 
@@ -2150,8 +2452,7 @@ csv.all.lc.mcro %>%
 
 ```
 
-### Canopy Diameter
-
+#### Canopy Diameter
 
 Canopy diameter measurements from macroplots. Calculated as the mean of CANOPY_DIA_1_CM + CANOPY_DIA_2_CM. 
 
@@ -2167,17 +2468,15 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
 ```
 
 
-**Summary table of canopy diameter by species **
+
 ```{r, eval=FALSE}
 
-# skimr
-# skimr::skim(iris, Sepal.Length, Petal.Length)
-
+# **Summary table of canopy diameter by species **
 csv.all.lc.mcro.df %>% 
   group_by(yr,SPECIES_CODE) %>% 
   skimr::skim(CANOPY_DIA_CM_avg) %>% 
-  kable()
-
+  select(-c(formatted, level)) %>% 
+  gt()
 ```
 
 
@@ -2287,64 +2586,17 @@ csv.all.lc.mcro.df %>%
 
 ```
 
-
-----
-
-```{r,eval=FALSE}
-
-# scrap
-# line int
-# csv.lineInt <- tibble(files = fs::dir_ls("data/EVMP_data/csv",glob = "*Line Intercept.csv"))
-
-c.line <- fs::dir_ls("data/EVMP_data/csv",glob = "*Line Intercept.csv")
-
-
-## read them all in and combines them
-c.line.dat <- map_df(c.line,read_csv)
-
-## many duplicates...
-c.line.dat <- distinct(c.line.dat)
-
-View(c.line.dat)
-## compare this to just the longest record, Same?
-
-Willow_Cumulative_Data_Baseline_Through_2018_2013_Line_Intercept <- read_csv("data/EVMP_data/csv/Willow_Cumulative_Data_Baseline_Through_2018-2013 Line Intercept.csv")
-View(Willow_Cumulative_Data_Baseline_Through_2018_2013_Line_Intercept)
-
-```
-
 ## Aspen 
-
-```{r, eval = FALSE}
-# Create a cache of workbook tabs as CSV files
-## cache csv. This creates a csv cache of each tab in the workbook.
-read_then_csv <- function(sheet, path) {
-  pathbase <- path %>%
-    basename() %>%
-    tools::file_path_sans_ext()
-  path %>%
-    read_excel(sheet = sheet) %>% 
-    write_csv(paste0(pathbase, "-", sheet, ".csv"))
-}
-
-path %>%
-  excel_sheets() %>%
-  set_names() %>% 
-  map(read_then_csv, path = path)
-
-```
-
 
 **Master excel file: Aspen_Data_Baseline_through_2018.xlsx**
 
-The excel datafile provided by RMNP (Aspen_Data_Baseline_Through_2018.xlsx) includes 10 tabs.
+The excel datafile provided by RMNP (Aspen_Data_Baseline_Through_2018.xlsx) includes **10 tabs**.
 
 ```{r}
 ## **Data import** 
 asp <- readxl::excel_sheets("./data/EVMP_data/TenYearReview/Aspen_Data_Baseline_Through_2018.xlsx")
 
 path <- ("data/EVMP_data/TenYearReview/Aspen_Data_Baseline_Through_2018.xlsx")
-
 
 #### Read in the worksheets and create list of df
 # each tab is a df in the list object
@@ -2362,9 +2614,7 @@ asp.d <- path %>%
 
 ```{r}
 
-### keep and discard
-# asp.d %>% keep(.x = .,)
-# asp.d %>% map(., discard("Aspen 2013 Site Info"))
+### check out 'keep' and 'discard'
 
 ######
 ## site info tabs. read and clean
@@ -2383,12 +2633,63 @@ asp.siteinfo_baseline <- asp.siteinfo_baseline %>%
 ## select the tabs with tally data
 asp.d.sel <- asp.d[c(3,4,5,6,8,10)] 
 
-
 ## combine
 asp.tally.all <- bind_rows(asp.d.sel, .id = "tab") 
 
+## fix inconsistent labels
+asp.tally.all <- 
+  asp.tally.all %>% 
+  mutate(SITE_ID = case_when(SITE_ID == "AC1" ~ "AC01",
+                       SITE_ID == "AC2" ~ "AC02",
+                       SITE_ID == "AC3" ~ "AC03", 
+                       SITE_ID == "AC4" ~ "AC04", 
+                       SITE_ID == "AC4" ~ "AC04",
+                       SITE_ID == "AC5" ~ "AC05",
+                       SITE_ID == "AC6" ~ "AC06", 
+                       SITE_ID == "AC7" ~ "AC07", 
+                       SITE_ID == "AC8" ~ "AC08",
+                       SITE_ID == "AC9" ~ "AC09",
+                       SITE_ID == "ANC1" ~ "ANC01",
+                       SITE_ID == "ANC1" ~ "ANC01",
+                       SITE_ID == "ANC2" ~ "ANC02",
+                       SITE_ID == "ANC3" ~ "ANC03", 
+                       SITE_ID == "ANC4" ~ "ANC04", 
+                       SITE_ID == "ANC4" ~ "ANC04",
+                       SITE_ID == "ANC5" ~ "ANC05",
+                       SITE_ID == "ANC6" ~ "ANC06", 
+                       SITE_ID == "ANC7" ~ "ANC07", 
+                       SITE_ID == "ANC8" ~ "ANC08",
+                       SITE_ID == "ANC9" ~ "ANC09",
+                       SITE_ID == "AK1" ~ "AK01",
+                       SITE_ID == "AK2" ~ "AK02",
+                       SITE_ID == "AK3" ~ "AK03", 
+                       SITE_ID == "AK4" ~ "AK04", 
+                       SITE_ID == "AK4" ~ "AK04",
+                       SITE_ID == "AK5" ~ "AK05",
+                       SITE_ID == "AK6" ~ "AK06", 
+                       SITE_ID == "AK7" ~ "AK07", 
+                       SITE_ID == "AK8" ~ "AK08",
+                       SITE_ID == "AK9" ~ "AK09",
+                       TRUE ~ as.character(SITE_ID))
+  )
+
+
 ## join in site info
 asp.tally.all <- left_join(asp.tally.all, site.info.clean, by = "SITE_ID")
+
+## make the 'NA' for the 'SITE_TYPE' field 'N' instead
+asp.tally.all <- asp.tally.all %>% 
+  mutate(FENCED = case_when(FENCED == "NA_" ~ "N",
+                            is.na(FENCED) ~ "N",
+                            TRUE ~ as.character(FENCED))
+  ) 
+
+
+## clean up BURNED: 'NA' to 'N'
+asp.tally.all <- 
+  asp.tally.all %>%
+  mutate(BURNED = case_when(is.na(BURNED) ~ 'Not burned',
+                            TRUE ~ as.character(BURNED)))
 
 ### write table
 # write_csv(asp.tally.all, "./data/EVMP_derived/asp_tally_all.csv")
@@ -2396,28 +2697,45 @@ asp.tally.all <- left_join(asp.tally.all, site.info.clean, by = "SITE_ID")
 ```
 
 
-aspen combined variable names
-```{r}
+```{r, eval=FALSE}
 
+asp.tally.all %>% 
+  group_by(BURNED, FENCED) %>% 
+  tally()%>% 
+  gt::gt()
+
+# aspen combined variable names
 asp.tally.all %>% 
   names() %>% 
   enframe() %>% 
-  flextable()
+  gt::gt()
 
 ```
 
-```{r}
+
+```{r, eval=FALSE}
 # asp.d.sel.comb %>% 
 #   janitor::tabyl(tab,SITE_TYPE) %>% 
 #   flextable()
+# _Tally of records by tab and core, non-core, and Kawuneeche Valley sites_
 
 asp.tally.all %>% 
   janitor::tabyl(tab,SITE_TYPE) %>% 
   gt::gt()
 
+```
+
+
+_Tally of records by year and core, non-core, and Kawuneeche Valley sites_
+```{r}
 asp.tally.all %>% 
   janitor::tabyl(YEAR,SITE_TYPE) %>% 
   gt::gt()
+
+```
+
+_Tally of records by site type (e.g., core, non-core, and Kawuneeche Valley sites) and fenced status_
+```{r}
 
 asp.tally.all %>% 
   janitor::tabyl(SITE_TYPE, FENCED) %>% 
@@ -2425,22 +2743,833 @@ asp.tally.all %>%
 
 ```
 
+```{r}
+asp.tally.all %>% 
+  filter(SITE_TYPE == 'AK') %>% 
+  select(SITE_ID, contains("DB")) %>% 
+  gt()
+```
 
+_Tally of records by SITE_ID and YEAR_
 ```{r}
 
-asp.tally.all %>% 
-  janitor::tabyl(SITE_ID, tab) %>% 
+asp.gt1 <- asp.tally.all %>% 
+  janitor::tabyl(SITE_ID, YEAR) %>% 
   gt::gt()
 
+## tbl formatting
+# asp.gt1 <- asp.gt1 %>% 
+#   tab_style(
+#     style = list(
+#       cell_fill(color = "lightcyan"),
+#       cell_text(weight = "bold")
+#       ),
+#     locations = cells_data(
+#       columns = vars('2006', '2007'),
+#       rows = SITE_ID == "2")
+#   ) 
+# asp.gt1
+
 ```
+
 
 ```{r}
 
+## tidy the dbh
+asp.tally.dbh.tidy <- asp.tally.all %>%
+  pivot_longer(
+    cols = starts_with("DBH"),
+    names_to = "DBHclass",
+    values_to = "DBHval"
+  )
+
+asp.tally.dbh.tidy <- asp.tally.dbh.tidy %>% 
+  select(-contains("HT_"))
+
+
+## tidy the height
+asp.tally.ht.tidy <- asp.tally.all %>%
+  pivot_longer(
+    cols = starts_with("HT_"),
+    names_to = "HTclass",
+    values_to = "HTval"
+  )
+
+asp.tally.ht.tidy <- asp.tally.ht.tidy %>% 
+  select(-contains("DBH"))
+
+```
+
+
+```{r asp_dbhmod}
+## mod the dbh
+asp.tally.dbh.tidy <- asp.tally.dbh.tidy %>% 
+  mutate(DBHclassFact = as_factor(DBHclass))
+
+asp.tally.dbh.tidy <- asp.tally.dbh.tidy %>% 
+  mutate(timeClass = case_when(YEAR == 2006 ~ "BL",
+                               YEAR == 2007 ~ "BL",
+                               YEAR == 2008 ~ "BL",
+                               YEAR == 2009 ~ "BL",
+                               TRUE ~ as.character(YEAR))) %>%  
+  mutate(timeClass = factor(timeClass, levels = c("BL", "2013","2015","2016","2017","2018")))  # set as factor, set levels
+
+
+### reanme the HTval to something more directly interpretable
+### then convert to stem density/ha
+asp.tally.dbh.tidy <- 
+  asp.tally.dbh.tidy %>% 
+  rename(stemTally = DBHval) 
+
+## Create a new field to combine the 2cm dbh bands into smaller number of classes. 
+# write a table to use as look-up
+# asp.tally.tidy %>% 
+#   distinct(DBHclassFact) %>% 
+#   write_csv('./data/EVMP_derived/DBHclassFact_lu.csv')
+
+# read in the lu
+dbh.lu <- read_csv('./data/EVMP_derived/DBHclassFact_lu.csv')
+
+asp.tally.dbh.tidy <- left_join(asp.tally.dbh.tidy, dbh.lu, by = "DBHclassFact")
+
+## collapse the tallies by DBHclGp01
+asp.tally.dbh.tidy <- asp.tally.dbh.tidy %>%
+  group_by(SITE_ID, timeClass, SITE_TYPE, REMOVED, BURNED, FENCED, VALLEY, RANGE_TYPE, LIVE_DEAD, DBHclGp01) %>% 
+  summarise(stemTally = sum(stemTally)) %>%
+  filter(!is.na(VALLEY)) %>% 
+  ungroup() %>% 
+  mutate(stemDen.ha = stemTally *400) %>% # converts stems/2m2 plot to stems/ha
+  mutate(stemDen.ac = stemTally *161.8744) # converts stems/2m2 plot to stems/acre
+
+```
+
+```{r asp_htMod}
+## mod the ht
+asp.tally.ht.tidy <- asp.tally.ht.tidy %>% 
+  mutate(timeClass = case_when(YEAR == 2006 ~ "BL",
+                               YEAR == 2007 ~ "BL",
+                               YEAR == 2008 ~ "BL",
+                               YEAR == 2009 ~ "BL",
+                               TRUE ~ as.character(YEAR))) %>% 
+  mutate(timeClass = factor(timeClass, levels = c("BL", "2013","2015","2016","2017","2018")))  # set as factor, set levels
+
+### reanme the HTval to something more directly interpretable
+### then convert to stem density/ha
+asp.tally.ht.tidy <- 
+  asp.tally.ht.tidy %>% 
+  rename(stemTally = HTval) %>% 
+  mutate(stemDen.ha = stemTally *400) %>% # converts stems/2m2 plot to stems/ha
+  mutate(stemDen.ac = stemTally *161.8744) # converts stems/2m2 plot to stems/acre
+
+```
+
+
+### Aspen DBH: Core winter range
+
+
+```{r asp_dbh_tileTally}
+
+asp.tally.dbh.tidy %>%
+  filter(LIVE_DEAD == 'LIVE') %>% 
+  filter(RANGE_TYPE == "core winter range") %>% 
+  # filter(SITE_ID == "AC60") %>% select(-contains("UT")) %>% datatable()
+  # ggplot(aes(timeClass, DBHclGp01)) +
+  ggplot(aes(timeClass, DBHclGp01)) +  
+  geom_tile(aes(fill = FENCED), color = "white", alpha = .2) +
+  geom_text(aes(label = stemTally), size = 3) +
+  facet_wrap(~SITE_ID) +
+  theme_bw() +
+  labs(x = "", y = "", title = "Moraine Park: Aspen dead stem tallies") +
+  # facet_grid(SITE_ID ~ timeClass) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+# asp.tally.dbh.tidy %>% 
+#   filter(LIVE_DEAD == 'LIVE') %>% 
+#   filter(RANGE_TYPE == "core winter range") %>% 
+#   filter(SITE_ID == "AC60") %>%
+#   # select(-contains("UT")) %>% datatable()
+#   # ggplot(aes(timeClass, DBHclGp01)) +
+#   ggplot(aes(timeClass, DBHclass)) +  
+#   geom_tile(aes(fill = FENCED), color = "white", alpha = .2) +
+#   geom_text(aes(label = stemTally), size = 3) +
+#   facet_wrap(~SITE_ID) +
+#   theme_bw() +
+#   labs(x = "", y = "", title = "Moraine Park: Aspen dead stem tallies") +
+#   # facet_grid(SITE_ID ~ timeClass) +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+_DBH classes: Fenced and non-burned plots_
+```{r}
+## DBH
+dbh.perc <- asp.tally.dbh.tidy %>%
+  # filter(is.na(REMOVED)) %>% 
+  filter(BURNED == "Not burned") %>%
+  filter(LIVE_DEAD == "LIVE") %>%
+  filter(FENCED == "Y") %>%
+  # filter(SITE_TYPE == "AC") %>%
+  # filter(timeClass %in% c('BL','2013','2018')) %>%
+  group_by(SITE_ID, timeClass) %>%
+  mutate(sumStem = sum(stemTally)) %>% 
+  ungroup() %>% 
+  mutate(percentTot = stemTally/sumStem) 
+
+## heatmap
+# dbh.perc %>%
+#   # datatable()
+#   # distinct(timeClass)
+#   filter(!is.nan(percentTot)) %>%
+#   ggplot(aes(DBHclGp01, SITE_ID)) +
+#   geom_tile(aes(fill = percentTot), color = 'white') +
+#   facet_grid(.~timeClass) +
+#   scale_fill_viridis_c(begin = .01, end = .9, direction = -1) +
+#   theme_minimal() +
+#   labs(x = "DBH class", y = "", fill = "% total stems", title = "Proportion of Live Aspen Stems by DBH Class", subtitle = "Fenced and unburned plots only")
+
+# ggsave("./output/figures/AC_Live_Fenced_Unburned_PropDBH_heatmap.png", width = 7, height = 5, dpi = 300)
+
+# dbh.perc %>%
+#   # distinct(timeClass)
+#   filter(!is.nan(percentTot)) %>%
+#   ggplot(aes(SITE_ID, percentTot)) +
+#   # geom_col(aes(fill = DBHclGp01), color = "darkgray") +
+#   geom_col(aes(fill = DBHclGp01)) +
+#   facet_wrap(~timeClass, ncol = 3) +
+#   # scale_fill_viridis_d(option = "D") +
+#   scale_fill_manual(values = c("bisque1", "bisque3", "bisque4")) +
+#   # scale_fill_manual(values = c("honeydew2", "honeydew3", "honeydew4")) +
+#   theme_minimal() +
+#   labs(y = "Proportion of stems", x = "", fill = "DBH class", title = "Proportion of Live Aspen Stems by DBH Class", subtitle = "Fenced and unburned plots only") +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+#   theme(legend.position = "top")
+  
+# ggsave("./output/figures/AC_Live_Fenced_Unburned_PropDBH_barChart.png", width = 8, height = 6, dpi = 300)
+
+dbh.perc %>%
+  filter(SITE_ID != "AC67") %>% 
+  filter(!is.nan(percentTot)) %>%
+  filter(timeClass %in% c("BL","2013","2018")) %>% 
+  ggplot(aes(timeClass, percentTot)) +
+  # geom_col(aes(fill = DBHclGp01), color = "darkgray") +
+  geom_col(aes(fill = DBHclGp01)) +
+  facet_wrap(~SITE_ID, ncol = 5) +
+  # scale_fill_manual(values = c("bisque1", "bisque3", "bisque4")) +
+  scale_fill_manual(values = c("honeydew2", "honeydew3", "darkolivegreen")) +
+  # theme_minimal() +
+  theme_bw() +
+  labs(y = "Proportion of stems", x = "", fill = "DBH class", title = "Proportion of Live Aspen Stems by DBH Class", subtitle = "Fenced and unburned plots only") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(legend.position = "top") +
+  scale_y_continuous(labels=scales::percent)
+
+# ggsave("./output/figures/aspen_tally_plots/AC_Live_Fenced_Unburned_PropDBH_bc.png", width = 8, height = 6, dpi = 300)
+
+
+```
+
+
+_DBH classes: Fenced and burned plots_
+```{r}
+## DBH
+dbh.perc2 <- asp.tally.dbh.tidy %>%
+  filter(is.na(REMOVED)) %>% 
+  filter(BURNED == "Burned") %>%
+  filter(LIVE_DEAD == "LIVE") %>%
+  filter(FENCED == "Y") %>%
+  filter(SITE_TYPE == "AC") %>%
+  # filter(timeClass %in% c('BL','2013','2018')) %>%
+  group_by(SITE_ID, timeClass) %>%
+  mutate(sumStem = sum(stemTally)) %>% 
+  ungroup() %>% 
+  mutate(percentTot = stemTally/sumStem) 
+
+# dbh.perc2 %>%
+#   filter(!is.nan(percentTot)) %>%
+#   ggplot(aes(SITE_ID, percentTot)) +
+#   # geom_col(aes(fill = DBHclGp01), color = "darkgray") +
+#   geom_col(aes(fill = DBHclGp01)) +
+#   facet_wrap(~timeClass, ncol = 3) +
+#   # scale_fill_viridis_d(option = "D") +
+#   # theme_minimal() +
+#   theme_bw() +
+#   labs(y = "Proportion of stems", x = "", fill = "DBH class", title = "Proportion of Live Aspen Stems by DBH Class", subtitle = "Fenced and burned plots only") +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+#   theme(legend.position = "top")
+  
+# ggsave("./output/figures/AC_Live_Fenced_Burned_PropDBH_barChart.png", width = 8, height = 6, dpi = 300)
+
+dbh.perc2 %>%
+  filter(!is.nan(percentTot)) %>%
+  ggplot(aes(timeClass, percentTot)) +
+  # geom_col(aes(fill = DBHclGp01), color = "darkgray") +
+  geom_col(aes(fill = DBHclGp01)) +
+  facet_wrap(~SITE_ID, ncol = 3) +
+  # scale_fill_viridis_d(option = "D") +
+  scale_fill_manual(values = c("honeydew2", "honeydew3", "darkolivegreen")) +
+  # theme_minimal() +
+  theme_bw() +
+  labs(y = "Proportion of stems", x = "", fill = "DBH class", title = "Proportion of Live Aspen Stems by DBH Class", subtitle = "Fenced and burned plots only") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(legend.position = "top") +
+  scale_y_continuous(labels=scales::percent)
+
+# ggsave("./output/figures/AC_Live_Fenced_Burned_PropDBH_bc.png", width = 8, height = 6, dpi = 300)
+
+```
+
+
+_DBH classes: Unfenced and unburned plots_
+```{r}
+## DBH
+dbh.perc3 <- asp.tally.dbh.tidy %>%
+  filter(is.na(REMOVED)) %>% 
+  filter(BURNED == "Not burned") %>%
+  filter(LIVE_DEAD == "LIVE") %>%
+  filter(FENCED == "N") %>%
+  filter(SITE_TYPE == "AC") %>%
+  filter(timeClass %in% c('BL','2013','2018')) %>%
+  group_by(SITE_ID, timeClass) %>%
+  mutate(sumStem = sum(stemTally)) %>% 
+  ungroup() %>% 
+  mutate(percentTot = stemTally/sumStem) 
+
+## heatmap
+# dbh.perc3 %>%
+#   filter(!is.nan(percentTot)) %>%
+#   ggplot(aes(DBHclGp01, SITE_ID)) +
+#   geom_tile(aes(fill = percentTot), color = 'white') +
+#   facet_grid(.~timeClass) +
+#   scale_fill_viridis_c(begin = .01, end = .9, direction = -1) +
+#   theme_minimal() +
+#   labs(x = "DBH class", y = "", fill = "% total stems", title = "Proportion of Live Aspen Stems by DBH Class", subtitle = "Unfenced and unburned plots only")
+
+# ggsave("./output/figures/Asp_unFenced_unburned_Live_AC_PropDBH_heatmap02.png", width = 7, height = 5, dpi = 300)
+
+# dbh.perc3 %>%
+#   filter(!is.nan(percentTot)) %>%
+#   ggplot(aes(SITE_ID, percentTot)) +
+#   geom_col(aes(fill = DBHclGp01)) +
+#   facet_wrap(~timeClass, ncol = 1) +
+#   # scale_fill_viridis_d(option = "D") +
+#   theme_minimal() +
+#   labs(y = "% total stems", x = "", fill = "DBH class", title = "Proportion of Live Aspen Stems by DBH Class", subtitle = "Unfenced and unburned plots only") +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+#   theme(legend.position = "top") +
+#   scale_y_continuous(labels=scales::percent) 
+
+dbh.perc3 %>%
+  filter(!is.nan(percentTot)) %>%
+  filter(SITE_ID != "AC68" & SITE_ID != "AC09" & SITE_ID != "AC30" & SITE_ID != "AC07" & SITE_ID != "AC37" & SITE_ID != "AC39") %>% 
+  ggplot(aes(timeClass, percentTot)) +
+  geom_col(aes(fill = DBHclGp01)) +
+  facet_wrap(~SITE_ID, ncol = 6) +
+  # scale_fill_viridis_d(option = "D") +
+  scale_fill_manual(values = c("honeydew2", "honeydew3", "darkolivegreen")) +
+  theme_bw() +
+  labs(y = "% total stems", x = "", fill = "DBH class", title = "Proportion of Live Aspen Stems by DBH Class", subtitle = "Unfenced and unburned plots only") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(legend.position = "top") +
+  scale_y_continuous(labels=scales::percent) 
+
+# ggsave("./output/figures/aspen_tally_plots/AC_Live_unfenced_Unburned_PropDBH_bc.png", width = 8, height = 6, dpi = 300)
+
+```
+
+### Aspen DBH: Non-core winter range
+
+_DBH classes: Non-fenced and non-burned plots_
+```{r}
+## DBH
+dbh.perc4 <- asp.tally.dbh.tidy %>%
+  filter(is.na(REMOVED)) %>% 
+  filter(BURNED == "Not burned") %>%
+  filter(LIVE_DEAD == "LIVE") %>%
+  filter(FENCED == "N") %>%
+  filter(SITE_TYPE == "ANC") %>%
+  # filter(timeClass %in% c('BL','2013','2018')) %>%
+  group_by(SITE_ID, timeClass) %>%
+  mutate(sumStem = sum(stemTally)) %>% 
+  ungroup() %>% 
+  mutate(percentTot = stemTally/sumStem) 
+
+## bar plot
+dbh.perc4 %>%
+  filter(!is.nan(percentTot)) %>%
+  ggplot(aes(timeClass, percentTot)) +
+  # geom_col(aes(fill = DBHclGp01), color = "darkgray") +
+  geom_col(aes(fill = DBHclGp01)) +
+  facet_wrap(~SITE_ID, ncol = 6) +
+  scale_fill_manual(values = c("honeydew2", "honeydew3", "darkolivegreen")) +
+  theme_bw() +
+  labs(y = "% total stems", x = "", fill = "DBH class", title = "Proportion of Live Aspen Stems by DBH Class", subtitle = "Non-core sites, unfenced and unburned plots only") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(legend.position = "top") +
+  scale_y_continuous(labels=scales::percent) 
+  
+# ggsave("./output/figures/ANC_Live_unFenced_Unburned_PropDBH_bc.png", width = 8, height = 6, dpi = 300)
+
+```
+
+
+### Aspen DBH: Kawuneeche Valley
+
+_DBH classes: Unfenced and unburned plots_
+```{r asp_dbh_KV}
+## DBH
+dbh.perc5 <- asp.tally.dbh.tidy %>%
+  filter(is.na(REMOVED)) %>% 
+  # filter(BURNED == "Not burned") %>%
+  filter(LIVE_DEAD == "LIVE") %>%
+  filter(FENCED == "N") %>%
+  filter(SITE_TYPE == "AK") %>%
+  # filter(timeClass %in% c('BL','2013','2018')) %>%
+  # filter(timeClass == "BL" | timeClass == 2013 | timeClass == 2018) %>%
+  group_by(SITE_ID, timeClass) %>%
+  mutate(sumStem = sum(stemTally)) %>% 
+  ungroup() %>% 
+  mutate(percentTot = stemTally/sumStem) 
+
+
+## bar plot
+dbh.perc5 %>%
+  filter(!is.nan(percentTot)) %>%
+  ggplot(aes(timeClass, percentTot)) +
+  # geom_col(aes(fill = DBHclGp01), color = "darkgray") +
+  geom_col(aes(fill = DBHclGp01)) +
+  facet_wrap(~SITE_ID, ncol = 4) +
+  # scale_fill_viridis_d(option = "D") +
+  # theme_minimal() +
+  theme_bw() +
+  labs(y = "% total stems", x = "", fill = "DBH class", title = "Proportion of Live Aspen Stems by DBH Class", subtitle = "Non-core sites, unfenced and unburned plots only") +
+  scale_fill_manual(values = c("honeydew2", "honeydew3", "darkolivegreen")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(legend.position = "top") +
+  scale_y_continuous(labels=scales::percent) 
+
+# ggsave("./output/figures/aspen_tally_plots/AK_Live_unFenced_Unburned_PropDBH_bc.png", width = 8, height = 6, dpi = 300)
+
+```
+
+
+### Aspen height: Core winter range
+
+```{r}
+
+### Add Short/Tall stem field 
+asp.tally.ht.tidy <- asp.tally.ht.tidy %>% 
+  mutate(shortTall = case_when(HTclass == 'HT_0_50_CM' ~ "short",
+                               HTclass == 'HT_51_100_CM' ~ "short",
+                               HTclass == 'HT_101_150_CM' ~ "short",
+                               HTclass == 'HT_151_200_CM' ~ "tall",
+                               HTclass == 'HT_201_250_CM' ~ "tall")
+         )
+
+
+asp.tally.ht.tidy %>% 
+  distinct(HTclass, shortTall) %>%
+  gt()
+
+```
+
+
+```{r asp_ht_clean}
+
+## list of plot lacking a value for "RANGE_TYPE"
+## on inspection, these have been dropped
+## e.g., AC41 was washed away in 2013 floods (see E. Ertl 2018 notes)
+## AC01 -  near Grand Lake
+## None of these have data for 2018
+# asp.tally.ht.tidy %>% 
+#   filter(is.na(RANGE_TYPE)) %>% 
+#   distinct(SITE_ID)
+#   View()
+# # A tibble: 5 x 1
+#   SITE_ID
+#   <chr>  
+# 1 AC01   
+# 2 AC21   
+# 3 AC41   
+# 4 AC12   
+# 5 AC14
+
+## CLEAN
+asp.tally.ht.tidy <- asp.tally.ht.tidy %>%
+  filter(!is.na(valley_full))  %>% ## drop the 4 plots
+  filter(is.na(REMOVED))
+
+## Convert stem counts to density 
+## 4046.86 m2 = 1 acre conversion
+## plot is 25m2
+## scaler is: 161.8744   
+## i.e., 1 stem/m2 = 161.8744 stems/acre
+
+### create a better 'HTclass' for plotting
+asp.tally.ht.tidy <- 
+  asp.tally.ht.tidy %>% 
+  mutate(HTclass2 = case_when(HTclass == "HT_0_50_CM" ~ "0-50cm",
+                              HTclass == "HT_51_100_CM" ~ "51-100cm",
+                              HTclass == "HT_101_150_CM" ~ "101-150cm",
+                              HTclass == "HT_151_200_CM" ~ "151-200cm",
+                              HTclass == "HT_201_250_CM" ~ "201-250cm")
+         )
+
+
+# set as factor, set levels
+asp.tally.ht.tidy <- 
+  asp.tally.ht.tidy %>% 
+  mutate(HTclass2 = factor(HTclass2, levels = c("0-50cm", "51-100cm","101-150cm","151-200cm","201-250cm")))
+
+```
+
+
+```{r}
+
+asp.tally.ht.tidy %>%
+  # group_by(VALLEY) %>% tally()
+  filter(VALLEY == "MP") %>% 
+  ggplot(aes(HTclass2, stemTally)) +
+  geom_col(aes(fill = LIVE_DEAD)) +
+  facet_grid(SITE_ID ~ timeClass, as.table = FALSE) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+asp.tally.ht.tidy %>%
+  # group_by(VALLEY) %>% tally()
+  filter(FENCED == "Y") %>% 
+  # filter(SITE_ID == "AC65") %>% 
+  filter(VALLEY == "MP") %>% 
+  ggplot(aes(HTclass2, stemTally)) +
+  geom_col(aes(fill = LIVE_DEAD)) +
+  facet_grid(SITE_ID ~ timeClass, as.table = FALSE) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+asp.tally.ht.tidy %>%
+  group_by(VALLEY) %>% tally()
+
+asp.tally.ht.tidy %>%
+  filter(LIVE_DEAD == 'LIVE') %>% 
+  filter(VALLEY == "MP") %>%
+  # filter(VALLEY == "EV") %>% 
+  ggplot(aes(HTclass2, timeClass)) +
+  geom_tile(aes(fill = stemTally), color = "white") +
+  scale_fill_viridis_c() +
+  facet_wrap(~SITE_ID) +
+  theme_bw() +
+  # facet_grid(SITE_ID ~ timeClass) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+
+```{r asp_tally_tileTxt, include=TRUE, fig.width=11, fig.height=8}
+### Core winter range: Aspen Stem Tallies
+
+## tally of core winter range - LIVE
+asp.tally.ht.tidy %>% # distinct(RANGE_TYPE)
+  filter(LIVE_DEAD == 'LIVE') %>% 
+  filter(RANGE_TYPE == "core winter range") %>%
+  # filter(VALLEY == "MP") %>%
+  # filter(VALLEY == "EV") %>% 
+  ggplot(aes(timeClass, HTclass2)) +
+  geom_tile(aes(fill = FENCED), color = "white", alpha = .2) +
+  geom_text(aes(label = stemTally), size = 3) +
+  # geom_tile(aes(fill = stemTally), color = "white") +
+  # scale_fill_viridis_c() +
+  facet_wrap(~SITE_ID) +
+  theme_bw() +
+  labs(x = "", y = "", title = "Core winter range: Aspen live stem tallies") +
+  # facet_grid(SITE_ID ~ timeClass) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# ggsave("./output/figures/aspen_tally_plots/asp_core_liveTally.png", width = 9.5, height = 8, dpi = 300)
+# ggsave("./output/figures/aspen_tally_plots/asp_core_liveTally.pdf", width = 11, height = 8.5, dpi = 300)
+
+
+## tally of core winter range - DEAD
+asp.tally.ht.tidy %>%
+  filter(LIVE_DEAD == 'DEAD') %>% 
+  filter(RANGE_TYPE == "core winter range") %>%
+  ggplot(aes(timeClass, HTclass2)) +
+  geom_tile(aes(fill = FENCED), color = "white", alpha = .2) +
+  geom_text(aes(label = stemTally), size = 3) +
+  facet_wrap(~SITE_ID) +
+  theme_bw() +
+  labs(x = "", y = "", title = "Moraine Park: Aspen dead stem tallies") +
+  # facet_grid(SITE_ID ~ timeClass) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# ggsave("./output/figures/aspen_tally_plots/asp_core_deadTally.png", width = 9.5, height = 8, dpi = 300)
+# ggsave("./output/figures/aspen_tally_plots/asp_core_deadTally.pdf", width = 11, height = 8.5, dpi = 300)
+
+
+## tally of NON-core winter range - LIVE
+asp.tally.ht.tidy %>% # distinct(RANGE_TYPE)
+  filter(LIVE_DEAD == 'LIVE') %>%
+  # distinct(RANGE_TYPE)
+  filter(RANGE_TYPE == "non-core winter range") %>%
+  filter(SITE_ID != "ANC24") %>% 
+  ggplot(aes(timeClass, HTclass2)) +
+  # geom_tile(aes(fill = FENCED), color = "white", alpha = .2) +
+  geom_tile(aes(fill = stemTally), color = "white") +
+  geom_text(aes(label = stemTally), size = 3) +
+  # scale_fill_viridis_c() +
+  scale_fill_viridis_c(begin = .4, end = .95, direction = -1, option = "B") +
+  facet_wrap(~SITE_ID) +
+  theme_bw() +
+  labs(x = "", y = "", title = "Non-core winter range: Aspen live stem tallies") +
+  # facet_grid(SITE_ID ~ timeClass) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("./output/figures/aspen_tally_plots/asp_noncore_deadTally.png", width = 7.125, height = 5.5, dpi = 300)
+# ggsave("./output/figures/aspen_tally_plots/asp_noncore_deadTally.pdf", width = 11, height = 8.5, dpi = 300)
+
+## tally of NON-core winter range - LIVE
+asp.tally.ht.tidy %>% # distinct(RANGE_TYPE)
+  filter(LIVE_DEAD == 'LIVE') %>%
+  # distinct(RANGE_TYPE)
+  filter(RANGE_TYPE == "non-core winter range") %>%
+  filter(SITE_ID != "ANC24") %>% 
+  ggplot(aes(timeClass, HTclass2)) +
+  # geom_tile(aes(fill = FENCED), color = "white", alpha = .2) +
+  geom_tile(aes(fill = stemTally), color = "white") +
+  geom_text(aes(label = stemTally), size = 3) +
+  # scale_fill_viridis_c() +
+  scale_fill_viridis_c(begin = .4, end = .95, direction = -1, option = "B") +
+  facet_wrap(~SITE_ID) +
+  theme_bw() +
+  labs(x = "", y = "", title = "Non-core winter range: Aspen live stem tallies") +
+  # facet_grid(SITE_ID ~ timeClass) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+# ggsave("./output/figures/aspen_tally_plots/asp_noncore_liveTally.png", width = 7.125, height = 5.5, dpi = 300)
+# ggsave("./output/figures/aspen_tally_plots/asp_noncore_liveTally.pdf", width = 11, height = 8.5, dpi = 300)
+
+## tally of NON-core winter range - LIVE
+asp.tally.ht.tidy %>% # distinct(RANGE_TYPE)
+  filter(LIVE_DEAD == 'LIVE') %>%
+  # distinct(RANGE_TYPE)
+  filter(RANGE_TYPE == "Kawuneeche Valley") %>%
+  # filter(SITE_ID != "ANC24") %>% 
+  ggplot(aes(timeClass, HTclass2)) +
+  # geom_tile(aes(fill = FENCED), color = "white", alpha = .2) +
+  geom_tile(aes(fill = stemTally), color = "white") +
+  geom_text(aes(label = stemTally), size = 3) +
+  # scale_fill_viridis_c() +
+  scale_fill_viridis_c(begin = .4, end = .95, direction = -1, option = "B") +
+  facet_wrap(~SITE_ID, ncol = 4) +
+  theme_bw() +
+  labs(x = "", y = "", title = "Kawuneeche Valley: Aspen live stem tallies") +
+  # facet_grid(SITE_ID ~ timeClass) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+# ggsave("./output/figures/aspen_tally_plots/asp_KV_liveTally.png", width = 7.125, height = 5.5, dpi = 300)
+
+
+```
+
+
+```{r}
+
+## tally of MP - LIVE
+asp.tally.ht.tidy %>%
+  filter(LIVE_DEAD == 'LIVE') %>% 
+  filter(VALLEY == "MP") %>%
+  # filter(VALLEY == "EV") %>% 
+  ggplot(aes(timeClass, HTclass2)) +
+  geom_tile(aes(fill = FENCED), color = "white", alpha = .2) +
+  geom_text(aes(label = stemTally), size = 3) +
+  # geom_tile(aes(fill = stemTally), color = "white") +
+  # scale_fill_viridis_c() +
+  facet_wrap(~SITE_ID) +
+  theme_bw() +
+  labs(x = "", y = "", title = "Moraine Park: Aspen live stem tallies") +
+  # facet_grid(SITE_ID ~ timeClass) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# ggsave("./output/figures/aspen_tally_plots/asp_MP_liveTally.png", width = 9.5, height = 7, dpi = 300)
+
+
+## tally of MP - DEAD
+asp.tally.ht.tidy %>%
+  filter(LIVE_DEAD == 'DEAD') %>% 
+  filter(VALLEY == "MP") %>%
+  ggplot(aes(timeClass, HTclass2)) +
+  geom_tile(aes(fill = FENCED), color = "white", alpha = .2) +
+  geom_text(aes(label = stemTally), size = 3) +
+  facet_wrap(~SITE_ID) +
+  theme_bw() +
+  labs(x = "", y = "", title = "Moraine Park: Aspen dead stem tallies") +
+  # facet_grid(SITE_ID ~ timeClass) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# ggsave("./output/figures/aspen_tally_plots/asp_MP_deadTally.png", width = 9.5, height = 7, dpi = 300)
+
+```
+
+
+
+```{r aspHtClass}
+## calc percentage in height classes
+ht.perc01 <- asp.tally.ht.tidy %>%
+  filter(is.na(REMOVED)) %>% 
+  filter(BURNED == "Not burned") %>%
+  filter(LIVE_DEAD == "LIVE") %>%
+  # filter(FENCED == "Y") %>%
+  filter(SITE_TYPE == "AC") %>%
+  filter(timeClass %in% c('BL','2013','2018')) %>%
+  # filter(timeClass == "BL" | timeClass == 2013 | timeClass == 2018) %>%
+  group_by(SITE_ID, timeClass) %>%
+  mutate(sumStem = sum(stemTally)) %>% 
+  ungroup() %>% 
+  mutate(percentTot = stemTally/sumStem) #%>% 
+  # mutate(percentTot = 100*round(percentTot,1)) 
+
+
+```
+
+
+```{r aspHtClass_plots}
+
+## heatmap: fenced
+ht.perc01 %>%
+  mutate(percentTot = 100*round(percentTot,1)) %>% 
+  filter(FENCED == "Y") %>%
+  filter(SITE_ID != "AC33") %>% 
+  filter(SITE_ID != "AC67") %>% 
+  filter(!is.nan(percentTot)) %>%
+  ggplot(aes(HTclass2, SITE_ID)) +
+  geom_tile(aes(fill = percentTot), color = 'white', alpha = .8) +
+  geom_text(aes(label = percentTot), size = 3) +
+  facet_grid(.~timeClass) +
+  scale_fill_viridis_c(begin = .4, end = .95, direction = -1, option = "B") +
+  theme_bw() +
+  # theme_minimal() +
+  labs(x = "Height class", y = "", fill = "% total stems", title = "Proportion of Live Aspen Stems by Height Class", subtitle = "Fenced and unburned plots only")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# ggsave("./output/figures/aspen_tally_plots/AC_Live_Fenced_Unburned_heightClass_heatmap3.png", width = 8.5, height = 6, dpi = 300)
+# ggsave("./output/figures/aspen_tally_plots/AC_Live_Fenced_Unburned_heightClass_heatmap2_w6h4p4.png", width = 6, height = 4.4, dpi = 300)
+
+
+## heatmap: unfenced
+ht.perc01 %>%
+  mutate(percentTot = 100*round(percentTot,1)) %>% 
+  filter(FENCED == "N") %>%
+  filter(SITE_ID != "AC07") %>% 
+  filter(SITE_ID != "AC68") %>% 
+  filter(!is.nan(percentTot)) %>%
+  ggplot(aes(HTclass2, SITE_ID)) +
+  geom_tile(aes(fill = percentTot), color = 'white', alpha = .8) +
+  geom_text(aes(label = percentTot), size = 3) +
+  facet_grid(.~timeClass) +
+  scale_fill_viridis_c(begin = .4, end = .95, direction = -1, option = "B") +
+  theme_bw() +
+  labs(x = "Height class", y = "", fill = "% total stems", title = "Proportion of Live Aspen Stems by Height Class", subtitle = "Unfenced and unburned plots only")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# ggsave("./output/figures/aspen_tally_plots/AC_Live_unFenced_Unburned_heightClass_heatmap3.png", width = 8.5, height = 6, dpi = 300)
+# ggsave("./output/figures/aspen_tally_plots/AC_Live_unFenced_Unburned_heightClass_heatmap2_w6h4p4.png", width = 6, height = 4.4, dpi = 300)
+
+
+## heatmap: KV
+asp.tally.ht.tidy %>%
+  filter(is.na(REMOVED)) %>% 
+  filter(BURNED == "Not burned") %>%
+  filter(LIVE_DEAD == "LIVE") %>%
+  # filter(FENCED == "Y") %>%
+  # filter(SITE_TYPE == "AC") %>%
+  filter(timeClass %in% c('BL','2013','2018')) %>%
+  # filter(timeClass == "BL" | timeClass == 2013 | timeClass == 2018) %>%
+  group_by(SITE_ID, timeClass) %>%
+  mutate(sumStem = sum(stemTally)) %>% 
+  ungroup() %>% 
+  mutate(percentTot = stemTally/sumStem) %>%
+  mutate(percentTot = 100*round(percentTot,1)) %>% 
+  filter(RANGE_TYPE == "Kawuneeche Valley") %>%
+  # filter(FENCED == "N") %>%
+  filter(SITE_ID != "AK04") %>% 
+  filter(SITE_ID != "AC68") %>% 
+  filter(!is.nan(percentTot)) %>%
+  ggplot(aes(HTclass2, SITE_ID)) +
+  geom_tile(aes(fill = percentTot), color = 'white', alpha = .8) +
+  geom_text(aes(label = percentTot), size = 3) +
+  facet_grid(.~timeClass) +
+  scale_fill_viridis_c(begin = .4, end = .95, direction = -1, option = "B") +
+  theme_bw() +
+  labs(x = "Height class", y = "", fill = "% total stems", title = "Proportion of Live Aspen Stems by Height Class", subtitle = "Unfenced and unburned plots only")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggsave("./output/figures/aspen_tally_plots/KV_Live_unFenced_Unburned_heightClass_heatmap3.png", width = 8.5, height = 6, dpi = 300)
+# ggsave("./output/figures/aspen_tally_plots/AC_Live_unFenced_Unburned_heightClass_heatmap2_w6h4p4.png", width = 6, height = 4.4, dpi = 300)
 
 
 
 ```
 
+
+```{r, fig.height=7.5, fig.height=6.5}
+
+## bar chart: fenced
+ht.perc01 %>%
+  filter(SITE_ID != "AC33") %>% 
+  filter(SITE_ID != "AC67") %>%
+  filter(FENCED == "Y") %>% 
+  filter(!is.nan(percentTot)) %>%
+  ggplot(aes(SITE_ID, percentTot)) +
+  geom_col(aes(fill = HTclass2)) +
+  facet_wrap(~timeClass, ncol = 3) +
+  # facet_grid(FENCED~timeClass) +
+  scale_fill_viridis_d(begin = .2, end = .95, direction = -1, option = "D") +
+  # scale_fill_viridis_d(option = "D") +
+  theme_bw() +
+  labs(y = "% of total stems", x = "", fill = "Height class", title = "Proportion of Live Aspen Stems by Height Class", subtitle = "Fenced and unburned plots only") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(legend.position = "top") +
+  scale_y_continuous(labels=scales::percent)
+  
+# ggsave("./output/figures/aspen_tally_plots/AC_Live_Fenced_Unburned_heightClass_bc.png", width = 9.5, height = 7.5, dpi = 300)
+# ggsave("./output/figures/aspen_tally_plots/AC_Live_Fenced_Unburned_heightClass_bc_w6h4p4.png", width = 6, height = 4.4, dpi = 300)
+
+# non-fenced
+ht.perc01 %>%
+  filter(SITE_ID != "AC33") %>% 
+  filter(SITE_ID != "AC67") %>%
+  filter(FENCED == "N") %>% 
+  filter(!is.nan(percentTot)) %>%
+  ggplot(aes(SITE_ID, percentTot)) +
+  geom_col(aes(fill = HTclass2)) +
+  facet_wrap(~timeClass, ncol = 3) +
+  # facet_grid(FENCED~timeClass) +
+  scale_fill_viridis_d(begin = .2, end = .95, direction = -1, option = "D") +
+  # scale_fill_viridis_d(option = "D") +
+  theme_bw() +
+  labs(y = "% of total stems", x = "", fill = "Height class", title = "Proportion of Live Aspen Stems by Height Class", subtitle = "Unfenced and unburned plots only") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(legend.position = "top") +
+  scale_y_continuous(labels=scales::percent)
+
+# ggsave("./output/figures/aspen_tally_plots/AC_Live_unFenced_Unburned_heightClass_bc.png", width = 9.5, height = 7.5, dpi = 300)
+# ggsave("./output/figures/aspen_tally_plots/AC_Live_unFenced_Unburned_heightClass_bc_w6h4p4.png", width = 6, height = 4.4, dpi = 300)
+
+
+```
+
+
+
+### Aspen height: Non-core winter range
+
+```{r}
+
+```
+
+
+
+### Aspen height: Kawuneeche Valley
+
+```{r}
+
+```
 
 
 
@@ -2450,7 +3579,46 @@ asp.tally.all %>%
 ## Willow Offtake
 
 
-```{r, eval=FALSE}
+_Master excel file: Willow_Offtake_Data_2009_Through_2018.xlsx_
+
+```{r, echo = FALSE}
+# Looking for baseline data?  	
+# 	Baseline data was collected over 2 seasons: 2008 and 2009.  
+# 	The baseline data is located in an Excel spreadsheet at:
+# 	EVMP > Vegetation > Analysis > 5 Year Review > Baseline Data from Linda
+# 	
+# Where is the Kawuneeche Baseline data?	
+# 	The Kawuneeche Baseline data is in a worksheet in the Baseline.xls workbook as described above.    
+# 	The Kawuneeche willow plots (KW 1 thru 8) were established in August/Sept 2011, just prior to the installation of the exclosure near Timber Creek CG.
+# 	
+# KEY	
+# SITE_TYPE (WC=Willow core, WNC= Willow noncore, WK= Willow Kawuneeche Valley)	
+# COLOR_OF_STEM_MARKER (BR=brown, G=green, BL=black, Y=yellow, GR=gray, BR-N=brown notched, W=white)	
+# NUMBER_BROWSED_CAG_SHOOTS (# Browsed Current Annual Growth Shoots)	
+# NUMBER_UNBROWSED_CAG_SHOOTS (# Unbrowsed Current Annual Growth Shoots)	
+# BROWSED_OR_UNBROWSED (Measured shoot browsed (B) or unbrowsed (U)?)	
+# ADDITIONAL_SHOOT (Additional shoot 1=yes, 0=no)	
+
+# Baseline data was collected over 2 seasons: 2008 and 2009.  
+# The baseline data is located in an Excel spreadsheet at:
+# EVMP > Vegetation > Analysis > 5 Year Review > Baseline Data from Linda
+# 	
+# The Kawuneeche Baseline data is in a worksheet in the Baseline.xls workbook as described above.    
+# The Kawuneeche willow plots (KW 1 thru 8) were established in August/Sept 2011, just prior to the installation of the exclosure near Timber Creek CG.
+# 	
+# Variable Key:
+# 	
+# SITE_TYPE (WC=Willow core, WNC= Willow noncore, WK= Willow Kawuneeche Valley)	
+# COLOR_OF_STEM_MARKER: (BR=brown, G=green, BL=black, Y=yellow, GR=gray, BR-N=brown notched, W=white)	
+# NUMBER_BROWSED_CAG_SHOOTS: (# Browsed Current Annual Growth Shoots)	
+# NUMBER_UNBROWSED_CAG_SHOOTS: (# Unbrowsed Current Annual Growth Shoots)	
+# BROWSED_OR_UNBROWSED: (Measured shoot browsed (B) or unbrowsed (U)?)	
+# ADDITIONAL_SHOOT: Additional shoot 1=yes, 0=no	
+
+```
+
+
+```{r, eval=FALSE, echo = FALSE}
 
 # data/EVMP_20181010/TenYearReview/Willow_Cumulative_Data_Baseline_Through_2018.xlsx
 wo <- readxl::excel_sheets("data/EVMP_data/TenYearReview/Willow_Cumulative_Data_Baseline_Through_2018.xlsx")
@@ -2638,23 +3806,28 @@ baseline <- baseline %>%
 
 ```
 
-Rewrite the SAS program used to analyze willow height data as found in table 9 of Zeigenfuss and Johnson (2015)--Least squares means of average and maximum willow height and percent willow cover on burned sites compared to unburned sites using the macroplot method at EVMP willow monitoring sites in Rocky Mountain National Park, Colorado. 
+```{r, echo=FALSE}
 
-**Steps:** 
+# Rewrite the SAS program used to analyze willow height data as found in table 9 of Zeigenfuss and Johnson (2015)--Least squares means of average and maximum willow height and percent willow cover on burned sites compared to unburned sites using the macroplot method at EVMP willow monitoring sites in Rocky Mountain National Park, Colorado. 
+# 
+# **Steps:** 
+# 
+# 1. Read in data from a file containing the baseline data from willow macroplots  
+# 2. Calculate canopy area for each plot and assigns the baseline year (2008) to these data 
+# 3. Sort data down to willow and non-willow species groups and calculates mean for the variables "average height" and "maximum ht" for each group.
+# 
+# 
+# 
+# [follow up]
+# **See: **  
+# 
+# >willow shrub cover macro table 8.sas  
+# >willow shrub height table 8.sas  
+# >willow shrub cover macro table 9.txt    
+# >willow shrub height table 9.txt 
 
-1. Read in data from a file containing the baseline data from willow macroplots  
-2. Calculate canopy area for each plot and assigns the baseline year (2008) to these data 
-3. Sort data down to willow and non-willow species groups and calculates mean for the variables "average height" and "maximum ht" for each group.
-
-
-
-[follow up]
-**See: **  
-
->willow shrub cover macro table 8.sas  
->willow shrub height table 8.sas  
->willow shrub cover macro table 9.txt    
->willow shrub height table 9.txt  
+```
+ 
 
 
 
@@ -2667,33 +3840,41 @@ asp1 <- read_excel("data/EVMP_data/TenYearReview/Aspen_Data_Baseline_through_201
 ```
 
 
-Percent of aspen monitoring sites on elk winter range and Kawuneeche Valley of Rocky Mountain National Park, Colorado, that had a recruiting sapling cohort (at least 400 stems per hectare of height between 1.5 and 2.5 meters) at baseline sampling and in 2013. Entire winter range numbers are weighted by the percent area in each location.
-
-Tally of Live Aspen Stems per Plot >2.5 m in Height (DBH=diameter at breast height [1.4 m])		
-
-Tally of Live Aspen Stems per Plot <2.5 m in Height				
-
-
-Tally of Dead Aspen Stems per Plot >2.5 m in Height (DBH=diameter at breast height [1.4 m])
-
-Cleaned data to make readable as csv
-
-Site Type: AC=core, ANC=non-core, AK=Kawuneeche Valley
-
-
-Rewrite the SAS program used to create figs. 3,4,5, and 7 of Zeigenfuss and Johnson (2015)--Distribution of aspen tree (height greater than 2.5 meters) stem diameters in monitoring sites. 
-
-**Steps:** 
-1. Read in data from a file with tallies of live aspen stems by dbh size class  
-2. Read in a file with information for each aspen monitoring site  
-3. Merge these two files, remove saplings 
-4. Reclass trees into groups of small (2-10 cm dbh), medium (10-20 cm dbh) and large (20+ dbh) trees.
+```{r, echo = FALSE}
+# Percent of aspen monitoring sites on elk winter range and Kawuneeche Valley of Rocky Mountain National Park, Colorado, that had a recruiting sapling cohort (at least 400 stems per hectare of height between 1.5 and 2.5 meters) at baseline sampling and in 2013. Entire winter range numbers are weighted by the percent area in each location.
+# 
+# Tally of Live Aspen Stems per Plot >2.5 m in Height (DBH=diameter at breast height [1.4 m])		
+# 
+# Tally of Live Aspen Stems per Plot <2.5 m in Height				
+# 
+# 
+# Tally of Dead Aspen Stems per Plot >2.5 m in Height (DBH=diameter at breast height [1.4 m])
+# 
+# Cleaned data to make readable as csv
+# 
+# Site Type: AC=core, ANC=non-core, AK=Kawuneeche Valley
+```
 
 
-**See: **  
 
->aspen sapling table 4.sas  
->aspen sapling table 5.sas  
+
+```{r, echo=FALSE}
+
+# Rewrite the SAS program used to create figs. 3,4,5, and 7 of Zeigenfuss and Johnson (2015)--Distribution of aspen tree (height greater than 2.5 meters) stem diameters in monitoring sites. 
+# 
+# **Steps:** 
+# 1. Read in data from a file with tallies of live aspen stems by dbh size class  
+# 2. Read in a file with information for each aspen monitoring site  
+# 3. Merge these two files, remove saplings 
+# 4. Reclass trees into groups of small (2-10 cm dbh), medium (10-20 cm dbh) and large (20+ dbh) trees.
+# 
+# 
+# **See: **  
+# 
+# >aspen sapling table 4.sas  
+# >aspen sapling table 5.sas 
+```
+ 
 
 
 
@@ -2735,27 +3916,10 @@ baseline <- baseline %>%
   naniar::replace_with_na_all(condition = ~.x %in% na_strings) %>%
   mutate(DATE = as.numeric(DATE)) 
 
-# baseline %>%
-#   excel_numeric_to_date(DATE, date_system = "modern")
 
 ```
 
 
-
-```{r, eval=TRUE}
-
-# Examine the file
-baseline <- baseline %>% 
-  filter(!is.na(UTM_E_NAD83))
-
-baseline %>% 
-  visdat::vis_dat() +
-  labs(title = "Upland Vegetation -- Missing Values")
-# + 
-# coord_flip()
-
-
-```
 
 ```{r, eval=FALSE}
 bl.sel <- baseline %>%
@@ -2780,12 +3944,15 @@ bl.sel %>%
 
 
 
-
+```{r, echo=FALSE}
 # Discussion
 
-Targets from Ziegenfuss and Johnson 2015:
+# Targets from Ziegenfuss and Johnson 2015:
+# 
+# 1.Progressive increase in aspen regeneration above the baseline level of 13 percent to at least 45 percent of winter range stands (presence of stems less than 2 cm dbh reaching 1.5–2.5 m tall).
+```
 
-1.Progressive increase in aspen regeneration above the baseline level of 13 percent to at least 45 percent of winter range stands (presence of stems less than 2 cm dbh reaching 1.5–2.5 m tall).
+
 
 # References  
 
