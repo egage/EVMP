@@ -1634,9 +1634,7 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
 
 # Results 
 
-## Willow line-intercept data
-
-### Shrub height [line intercept]
+## Shrub height [line intercept]
 
 ```{r, echo=FALSE}
 # > From discussions with HA in the field, the orientation of line-intercept transects may not have had a consistent orientation from sampling interval to interval.
@@ -1960,7 +1958,7 @@ csv.all.lc.li.df %>%
 
 > Make assumption that "NA" for fenced is not fenced?
 
-#### Core winter range: fenced vs unfenced
+### Core winter range: fenced vs unfenced
 ```{r}
 ## will want to be sure interannual comparisons are made on using the right sets of points
 ## if, for example, 1/3 of 2018 plots were sampled in 2017, a comparison made on all of the 2018 data wouldn't make too much sense. 
@@ -2388,7 +2386,6 @@ sinfo.df %>%
 ```
 
 
-
 ```{r Moose, eval=FALSE}
 #### Observations of moose presence noted in plots
 # 
@@ -2473,10 +2470,52 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
 
 # **Summary table of canopy diameter by species **
 csv.all.lc.mcro.df %>% 
+  filter(str_detect(SPECIES_CODE, "^SA")) %>% 
+  filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SABO" & SPECIES_CODE !="SAER") %>%
+  filter(SITE_TYPE == "WC") %>%
+  # filter(SITE_TYPE != "WNC") %>% 
+  mutate(yr = as.character(yr)) %>%
+  # mutate(yr = as.integer(yr)) %>%
+  # mutate(yr = as.character(yr)) %>% 
+  # filter(yr == 2013 | yr == 2018) %>%
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
   group_by(yr,SPECIES_CODE) %>% 
   skimr::skim(CANOPY_DIA_CM_avg) %>% 
-  select(-c(formatted, level)) %>% 
-  gt()
+  # names()
+  # select(-c(formatted, level)) %>% 
+  select(yr, contains("skim"),SPECIES_CODE, contains("c.m"), contains("c.s")) %>%
+  select(-skim_type) %>% 
+  ggplot(aes(yr, SPECIES_CODE)) +
+  geom_tile(aes(fill = numeric.mean)) +
+  geom_text(aes(label = round(numeric.mean,1)), color = "white") +
+  scale_fill_viridis() +
+  labs(x = "Year", y = "Species", fill = "mean", title = "Mean Canopy Diameter - Core Range")
+  
+# **Summary table of canopy diameter by species **
+csv.all.lc.mcro.df %>% 
+  # filter(str_detect(SPECIES_CODE, "^SA")) %>%
+  # filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SABO" & SPECIES_CODE !="SAER") %>%
+  filter(!(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SABO" & SPECIES_CODE !="SAER")) %>%
+  filter(SPECIES_CODE !="SAXX") %>% 
+  filter(SITE_TYPE == "WC") %>%
+  # filter(SITE_TYPE != "WNC") %>% 
+  mutate(yr = as.character(yr)) %>%
+  # mutate(yr = as.integer(yr)) %>%
+  # mutate(yr = as.character(yr)) %>% 
+  # filter(yr == 2013 | yr == 2018) %>%
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  group_by(yr,SPECIES_CODE) %>% 
+  skimr::skim(CANOPY_DIA_CM_avg) %>% 
+  # names()
+  # select(-c(formatted, level)) %>% 
+  select(yr, contains("skim"),SPECIES_CODE, contains("c.m"), contains("c.s")) %>%
+  select(-skim_type) %>% 
+  ggplot(aes(yr, SPECIES_CODE)) +
+  geom_tile(aes(fill = numeric.mean)) +
+  geom_text(aes(label = round(numeric.mean,1)), color = "white") +
+  scale_fill_viridis() +
+  labs(x = "Year", y = "Species", fill = "mean", title = "Mean Canopy Diameter - Core Range")
+
 ```
 
 
@@ -2573,6 +2612,58 @@ csv.all.lc.mcro.df %>%
 ```
 
 
+### Shrub Height - Macroplot
+
+```{r}
+
+csv.all.lc.mcro.df %>% 
+  filter(str_detect(SPECIES_CODE, "^SA")) %>% 
+  filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SABO" & SPECIES_CODE !="SAER") %>%
+  filter(SITE_TYPE == "WC") %>%
+  # filter(SITE_TYPE != "WNC") %>% 
+  mutate(yr = as.character(yr)) %>%
+  # mutate(yr = as.integer(yr)) %>%
+  # mutate(yr = as.character(yr)) %>% 
+  # filter(yr == 2013 | yr == 2018) %>%
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  group_by(yr,SPECIES_CODE) %>% 
+  skimr::skim(PLANT_HT_CM) %>% 
+  # names()
+  # select(-c(formatted, level)) %>% 
+  select(yr, contains("skim"),SPECIES_CODE, contains("c.m"), contains("c.s")) %>%
+  select(-skim_type) %>% 
+  ggplot(aes(yr, SPECIES_CODE)) +
+  geom_tile(aes(fill = numeric.mean)) +
+  geom_text(aes(label = round(numeric.mean,1)), color = "white") +
+  scale_fill_viridis() +
+  labs(x = "Year", y = "Species", fill = "mean", title = "Mean Height - Core Range", subtitle = "Macroplot data")
+
+```
+
+```{r}
+csv.all.lc.mcro.df %>% 
+  filter(str_detect(SPECIES_CODE, "^SA")) %>% 
+  filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SABO" & SPECIES_CODE !="SAER") %>%
+  filter(SITE_TYPE == "WC") %>%
+  # filter(SITE_TYPE != "WNC") %>% 
+  mutate(yr = as.character(yr)) %>%
+  # mutate(yr = as.integer(yr)) %>%
+  # mutate(yr = as.character(yr)) %>% 
+  # filter(yr == 2013 | yr == 2018) %>%
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  group_by(yr,SPECIES_CODE, FENCED) %>% 
+  skimr::skim(PLANT_HT_CM) %>% 
+  # names()
+  # select(-c(formatted, level)) %>% 
+  select(yr, contains("skim"),SPECIES_CODE, contains("c.m"), contains("c.s"), FENCED) %>%
+  select(-skim_type) %>% 
+  ggplot(aes(yr, SPECIES_CODE)) +
+  geom_tile(aes(fill = numeric.mean)) +
+  geom_text(aes(label = round(numeric.mean,1)), color = "white") +
+  scale_fill_viridis() +
+  labs(x = "Year", y = "Species", fill = "mean", title = "Mean Height - Core Range", subtitle = "Fenced/unfenced") +
+  facet_wrap(~FENCED)
+```
 
 #### Count of Observations by Species  
 
@@ -3599,21 +3690,71 @@ _Master excel file: Willow_Offtake_Data_2009_Through_2018.xlsx_
 # BROWSED_OR_UNBROWSED (Measured shoot browsed (B) or unbrowsed (U)?)	
 # ADDITIONAL_SHOOT (Additional shoot 1=yes, 0=no)	
 
-# Baseline data was collected over 2 seasons: 2008 and 2009.  
-# The baseline data is located in an Excel spreadsheet at:
-# EVMP > Vegetation > Analysis > 5 Year Review > Baseline Data from Linda
+```
+
+The Kawuneeche willow plots (KW 1 thru 8) were established in August/Sept 2011, just prior to the installation of the exclosure near Timber Creek CG.
+
+_KEY:_	
+	
+SITE_TYPE (WC=Willow core, WNC= Willow noncore, WK= Willow Kawuneeche Valley)	
+	
+COLOR_OF_STEM_MARKER (BR=brown, G=green, BL=black, Y=yellow, GR=gray, BR-N=brown notched, W=white)	
+	
+NUMBER_BROWSED_CAG_SHOOTS (# Browsed Current Annual Growth Shoots)	
+	
+NUMBER_UNBROWSED_CAG_SHOOTS (# Unbrowsed Current Annual Growth Shoots)	
+	
+BROWSED_OR_UNBROWSED (Measured shoot browsed (B) or unbrowsed (U)?)	
+	
+ADDITIONAL_SHOOT (Additional shoot 1=yes, 0=no)	
+
+
+```{r, eval=FALSE}
+
+# This willow database (workbook)structure	
+# 	Annual willow data collected in support of the Elk-Vegetation Management Plan (EVMP) is accumulated by year and season in this single workbook
 # 	
-# The Kawuneeche Baseline data is in a worksheet in the Baseline.xls workbook as described above.    
-# The Kawuneeche willow plots (KW 1 thru 8) were established in August/Sept 2011, just prior to the installation of the exclosure near Timber Creek CG.
+# 	The cumulative data set for all years-to-date is contained in the most recent year's subdirectory, e.g., O:…EVMP>Vegetation>Annual Records>FY10, FY11, etc.
 # 	
-# Variable Key:
+# 	Data are collected and entered in a worksheet specific to that year and season as shown on the worksheet tabs.   
+# 	
+# 	Willow data in support of the Elk Vegetation Management Plan (EVMP) is collected in 2 stages each year -- A sample of unbrowsed shoots are collected   
+# 	     each fall, after the growing season.  Specific measurements of browsed and unbrowsed shoots in specified plots are taken each spring
+# 	     prior to the onset of growth.  Comparison of the spring measurements to the previous fall's shoot measurements allows calculation of winter offtake by
+# 	    herbivores.
+# 	
+# Data security, disaster recovery	
+# 	In addition to residing on the O:..>EVMP subdirectory as noted above, the data workbook is backed up on the hard drive (C:) of the field wildlife  
+# 	     biologist's office computer after each data entry session
+# 	
+# 	Hard copy of spring offtake shoot measurements are held in the supervisory biologist's (T. Johnson) files (originals) and photocopies are kept in the field wildlife  
+# 	    biologist's files
+# 	
+# 	Fall shoot measurements are conducted in the office, and entered directly into the worksheet, without hard copy
+# 	
+# Looking for baseline data?  	
+# 	Baseline data was collected over 2 seasons: 2008 and 2009.  
+# 	The baseline data is located in an Excel spreadsheet at:
+# 	EVMP > Vegetation > Analysis > 5 Year Review > Baseline Data from Linda
+# 	
+# Where is the Kawuneeche Baseline data?	
+# 	The Kawuneeche Baseline data is in a worksheet in the Baseline.xls workbook as described above.    
+# 	The Kawuneeche willow plots (KW 1 thru 8) were established in August/Sept 2011, just prior to the installation of the exclosure near Timber Creek CG.
+# 	
+# KEY	
 # 	
 # SITE_TYPE (WC=Willow core, WNC= Willow noncore, WK= Willow Kawuneeche Valley)	
-# COLOR_OF_STEM_MARKER: (BR=brown, G=green, BL=black, Y=yellow, GR=gray, BR-N=brown notched, W=white)	
-# NUMBER_BROWSED_CAG_SHOOTS: (# Browsed Current Annual Growth Shoots)	
-# NUMBER_UNBROWSED_CAG_SHOOTS: (# Unbrowsed Current Annual Growth Shoots)	
-# BROWSED_OR_UNBROWSED: (Measured shoot browsed (B) or unbrowsed (U)?)	
-# ADDITIONAL_SHOOT: Additional shoot 1=yes, 0=no	
+# 	
+# COLOR_OF_STEM_MARKER (BR=brown, G=green, BL=black, Y=yellow, GR=gray, BR-N=brown notched, W=white)	
+# 	
+# NUMBER_BROWSED_CAG_SHOOTS (# Browsed Current Annual Growth Shoots)	
+# 	
+# NUMBER_UNBROWSED_CAG_SHOOTS (# Unbrowsed Current Annual Growth Shoots)	
+# 	
+# BROWSED_OR_UNBROWSED (Measured shoot browsed (B) or unbrowsed (U)?)	
+# 	
+# ADDITIONAL_SHOOT (Additional shoot 1=yes, 0=no)	
+
 
 ```
 
@@ -3621,31 +3762,31 @@ _Master excel file: Willow_Offtake_Data_2009_Through_2018.xlsx_
 ```{r, eval=FALSE, echo = FALSE}
 
 # data/EVMP_20181010/TenYearReview/Willow_Cumulative_Data_Baseline_Through_2018.xlsx
-wo <- readxl::excel_sheets("data/EVMP_data/TenYearReview/Willow_Cumulative_Data_Baseline_Through_2018.xlsx")
-wo
+offt <- readxl::excel_sheets("./data/EVMP_data/TenYearReview/Willow_Offtake_Data_2009_Through_2018.xlsx")
 
-path <- ("data/EVMP_data/TenYearReview/Willow_Cumulative_Data_Baseline_Through_2018.xlsx")
 
+
+u17.raw <- u17.raw %>% 
+  rename(wilid = wildid) %>% 
+  rename(species = spp) %>% 
+  rename(pl_ht_cm = ht_cm) %>%
+  rename(live_dead = live) %>% 
+  mutate(season = "spring") %>% 
+  mutate(yr = as.character("2017"))
+
+
+path.offt <- ("./data/EVMP_data/TenYearReview/Willow_Offtake_Data_2009_Through_2018.xlsx")
+
+
+# Willow_Offtake_Data_2009_Through_2018.xlsx
 
 #### Read in the worksheets and create list of df
 # each tab is a df in the list object
-wo.d <- path %>% 
-  excel_sheets() %>% 
+offtake <- path.offt %>% 
+  excel_sheets() %>%
+  str()
   set_names() %>% 
   map(read_excel, path = path) # 
-
-## this just got ALL of the tabs. Will want to subset the list to get the "like" types (e.g., rowbind columns structured the same way)
-# wo.d %>% names()
-#  [1] "KEY"                             "2008 Site Info"                 
-#  [3] "2008-09 Macroplot Baseline"      "2008-09 Line Intercept Baseline"
-#  [5] "2013 Site Info"                  "2013 Macroplot Inventory"       
-#  [7] "2013 Line Intercept"             "2015 Site Info"                 
-#  [9] "2015 Macroplot Inventory"        "2015 Line Intercept"            
-# [11] "2016 Site Info"                  "2016 Macroplot Inventory"       
-# [13] "2016 Line Intercept"             "2017 Site Info"                 
-# [15] "2017 Macroplot Inventory"        "2017 Line Intercept"            
-# [17] "2018 Site Info"                  "2018 Macroplot Inventory"       
-# [19] "2018 Line Intercept"  
 
 
 ###### Get the names of the macroplot tabs as vector with datapasta
