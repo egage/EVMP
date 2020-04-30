@@ -7,7 +7,6 @@ output:
     fig_caption: yes
     theme: yeti
     toc: yes
-    toc_depth: 2
   word_document:
     toc: yes
     toc_depth: '1'
@@ -23,6 +22,53 @@ opts_chunk$set(fig.path = "../output/figures/") # corrected path and added dev. 
 
 ```
 
+
+```{r,echo=FALSE}
+# library(here)
+# here()
+# install.packages("bindrcpp")
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(fs))
+suppressPackageStartupMessages(library(sf))
+# library(raster)
+suppressPackageStartupMessages(library(janitor))
+suppressPackageStartupMessages(library(readxl))
+# library(glue)
+suppressPackageStartupMessages(library(mapview))
+# library(ggmap)
+# library(ggrepel)
+suppressPackageStartupMessages(library(viridis))
+# library(ggExtra)
+suppressPackageStartupMessages(library(ggstance))
+suppressPackageStartupMessages(library(readxl))
+suppressPackageStartupMessages(library(DT))
+# library(kableExtra)
+suppressPackageStartupMessages(library(lubridate))
+suppressPackageStartupMessages(library(skimr)) 
+suppressPackageStartupMessages(library(dataMaid))
+# library(ggmap)
+library(lubridate)
+library(mapview)
+library(vtree)
+library(bayestestR)
+
+# library(flextable) # using gt instead
+
+library(gt)
+library(rstatix)
+# devtools::install_github("dkahle/ggmap")
+library(ggmap)
+library(gt)
+library(ggrepel)
+
+
+## vroom https://vroom.r-lib.org/articles/vroom.html
+```
+
+https://vroom.r-lib.org/articles/vroom.html
+
+
+### Function definitions
 ```{r, utilityFuncDefn, echo=FALSE, warning=FALSE,message=FALSE, comment=FALSE}
 # define some utility functions...
 
@@ -83,18 +129,125 @@ cut_equal_ranges <- function(x, n = 10, ...) {
 
 ```
 
-```{r, echo=FALSE, warning=FALSE,message=FALSE, comment=FALSE, eval=FALSE}
+```{r, echo=FALSE, warning=FALSE,message=FALSE, comment=FALSE, eval=TRUE}
 
 # some themes
 theme_smFacet <- theme_bw() + theme(strip.text.x = element_text(size = 7))
 theme_smFacet2 <- theme_bw() + theme(strip.text.x = element_text(size = 6))
-theme_CowsMod1 <- theme_cowplot() + 
-  theme(strip.text.x = element_text(size = 7)) +
-  theme(plot.title = element_text(hjust = 0)) 
+# theme_CowsMod1 <- theme_cowplot() + 
+#   theme(strip.text.x = element_text(size = 7)) +
+#   theme(plot.title = element_text(hjust = 0)) 
 
 ```
 
+```{r, echo=FALSE, warning=FALSE,message=FALSE, comment=FALSE}
+
+read_sheets <- function(file){
+  xlsx_file <- file
+  xlsx_file %>%
+    excel_sheets() %>%
+    set_names() %>%
+    map_df(read_excel, path = xlsx_file, .id = 'sheet_name', trim_ws = TRUE, skip = 1, col_types = "text", range = "A2:DW700") %>% 
+    mutate(file_name = file) %>% 
+    select(file_name, sheet_name, everything())
+}
+
+
+## read xlsx then csv cache
+read_then_csv <- function(sheet, path) {
+  pathbase <- path %>%
+    basename() %>%
+    tools::file_path_sans_ext()
+  path %>%
+    read_excel(sheet = sheet) %>% 
+    write_csv(paste0(pathbase, "-", sheet, ".csv"))
+}
+
+## plotting
+ggTile_yr_season_site2 <- function(df){
+  df %>%
+  group_by(yr, season, site2) %>%
+  summarise(n= n()) %>%
+  ggplot(aes(yr, site2)) +
+  geom_tile(aes(fill = n), color = 'white') +
+  viridis::scale_fill_viridis(option = "B") +
+  facet_wrap(~season) +
+  theme(axis.text.x = element_text(angle = 55, hjust = 1, size = 7)) +
+  theme(axis.text.y = element_text(size = 7)) +
+  facet_wrap(~season)}
+
+
+ggTile_yr_season_site <- function(df){
+  df %>%
+  group_by(yr, season, site) %>%
+  summarise(n= n()) %>%
+  ggplot(aes(yr, site)) +
+  geom_tile(aes(fill = n), color = 'white') +
+  viridis::scale_fill_viridis(option = "D") +
+  theme(axis.text.x = element_text(angle = 55, hjust = 1, size = 7)) +
+  theme(axis.text.y = element_text(size = 7)) +
+  facet_wrap(~season)} 
+# plotting funcs
+
+
+### aspen tally
+## need to work on!
+ggTile_asp_denisty01 <- function(df,fillvar, facvar){
+  df %>%
+  filter(LIVE_DEAD == 'LIVE') %>% 
+  # filter(RANGE_TYPE == "core winter range") %>% 
+  # filter(SITE_ID == "AC60") %>% select(-contains("UT")) %>% datatable()
+  # ggplot(aes(timeClass, DBHclGp01)) +
+  ggplot(aes(timeClass, DBHclGp01)) +  
+  geom_tile(aes(fill = {{fillvar}}), color = "white", alpha = .2) +
+  # geom_text(aes(label = stemTally), size = 3) +
+  # facet_wrap(~SITE_ID) +
+  facet_wrap(~ {{facvar}}) +
+  theme_bw() +
+  labs(x = "", y = "", title = "Aspen live stem tallies") +
+  # facet_grid(SITE_ID ~ timeClass) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+
+```
   
+
+```{r}
+### Table functions
+## gt field names
+
+names.gt <- function(df){
+  df %>% 
+  names() %>% enframe %>% gt::gt() %>% 
+    tab_header(title = "field names")
+}
+
+names.dt <- function(df){
+  df %>% 
+  names() %>% enframe %>% 
+    DT::datatable(caption = "field names")
+}
+
+
+```
+
+```{r}
+## summary funcs
+mean_r1 <- function(x){
+  round(mean(x, na.rm = TRUE),1)
+}
+
+sd_r1 <- function(x){
+  round(sd(x, na.rm = TRUE),1)
+}
+
+range_r1 <- function(x){
+  round(range(x, na.rm = TRUE),1)
+}
+
+
+
+```
 
 Contact: edgage@rams.colostate.edu
 
@@ -105,42 +258,6 @@ Contact: edgage@rams.colostate.edu
 This is a working document. All analyses are provisional. 
 Please do not distribute.
 
-
-```{r,echo=FALSE}
-# library(here)
-# here()
-# install.packages("bindrcpp")
-suppressPackageStartupMessages(library(tidyverse))
-suppressPackageStartupMessages(library(fs))
-suppressPackageStartupMessages(library(sf))
-# library(raster)
-suppressPackageStartupMessages(library(janitor))
-suppressPackageStartupMessages(library(readxl))
-# library(glue)
-suppressPackageStartupMessages(library(mapview))
-# library(ggmap)
-# library(ggrepel)
-suppressPackageStartupMessages(library(viridis))
-# library(ggExtra)
-suppressPackageStartupMessages(library(ggstance))
-suppressPackageStartupMessages(library(readxl))
-suppressPackageStartupMessages(library(DT))
-# library(kableExtra)
-suppressPackageStartupMessages(library(lubridate))
-suppressPackageStartupMessages(library(skimr)) 
-suppressPackageStartupMessages(library(dataMaid))
-# library(ggmap)
-library(lubridate)
-library(mapview)
-
-library(flextable)
-# remotes::install_github("rstudio/gt") # Rstudio alternaitive to flextable?
-library(gt)
-
-# devtools::install_github("dkahle/ggmap")
-library(ggmap)
-
-```
 
 # Introduction
 
@@ -175,6 +292,8 @@ This report analyzes data from the first 10 years of EVMP monitoring to help ass
 Protocols detailed in the EVMP monitoring plan were used to collect vegetation data at study plots (Zeigenfuss et al. 2011). Baseline measurements were collected from 2006–2009, with RMNP staff collecting subsequent data. Willow offtake measurements were usually made in May and June, but were delayed in some years to as late as mid-July due to weather.
 
 Upland line intercept transect data were collected in core upland (UC) and upland noncore areas (UNC) along a 30m transect line. Observations included the presence of tracks, scat, burrows, plant damage, or browse. In addition, observation of animal sign were made for elk, deer, moose, and other notable species.
+
+Willow data were collected in the spring and fall each year. Comparison of the spring measurements to the previous fall's shoot measurements allows calculation of winter offtake by herbivores.
 
 ```{r, eval=FALSE, echo=FALSE}
 
@@ -395,20 +514,6 @@ valley_lu <- read_csv("./data/EVMP_derived/VALLEY_lu.csv")
 ## join in the valley info
 site.info.clean <- left_join(site.info.clean, valley_lu, by = "VALLEY") 
 
-# site.info.clean %>% 
-#   group_by(BURNED) %>% 
-#   tally()
-
-#   BURNED                       n
-#   <chr>                    <int>
-# 1 Completely                  16
-# 2 Moderately                   1
-# 3 Moderately to Completely    10
-# 4 N                          192
-# 5 N Y                          1
-# 6 Not burned                  13
-# 7 Y                            8
-
 # I'm going to convert all these into y and n until I get guidance from Hanem
 # I'm also eliminating all the vague burned categories, collapsing them to a binary burned/not-burned category
 
@@ -449,58 +554,77 @@ A total of 15 plots were removed from subsequent steps. Confirm the final status
 ```{r}
 ## create some tables
 
-gt.siteinfo <- site.info.clean %>%
+site.info.clean %>%
   dplyr::select(-REMOVED) %>% 
-  gt::gt() %>%
-  tab_header(title = md("**Valid EVMP plots from 'site_info' worksheet**")) 
+  datatable(caption = "Valid EVMP plots")
 
-gt.siteinfo <- gt.siteinfo %>% 
-  tab_style(
-    style = list(
-      cell_fill(color = "lightcyan"),
-      cell_text(weight = "bold")
-      ),
-    locations = cells_data(
-      columns = vars(FENCED),
-      rows = FENCED == "Y")
-  ) %>% 
-  tab_style(
-    style = list(
-      cell_fill(color = "ivory")),
-    locations = cells_data(
-      columns = vars(FENCED),
-      rows = FENCED == "N")
-  ) 
 
-## add color for pType
-gt.siteinfo %>% 
-    tab_style(
-    style = list(
-      cell_fill(color = "lightgreen"),
-      cell_text(weight = "bold")
-      ),
-    locations = cells_data(
-      columns = vars(pType),
-      rows = pType == "willow")
-  ) %>% 
-  tab_style(
-    style = list(
-      cell_fill(color = "ivory2"),
-      cell_text(weight = "bold")
-    ),
-    locations = cells_data(
-      columns = vars(pType),
-      rows = pType == "aspen")
-  ) %>% 
-  tab_style(
-    style = list(
-      cell_fill(color = "pink"),
-      cell_text(weight = "bold")
-      ),
-    locations = cells_data(
-      columns = vars(pType),
-      rows = pType == "upland")
-  )
+```
+
+```{r}
+
+# site.info.clean %>% 
+#   write_csv("./output/tables/evmp_plots_table1.csv")
+
+```
+
+```{r}
+# gt.siteinfo <- site.info.clean %>%
+#   dplyr::select(-REMOVED) %>% 
+#   datatable(caption = "Valid EVMP plots")
+
+# gt.siteinfo <- site.info.clean %>%
+#   dplyr::select(-REMOVED) %>% 
+#   gt::gt() %>%
+#   tab_header(title = md("**Valid EVMP plots from 'site_info' worksheet**")) 
+
+# gt.siteinfo <- gt.siteinfo %>% 
+#   tab_style(
+#     style = list(
+#       cell_fill(color = "lightcyan"),
+#       cell_text(weight = "bold")
+#       ),
+#     locations = cells_data(
+#       columns = vars(FENCED),
+#       rows = FENCED == "Y")
+#   ) %>% 
+#   tab_style(
+#     style = list(
+#       cell_fill(color = "ivory")),
+#     locations = cells_data(
+#       columns = vars(FENCED),
+#       rows = FENCED == "N")
+#   ) 
+# 
+# ## add color for pType
+# gt.siteinfo %>% 
+#     tab_style(
+#     style = list(
+#       cell_fill(color = "lightgreen"),
+#       cell_text(weight = "bold")
+#       ),
+#     locations = cells_data(
+#       columns = vars(pType),
+#       rows = pType == "willow")
+#   ) %>% 
+#   tab_style(
+#     style = list(
+#       cell_fill(color = "ivory2"),
+#       cell_text(weight = "bold")
+#     ),
+#     locations = cells_data(
+#       columns = vars(pType),
+#       rows = pType == "aspen")
+#   ) %>% 
+#   tab_style(
+#     style = list(
+#       cell_fill(color = "pink"),
+#       cell_text(weight = "bold")
+#       ),
+#     locations = cells_data(
+#       columns = vars(pType),
+#       rows = pType == "upland")
+#   )
 
 ```
 
@@ -1122,6 +1246,7 @@ csv.all.lc.li <- csv.all.lc %>%
 ```
 
 
+
 ```{r}
 #### FUNCTIONS 
 #### Select multiple columns. To combine, need the same fields to be present in each tab.
@@ -1141,9 +1266,30 @@ filtFunSel <- function(x){
                       GENUS))
 }
 
+
+### the above is used throoughout below
+# but now I woant to grab the shrub intercept bits
+filtFunSel_li <- function(x){
+  x %>% dplyr::select(c(DATE,
+                      SITE_TYPE,
+                      SITE_NUMBER,
+                      SITE_ID,
+                      SPECIES_CODE,
+                      SHRUB_INTERCEPT_START_M,
+                      SHRUB_INTERCEPT_STOP_M,
+                      MAX_HEIGHT_CM,
+                      DEAD,
+                      BROWSED,
+                      INTERCEPT_LENGTH_M,
+                      GENUS))
+}
+
 # create new list column with the selected rows as specfied in the function
 csv.all.lc.li <- csv.all.lc.li %>% 
   mutate(data.sel = map(.x = data, filtFunSel))
+
+# csv.all.lc.li.cov <- csv.all.lc.li %>% 
+#   mutate(data.sel = map(.x = data, filtFunSel_li))
 
 ## purrr ninja move:
 csv.all.lc.li.df <- csv.all.lc.li %>% 
@@ -1223,6 +1369,7 @@ csv.all.lc.li.df <- csv.all.lc.li.df %>%
 #   summarize()
 
 ```
+
 
 
 ```{r}
@@ -1378,7 +1525,6 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
                        SITE_ID == "WNC2" ~ "WNC02",
                        SITE_ID == "WNC3" ~ "WNC03", 
                        SITE_ID == "WNC4" ~ "WNC04", 
-                       SITE_ID == "WNC4" ~ "WNC04",
                        SITE_ID == "WNC5" ~ "WNC05",
                        SITE_ID == "WNC6" ~ "WNC06", 
                        SITE_ID == "WNC7" ~ "WNC07", 
@@ -1632,6 +1778,7 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
 ```
 
 
+
 # Results 
 
 ## Shrub height [line intercept]
@@ -1643,7 +1790,7 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
 **Max shrub height in-line intercept: Core winter range**
 ```{r}
 csv.all.lc.li.df %>% 
-  filter(SITE_TYPE != "WNC") %>% 
+  filter(SITE_TYPE == "WC") %>% 
   mutate(yr = as.character(yr)) %>%
   # mutate(yr = as.integer(yr)) %>%
   # mutate(yr = as.character(yr)) %>% 
@@ -1654,17 +1801,39 @@ csv.all.lc.li.df %>%
   geom_boxplot(aes(fill = FENCED), outlier.shape = NA) +
   ylim(0,300) +
   labs(x="Year", y= "Height (cm)", title = "Maximum shrub height", subtitle = "All shrub species in line intercept plots") +
+  scale_fill_manual(values = c("ivory2","grey")) +
   theme_bw() +
-  theme(axis.text.x=element_text(angle = 45, hjust = 1)) +
-  facet_grid(.~SITE_TYPE)
+  theme(axis.text.x=element_text(angle = 45, hjust = 1)) #+
+  # facet_grid(.~SITE_TYPE)
 
-# ggsave("./output/figures_exported/all_shrub_LI_boxplot01.png", width = 6.5, height = 4.875)
+# ggsave("./output/figures_exported/all_shrub_LI_boxplot_WC.png", width = 6.5, height = 4.875)
 
 ```
 
+# and a table for above
 ```{r}
 csv.all.lc.li.df %>% 
-  distinct(SPECIES_CODE) %>% gt::gt()
+  filter(SITE_TYPE == "WC") %>% 
+  mutate(yr = as.character(yr)) %>%
+  # mutate(yr = as.integer(yr)) %>%
+  # mutate(yr = as.character(yr)) %>% 
+  # filter(yr == 2013 | yr == 2018) %>%
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>% 
+  group_by(yr, FENCED) %>% 
+  summarise_if(.predicate = is.numeric,.funs = median,na.rm=TRUE) %>% 
+  select(FENCED, yr, MAX_HEIGHT_CM) %>% 
+  gt() %>% 
+  tab_header(title = "Median max height", subtitle = "All shrub species, all range types")
+
+```
+
+
+#### line intercept core winter range
+
+```{r}
+# csv.all.lc.li.df %>% 
+#   distinct(SPECIES_CODE) %>% 
+#   gt::gt()
 
 ## yr,FENCED, SPECIES_CODE
 tabl.li.meanht1 <- csv.all.lc.li.df %>% 
@@ -1676,31 +1845,55 @@ tabl.li.meanht1 <- csv.all.lc.li.df %>%
   # mutate(yr = as.character(yr)) %>% 
   # filter(yr == 2013 | yr == 2018) %>%
   filter(SPECIES_CODE != "NONE" & SPECIES_CODE != "SAXX") %>% 
-  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
-  group_by(yr,FENCED, SPECIES_CODE) %>% 
+  filter(yr == 2008 | yr == 2009 | yr == 2013 | yr == 2018) %>%
+  mutate(yr_cat = case_when(yr == "2008" | yr == "2009" ~ "bl",
+                            TRUE ~ yr)) %>% 
+  group_by(yr_cat,FENCED, SPECIES_CODE) %>%
+  # janitor::clean_names() %>% 
   summarise(mean.max.ht = round(mean(MAX_HEIGHT_CM, na.rm=TRUE),0)) %>% 
-  pivot_wider(names_from = yr, values_from = mean.max.ht)
+  pivot_wider(names_from = yr_cat, values_from = mean.max.ht)
   
-tabl.li.meanht1 %>% 
-  datatable()
+tabl.li.meanht1 <- tabl.li.meanht1 %>%
+  janitor::clean_names()
 
-tabl.li.meanht1 %>% 
-  gt::gt()
+# tabl.li.meanht1 %>%
+#   gt()
 
 ```
 
 ```{r}
+tabl.li.meanht1 <- tabl.li.meanht1 %>% 
+  as_tibble() %>% 
+  mutate(gross_diff_bl_13 = x2013 - bl) %>%
+  mutate(gross_diff_bl_18 = x2018 - bl) %>% 
+  mutate(gross_diff_13_18 = x2018 - x2013) %>% 
+  mutate(perc_diff_13_18 = (gross_diff_bl_13 - bl)/bl) %>% 
+  mutate(perc_diff_bl_13 = (gross_diff_bl_18 - bl)/bl) %>%
+  mutate(perc_diff_bl_18 = (gross_diff_13_18 - x2013)/x2013) 
+
+  
+tabl.li.meanht1 %>% 
+  datatable()
+
+# tabl.li.meanht1 %>% 
+#   gt::gt()
+```
+
+
+### Height summary
+```{r}
 ##
 csv.all.lc.li.df %>% 
-  filter(!is.na(FENCED)) %>% 
+  # filter(!is.na(FENCED)) %>% 
   filter(!is.na(MAX_HEIGHT_CM)) %>%
   # group_by(yr,SITE_TYPE, FENCED, SITE_ID, SPECIES_CODE) %>%
   filter(SITE_TYPE == "WC") %>% 
-  group_by(yr,SITE_TYPE, FENCED, SPECIES_CODE) %>%
-  summarise(mean.max.ht = round(mean(MAX_HEIGHT_CM, na.rm=TRUE),0)) %>% 
+  group_by(yr,SITE_TYPE, FENCED, SPECIES_CODE, BURNED) %>%
+  summarise(mean.max.ht = round(mean(MAX_HEIGHT_CM, na.rm=TRUE),1),
+            sd.max.ht = round(sd(MAX_HEIGHT_CM, na.rm=TRUE),1)) %>% 
   filter(FENCED != "Y_but_fence_down_since_2013") %>% 
   filter(SPECIES_CODE != "SAXX") %>% 
-  gt::gt()
+  datatable() # kable(caption = "Core winter range")
 
 
 ```
@@ -2271,6 +2464,117 @@ facet_wrap(~BURNED)
 
 ```
 
+## shrub height
+
+```{r}
+## shrub height
+csv.all.lc.li.df %>% 
+  filter(BURNED != "BURNED") %>%
+  filter(!is.na(MAX_HEIGHT_CM)) %>%
+  filter(str_detect(SPECIES_CODE, "^SA")) %>%
+  filter(SPECIES_CODE != "SAXX") %>%
+  filter(yr == 2008 | yr == 2009 | yr == 2013 | yr == 2018) %>%
+  filter(FENCED == "N" | FENCED == "Y") %>% 
+  # filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER") %>%
+  filter(SITE_TYPE == "WC") %>%
+  # distinct(SPECIES_CODE) %>% 
+  mutate(yr = as.character(yr)) %>% 
+  # mutate(yr = anytime::anytime(yr)) %>% 
+  group_by(FENCED, valley_full,pType, yr) %>% 
+  summarise(mean.MAX_HEIGHT_CM = mean(MAX_HEIGHT_CM, na.rm = TRUE)) %>% 
+  gt::gt()
+
+```
+
+
+#### Statistical comparisons: willow height
+
+```{r}
+#### Repeated measures: willow height
+
+```
+
+
+```{r}
+
+# library(rstatix)
+
+
+
+```
+
+
+```{r, echo=FALSE}
+
+# Unpaired two samples t-test (parametric)
+# What is unpaired two-samples t-test?
+# Research questions and statistical hypotheses
+# Formula of unpaired two-samples t-test
+# Visualize your data and compute unpaired two-samples t-test in R
+# R function to compute unpaired two-samples t-test
+# Visualize your data using box plots
+# Preliminary test to check independent t-test assumptions
+# Compute unpaired two-samples t-test
+
+# Unpaired Two-Samples Wilcoxon Test (non-parametric).
+
+## see: https://rpkgs.datanovia.com/rstatix/reference/anova_test.html
+## https://rpkgs.datanovia.com/rstatix/reference/wilcox_test.html
+```
+
+```{r, eval=FALSE, echo=FALSE}
+## examples
+# library(rstatix)
+
+# Load data
+#:::::::::::::::::::::::::::::::::::::::
+data("ToothGrowth")
+df <- ToothGrowth
+
+# One-sample test
+#:::::::::::::::::::::::::::::::::::::::::
+df %>% wilcox_test(len ~ 1, mu = 0)#> Error in UseMethod("wilcox_test"): pas de méthode pour 'wilcox_test' applicable pour un objet de classe "data.frame"
+
+# Two-samples unpaired test
+#:::::::::::::::::::::::::::::::::::::::::
+df %>% wilcox_test(len ~ supp)#> Error in UseMethod("wilcox_test"): pas de méthode pour 'wilcox_test' applicable pour un objet de classe "data.frame"
+
+# Two-samples paired test
+#:::::::::::::::::::::::::::::::::::::::::
+df %>% wilcox_test (len ~ supp, paired = TRUE)#> Error in UseMethod("wilcox_test"): pas de méthode pour 'wilcox_test' applicable pour un objet de classe "data.frame"
+
+# Compare supp levels after grouping the data by "dose"
+#::::::::::::::::::::::::::::::::::::::::
+df %>%
+  group_by(dose) %>%
+  wilcox_test(data =., len ~ supp) %>%
+  adjust_pvalue(method = "bonferroni") %>%
+  add_significance("p.adj")#> Error in add_significance(., "p.adj"): The column p.adj does not exist in the data
+# pairwise comparisons
+#::::::::::::::::::::::::::::::::::::::::
+# As dose contains more than two levels ==>
+# pairwise test is automatically performed.
+df %>% wilcox_test(len ~ dose)#> Error in UseMethod("wilcox_test"): pas de méthode pour 'wilcox_test' applicable pour un objet de classe "data.frame"
+# Comparison against reference group
+#::::::::::::::::::::::::::::::::::::::::
+# each level is compared to the ref group
+df %>% wilcox_test(len ~ dose, ref.group = "0.5")#> Error in UseMethod("wilcox_test"): pas de méthode pour 'wilcox_test' applicable pour un objet de classe "data.frame"
+
+# Comparison against all
+#::::::::::::::::::::::::::::::::::::::::
+df %>% wilcox_test(len ~ dose, ref.group = "all")#> Error in UseMethod("wilcox_test"): pas de méthode pour 'wilcox_test' applicable pour un objet de classe "data.frame"
+
+```
+
+```{r, echo=FALSE, eval=FALSE}
+## reporting example
+A two-way repeated measures ANOVA was performed to evaluate the effect of different diet treatments over time on self-esteem score.
+
+There was a statistically significant interaction between treatment and time on self-esteem score, F(2, 22) = 30.4, p < 0.0001. Therefore, the effect of treatment variable was analyzed at each time point. P-values were adjusted using the Bonferroni multiple testing correction method. The effect of treatment was significant at t2 (p = 0.036) and t3 (p = 0.00051) but not at the time point t1 (p = 1).
+
+Pairwise comparisons, using paired t-test, show that the mean self-esteem score was significantly different between ctr and Diet trial at time points t2 (p = 0.012) and t3 (p = 0.00017) but not at t1 (p = 0.55).
+```
+
 
 ## Willow macroplot data
 
@@ -2315,6 +2619,27 @@ sinfo.df %>%
     )
 
 
+```
+
+```{r}
+#vtree status
+
+sinfo.df %>%
+  mutate(BEAVER_PRESENCE = recode(BEAVER_PRESENCE, 
+                         "Absence_" = "Absence",
+                         "Food_cache_cuttings"="Cuttings")) %>% 
+  vtree::vtree(z = .,vars = "LOCATION BEAVER_PRESENCE")
+  
+
+```
+
+```{r}
+sinfo.df %>%
+  filter(LOCATION == "Moraine_Park") %>% 
+  mutate(BEAVER_PRESENCE = recode(BEAVER_PRESENCE, 
+                         "Absence_" = "Absence",
+                         "Food_cache_cuttings"="Cuttings")) %>% 
+  vtree::vtree(z = .,vars = "LOCATION FENCED BURNED")
 ```
 
 
@@ -2612,6 +2937,8 @@ csv.all.lc.mcro.df %>%
 ```
 
 
+
+
 ### Shrub Height - Macroplot
 
 ```{r}
@@ -2676,6 +3003,22 @@ csv.all.lc.mcro.df %>%
   datatable(rownames = FALSE, caption = "Count of observations by shrub species.")
 
 ```
+
+```{r}
+# csv.all.lc.mcro.df %>% 
+#   write_csv("./output/exported_data/willow_mcro.csv")
+
+```
+
+
+#### Repeated measures: willow height
+
+```{r}
+#### Repeated measures: willow height
+
+
+```
+
 
 ## Aspen 
 
@@ -2970,11 +3313,135 @@ asp.tally.dbh.tidy %>%
   geom_text(aes(label = stemTally), size = 3) +
   facet_wrap(~SITE_ID) +
   theme_bw() +
-  labs(x = "", y = "", title = "Moraine Park: Aspen dead stem tallies") +
+  labs(x = "", y = "", title = "Aspen live stem tallies", subtitle = "Core winter range") +
+  # facet_grid(SITE_ID ~ timeClass) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+```{r, eval=FALSE}
+## in progress
+asp.tally.dbh.tidy %>%
+  filter(LIVE_DEAD == 'LIVE') %>% 
+  filter(RANGE_TYPE == "core winter range") %>% 
+  # filter(SITE_ID == "AC60") %>% select(-contains("UT")) %>% datatable()
+  # ggplot(aes(timeClass, DBHclGp01)) +
+  ggplot(aes(timeClass, DBHclGp01)) +  
+  geom_tile(aes(fill = FENCED), color = "white", alpha = .2) +
+  geom_text(aes(label = stemTally), size = 3) +
+  # facet_wrap(~SITE_ID) +
+  facet_grid(FENCED~VALLEY) +
+  theme_bw() +
+  labs(x = "", y = "", title = "Moraine Park: Aspen live stem tallies") +
   # facet_grid(SITE_ID ~ timeClass) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
+```
+
+#### Aspen : stem density per acre - core winter range
+
+or do we want ha?
+
+```{r, fig.height=8, fig.width=8}
+asp.tally.dbh.tidy %>%
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>% 
+  filter(LIVE_DEAD == 'LIVE') %>% 
+  filter(RANGE_TYPE == "core winter range") %>% 
+  # filter(SITE_ID == "AC60") %>% select(-contains("UT")) %>% datatable()
+  # ggplot(aes(timeClass, DBHclGp01)) +
+  ggplot(aes(timeClass, DBHclGp01)) +  
+  geom_tile(aes(fill = stemDen.ac), color = "white", alpha = .52) +
+  scale_fill_viridis_c() +
+  geom_text(aes(label = round(stemDen.ac,0)),size = 2.13) +
+  facet_wrap(~SITE_ID, ncol = 6) +
+  theme_bw() +
+  labs(x = "", y = "", title = "Aspen live stem density", subtitle = "Core winter range", fill = "Stems/acre", y = "DBH class") +
+  # facet_grid(SITE_ID ~ timeClass) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# ggsave("./output/figures_exported/AspCoreWR_stemsAc_tile_b.png", width = 10.5, height = 7)
+
+```
+
+#### Aspen : live stem density per acre - core winter range
+
+or do we want ha?
+
+```{r, fig.height=6, fig.width=6}
+asp.tally.dbh.tidy %>%
+  # distinct(RANGE_TYPE)
+  filter(LIVE_DEAD == 'LIVE') %>% 
+  filter(RANGE_TYPE == "non-core winter range") %>% 
+  # filter(SITE_ID == "AC60") %>% select(-contains("UT")) %>% datatable()
+  # ggplot(aes(timeClass, DBHclGp01)) +
+  ggplot(aes(timeClass, DBHclGp01)) +  
+  geom_tile(aes(fill = stemDen.ac), color = "white", alpha = .52) +
+  scale_fill_viridis_c() +
+  geom_text(aes(label = round(stemDen.ac,0)),size = 2.13) +
+  facet_wrap(~SITE_ID, ncol = 6) +
+  theme_bw() +
+  labs(x = "", y = "", title = "Aspen live stem density", subtitle = "Non-core winter range", fill = "Stems/acre", y = "DBH class") +
+  # facet_grid(SITE_ID ~ timeClass) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# ggsave("./output/figures_exported/AspNCoreWR_stemsAc_tile.png", width = 7.5, height = 4)
+
+```
+
+#### Aspen : live stem density per acre - Kawuneeche Valley
+
+
+
+```{r, fig.height=3.75, fig.width=5}
+asp.tally.dbh.tidy %>%
+  # distinct(RANGE_TYPE)
+  filter(LIVE_DEAD == 'LIVE') %>% 
+  filter(RANGE_TYPE == "Kawuneeche Valley") %>% 
+  # filter(SITE_ID == "AC60") %>% select(-contains("UT")) %>% datatable()
+  # ggplot(aes(timeClass, DBHclGp01)) +
+  ggplot(aes(timeClass, DBHclGp01)) +  
+  geom_tile(aes(fill = stemDen.ac), color = "white", alpha = .52) +
+  scale_fill_viridis_c() +
+  geom_text(aes(label = round(stemDen.ac,0)),size = 2.13) +
+  facet_wrap(~SITE_ID, ncol = 4) +
+  theme_bw() +
+  labs(x = "", y = "", title = "Aspen live stem density", subtitle = "Kawuneeche Valley", fill = "Stems/acre", y = "DBH class") +
+  # facet_grid(SITE_ID ~ timeClass) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# ggsave("./output/figures_exported/AspKW_stemsAc_tile.png", width = 4.75, height = 3.15)
+
+```
+
+#### Aspen: live stem density summary table
+
+```{r}
+asp.den.summary <- asp.tally.dbh.tidy %>%
+  filter(LIVE_DEAD == 'LIVE') %>% 
+  group_by(timeClass, RANGE_TYPE, FENCED) %>% 
+  summarise(mean.den.ac = round(mean(stemDen.ac, na.rm=TRUE), 1), sd.den.ac = round(sd(stemDen.ac,na.rm=TRUE),1), median.den.ac = round(median(stemDen.ac, na.rm=TRUE),1), iqr.den.ac = round(IQR(x = stemDen.ac, type = 8, na.rm = TRUE),1), max.den.ac = round(max(stemDen.ac),1),n = n())
+
+#Type 8
+# m = (p+1)/3. p[k] = (k - 1/3) / (n + 1/3). Then p[k] =~ median[F(x[k])]. The resulting quantile estimates are approximately median-unbiased regardless of the distribution of x.
+
+
+asp.den.summary %>% 
+  datatable(filter="bottom")
+
+```
+
+```{r}
+asp.den.summary %>% 
+  pivot_wider(names_from = FENCED,
+              values_from = c(median.den.ac, mean.den.ac)) %>% 
+  datatable()
+
+
+```
+
+
+```{r}
 # asp.tally.dbh.tidy %>% 
 #   filter(LIVE_DEAD == 'LIVE') %>% 
 #   filter(RANGE_TYPE == "core winter range") %>% 
@@ -2990,11 +3457,13 @@ asp.tally.dbh.tidy %>%
 #   # facet_grid(SITE_ID ~ timeClass) +
 #   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-
 ```
+
 
 _DBH classes: Fenced and non-burned plots_
 ```{r}
+## Add objectives
+
 ## DBH
 dbh.perc <- asp.tally.dbh.tidy %>%
   # filter(is.na(REMOVED)) %>% 
@@ -3007,6 +3476,7 @@ dbh.perc <- asp.tally.dbh.tidy %>%
   mutate(sumStem = sum(stemTally)) %>% 
   ungroup() %>% 
   mutate(percentTot = stemTally/sumStem) 
+
 
 ## heatmap
 # dbh.perc %>%
@@ -3169,7 +3639,14 @@ dbh.perc3 %>%
 
 ```
 
-### Aspen DBH: Non-core winter range
+Means of aspen sapling (plants with height less than or equal to 2.5 meters) density at aspen monitoring sites at sites burned in the 2012 Fern Lake Fire compared to unburned sites in Rocky Mountain National Park, Colorado. Baseline data collected 2006–9, with most of the sites collected in 2007 or 2008.
+
+```{r}
+
+```
+
+
+#### Aspen DBH: Non-core winter range
 
 _DBH classes: Non-fenced and non-burned plots_
 ```{r}
@@ -3205,7 +3682,7 @@ dbh.perc4 %>%
 ```
 
 
-### Aspen DBH: Kawuneeche Valley
+#### Aspen DBH: Kawuneeche Valley
 
 _DBH classes: Unfenced and unburned plots_
 ```{r asp_dbh_KV}
@@ -3245,7 +3722,33 @@ dbh.perc5 %>%
 ```
 
 
-### Aspen height: Core winter range
+
+#### proportion of plots with regen above threshold
+
+```{r}
+
+asp.tally.dbh.tidy %>%
+  filter(is.na(REMOVED)) %>% 
+  filter(BURNED == "Not burned") %>%
+  filter(LIVE_DEAD == "LIVE") %>%
+  filter(FENCED == "N") %>%
+  filter(SITE_TYPE == "ANC") %>%
+  # filter(timeClass %in% c('BL','2013','2018')) %>%
+  group_by(SITE_ID, timeClass) %>%
+  mutate(sumStem = sum(stemTally)) %>% 
+  ungroup() %>% 
+  mutate(percentTot = stemTally/sumStem) 
+```
+
+
+
+```{r}
+
+```
+
+### Aspen height
+
+#### Aspen height: Core winter range
 
 ```{r}
 
@@ -3263,6 +3766,220 @@ asp.tally.ht.tidy %>%
   distinct(HTclass, shortTall) %>%
   gt()
 
+```
+
+```{r}
+## join in dbh with height classes
+
+asp.dbh2join <- asp.tally.dbh.tidy %>%
+  select(c(SITE_ID, timeClass, DBHclGp01)) 
+
+asp.dbh2join %>%
+  glimpse()
+
+ht.dbh.class <- left_join(asp.tally.ht.tidy, asp.dbh2join) %>% 
+  filter(LIVE_DEAD != "DEAD") %>% 
+  select(c(SITE_TYPE, SITE_ID, timeClass, stemTally, stemDen.ac, BURNED, FENCED, RANGE_TYPE, VALLEY, DBHclGp01, HTclass, shortTall))
+
+```
+
+
+#### suckering 1.5 m to 2.5 m in ht
+
+```{r}
+### suckering classes: by range type
+# the following combines the tally for stems between 1.5 and 2.5 m
+suckering.vtype <- ht.dbh.class %>%
+  # distinct(HTclass)
+  filter(HTclass == "HT_151_200_CM" |HTclass == "HT_201_250_CM") %>%
+  group_by(SITE_ID, RANGE_TYPE, timeClass) %>% 
+  summarise(stemTally.1p5to2m = sum(stemTally)) %>%
+  mutate(stemDen.ac = stemTally.1p5to2m *161.8744) %>% # converts stems/2m2 plot to stems/acre) %>% 
+  mutate(suckering_class = case_when(stemDen.ac < 1700 ~ "Poor (<1,700 stems/acre)",
+                                   stemDen.ac >=1700 & stemDen.ac <4500 ~ "Moderate (1,700-4,500 stems/acre)",
+                                   stemDen.ac >=4500 ~ "High (>4500 stems/acre)")) 
+
+suckering.vtype %>%
+  filter(!is.na(RANGE_TYPE)) %>% 
+  filter(timeClass %in% c("BL","2013","2018")) %>% 
+  ggplot(aes(timeClass, SITE_ID)) +
+  geom_tile(aes(fill = suckering_class), color = "white") +
+  scale_fill_manual(values = c("red","pink","grey90")) +
+  theme_minimal() +
+  theme(legend.position = "top") +
+  labs(x = "", y = "Site ID", fill = "", caption = "Suckering: Stem denisty 1.5 m to 2.5 m in ht") +
+  facet_wrap(~RANGE_TYPE, scales = "free_y")
+
+# ggsave("./output/figures_exported/suckering_1p5to2p5m.png", width = 7, height = 7)
+
+suckering.vtype %>%
+  filter(!is.na(RANGE_TYPE)) %>% 
+  filter(timeClass %in% c("BL","2013","2018")) %>% 
+  arrange(-stemDen.ac) %>% 
+  datatable(rownames = FALSE, caption = "stemDen.ac aspen suckering 1.5 m to 2.5 m", filter = "top")
+
+```
+
+```{r}
+
+# prop func
+prop.fun <- function(x, cnt){
+  x = x/cnt
+  x
+}
+
+# suckering.vtype.tabyl %>% 
+#   # glimpse()
+#   # mutate(n = sum(`High (>4500 stems/acre)`,`Moderate (1,700-4,500 stems/acre)`,`Poor (<1,700 stems/acre)`)) %>% 
+#   # mutate_if(.predicate = is.numeric, prop.fun())
+#   gt()
+
+# suckering.vtype %>% distinct(SITE_ID)
+
+#### calc the percent 
+percent_suckering_class <- suckering.vtype %>% 
+  filter(!is.na(RANGE_TYPE)) %>% 
+  mutate(timeClass = as.character(timeClass)) %>%
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>%
+  group_by(timeClass, suckering_class) %>% 
+  summarise(sum_class = n()) %>% 
+  ungroup() %>% 
+  # tally()
+  group_by(timeClass) %>% 
+  mutate(n_allTimes = sum(sum_class)) %>% 
+  ungroup() %>% 
+  mutate(percent_in_class = round(100*(sum_class/n_allTimes)),3)
+  
+percent_suckering_class %>% 
+  datatable()
+  
+
+
+```
+
+
+
+```{r}
+# fig for report
+
+percent_suckering_class %>% 
+  mutate(timeClass = as_factor(timeClass)) %>%
+  mutate(timeClass = relevel(timeClass, "BL")) %>% 
+  ggplot(aes(timeClass, percent_in_class)) +
+  geom_col(aes(fill = suckering_class), color = "white") +
+  theme_minimal() +
+  scale_fill_manual(values = c("darkgreen","lightgreen","ivory3")) +
+  labs(x = "", y = "Percent of plots", fill = "") # +
+  # teme(legend.position = "top")
+
+# ggsave("./output/figures_exported/suckering_proportion_all_plots_ht_class.png", width = 7, height = 3.85)
+
+```
+
+```{r}
+#### calc the percent 
+percent_suckering_class.vtype <- suckering.vtype %>% 
+  filter(!is.na(RANGE_TYPE)) %>% 
+  mutate(timeClass = as.character(timeClass)) %>%
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>%
+  group_by(timeClass, suckering_class, RANGE_TYPE) %>% 
+  summarise(sum_class = n()) %>% 
+  ungroup() %>% 
+  group_by(timeClass, RANGE_TYPE) %>% 
+  mutate(n_allTimes = sum(sum_class)) %>% 
+  ungroup() %>% 
+  mutate(percent_in_class = 100*sum_class/n_allTimes) %>% 
+  mutate(percent_in_class = round(percent_in_class, 1))
+  
+percent_suckering_class.vtype %>% 
+  datatable()
+
+```
+
+```{r}
+#### Fig for report
+percent_suckering_class.vtype %>% 
+  mutate(timeClass = as_factor(timeClass)) %>%
+  mutate(timeClass = relevel(timeClass, "BL")) %>% 
+  mutate(RANGE_TYPE = as_factor(RANGE_TYPE)) %>%
+  mutate(RANGE_TYPE = relevel(RANGE_TYPE, "core winter range","non-core winter range")) %>%
+  ggplot(aes(timeClass, percent_in_class)) +
+  geom_col(aes(fill = suckering_class), color = "white") +
+  # geom_text(aes(label = percent_in_class)) +
+  theme_minimal() +
+  scale_fill_manual(values = c("darkgreen","lightgreen","ivory3")) +
+  labs(x = "", y = "Percent of sites", fill = "") +
+  facet_wrap(~RANGE_TYPE)
+
+# ggsave("./output/figures_exported/suckering_proportion_all_plots_ht_class_rangety.png", width = 8, height = 3.85)
+
+```
+
+
+#### Stats suckering
+```{r, echo=FALSE, eval = FALSE}
+
+# see https://easystats.github.io/bayestestR/index.html
+
+suckering.vtype <- suckering.vtype %>% 
+  filter(!is.na(RANGE_TYPE))
+  
+suckering.vtype %>% 
+  glimpse()
+
+describe_posterior(
+  rnorm(1000),
+  centrality = "median",
+  test = c("p_direction", "p_significance")
+)
+
+# ex2
+
+zinb <- read.csv("http://stats.idre.ucla.edu/stat/data/fish.csv")
+set.seed(123)
+model <- brm(
+  bf(
+    count ~ child + camper + (1 | persons), 
+    zi ~ child + camper + (1 | persons)
+  ),
+  data = zinb,
+  family = zero_inflated_poisson(),
+  chains = 1,
+  iter = 500
+)
+
+
+
+```
+
+
+```{r}
+ht.dbh.class %>%
+  group_by(RANGE_TYPE, timeClass, BURNED, FENCED, DBHclGp01, HTclass) %>% 
+  summarise(mean.stemDen.ac = mean_r1(stemDen.ac), sd.stemDen.ac = sd_r1(stemDen.ac), n = n()) %>% 
+  datatable(filter = "bottom")
+
+```
+
+#### Suckering: live unburned 
+```{r}
+ht.dbh.class.ub <- ht.dbh.class %>%
+  filter(BURNED == "Not burned")
+  
+# ht.dbh.class %>% 
+#   group_by(RANGE_TYPE, timeClass, FENCED, suckering_class) %>% 
+#   summarise(mean.stemDen.ac = mean_r1(stemDen.ac), sd.stemDen.ac = sd_r1(stemDen.ac), n = n()) %>% 
+#   ungroup() %>% 
+#   mutate(suckering_class = case_when(mean.stemDen.ac < 1700 ~ "Poor (<1,700 stems/acre)",
+#                                    mean.stemDen.ac >=1700 & mean.stemDen.ac <4500 ~ "Moderate (1,700-4,500 stems/acre)",
+#                                    mean.stemDen.ac >=4500 ~ "High (>4500 stems/acre)")) 
+
+
+# ht.dbh.class %>% 
+#   pivot_wider(names_from = "suckering_class",values_from = )
+
+ht.dbh.class %>% 
+  datatable(filter = "bottom")
 ```
 
 
@@ -3648,7 +4365,7 @@ ht.perc01 %>%
 
 
 
-### Aspen height: Non-core winter range
+#### Aspen height: Non-core winter range
 
 ```{r}
 
@@ -3656,15 +4373,117 @@ ht.perc01 %>%
 
 
 
-### Aspen height: Kawuneeche Valley
+#### Aspen height: Kawuneeche Valley
 
 ```{r}
 
 ```
 
+
+
+
+### Aspen management goals
+
+_Targets from Ziegenfuss and Johnson 2015:_
+
+1.Progressive increase in aspen regeneration above the baseline level of 13 percent to at least 45 percent of winter range stands (presence of stems less than 2 cm dbh reaching 1.5–2.5 m tall).
+
+#
+```{r}
+
+ht.perc01 %>%
+  group_by(RANGE_TYPE, FENCED, pType) %>% 
+  summarise(mean.stemDen.ac = mean_r1(stemDen.ac),n = n())
+  # filter(SITE_ID != "AC33") %>% 
+  # filter(SITE_ID != "AC67") %>%
+  # filter(FENCED == "N") %>%
+  # filter(!is.nan(percentTot))
+
+asp.tally.dbh.tidy %>%
+  # filter(is.na(REMOVED)) %>% 
+  filter(BURNED == "Not burned") %>%
+  filter(LIVE_DEAD == "LIVE") %>%
+  filter(FENCED == "Y") %>%
+  # filter(SITE_TYPE == "AC") %>%
+  # filter(timeClass %in% c('BL','2013','2018')) %>%
+  group_by(SITE_ID, timeClass) %>%
+  mutate(sumStem = sum(stemTally)) %>% 
+  ungroup() %>% 
+  mutate(percentTot = stemTally/sumStem) 
+```
+
+
+### Aspen repeated measures
+
+```{r, echo=FALSE}
+
+## Repeated measures: Assumptions
+# The repeated measures ANOVA makes the following assumptions about the data:
+# 
+# No significant outliers in any cell of the design. This can be checked by visualizing the data using box plot methods and by using the function identify_outliers() [rstatix package].
+# Normality: the outcome (or dependent) variable should be approximately normally distributed in each cell of the design. This can be checked using the Shapiro-Wilk normality test (shapiro_test() [rstatix]) or by visual inspection using QQ plot (ggqqplot() [ggpubr package]).
+# Assumption of sphericity: the variance of the differences between groups should be equal. This can be checked using the Mauchly’s test of sphericity, which is automatically reported when using the R function anova_test() [rstatix package]. Read more in Chapter @ref(mauchly-s-test-of-sphericity-in-r).
+
+# Note that, if the above assumptions are not met there are a non-parametric alternative (Friedman test) to the one-way repeated measures ANOVA.
+# 
+# Unfortunately, there are no non-parametric alternatives to the two-way and the three-way repeated measures ANOVA. Thus, in the situation where the assumptions are not met, you could consider running the two-way/three-way repeated measures ANOVA on the transformed and non-transformed data to see if there are any meaningful differences.
+# 
+# If both tests lead you to the same conclusions, you might not choose to transform the outcome variable and carry on with the two-way/three-way repeated measures ANOVA on the original data.
+# 
+# It’s also possible to perform robust ANOVA test using the WRS2 R package.
+
+# Compute and interpret the different repeated measures ANOVA in R.
+
+# Check repeated measures ANOVA test assumptions
+
+# Perform post-hoc tests, multiple pairwise comparisons between groups to identify which groups are different
+
+```
+
+```{r}
+###### WRITE to disk for statistical analysis
+# ht.perc01 %>% write_csv("./output/exported_data/asp_ht_perc1_20200309.csv")
+
+# i think the one to use...
+# asp.tally.dbh.tidy %>% 
+#   write_csv("./output/exported_data/asp_ht_perc1_20200309.csv")
+  
+```
+
+
+```{r, echo=FALSE, eval = FALSE}
+
+## stat tests: differences
+# R function to compute Wilcoxon test
+# To perform two-samples Wilcoxon test comparing the means of two independent samples (x & y), the R function wilcox.test() can be used as follow:
+# 
+# wilcox.test(x, y, alternative = "two.sided")
+# 
+# x,y: numeric vectors
+# alternative: the alternative hypothesis. Allowed value is one of “two.sided” (default), “greater” or “less”.
+
+```
 
 
 ----
+
+#### Repeated measures: aspen stem tally
+
+Increase in aspen regeneration above the baseline level of 13 percent to at least 45 percent of winter range stands **(presence of stems less than 2 cm dbh reaching 1.5–2.5 m tall). **
+
+Progressive shift in the distribution of stem sizes toward the desired future condition of 75 percent small-diameter stems, 20 percent medium-diameter stems, and 5 percent large-diameter stems.
+
+```{r}
+# Progressive increase in aspen regeneration above the baseline level of 13 percent to at least 45 percent of winter range stands (presence of stems less than 2 cm dbh reaching 1.5–2.5 m tall). Progressive shift in the distribution of stem sizes toward the desired future condition of 75 percent small-diameter stems, 20 percent medium-diameter stems, and 5 percent large-diameter stems.
+```
+
+
+### distribution of stem sizes toward the desired future condition of 75 percent small-diameter stems, 20 percent medium-diameter stems, and 5 percent large-diameter stems
+
+```{r}
+
+```
+
 
 
 ## Willow Offtake
@@ -3711,26 +4530,6 @@ ADDITIONAL_SHOOT (Additional shoot 1=yes, 0=no)
 
 ```{r, eval=FALSE}
 
-# This willow database (workbook)structure	
-# 	Annual willow data collected in support of the Elk-Vegetation Management Plan (EVMP) is accumulated by year and season in this single workbook
-# 	
-# 	The cumulative data set for all years-to-date is contained in the most recent year's subdirectory, e.g., O:…EVMP>Vegetation>Annual Records>FY10, FY11, etc.
-# 	
-# 	Data are collected and entered in a worksheet specific to that year and season as shown on the worksheet tabs.   
-# 	
-# 	Willow data in support of the Elk Vegetation Management Plan (EVMP) is collected in 2 stages each year -- A sample of unbrowsed shoots are collected   
-# 	     each fall, after the growing season.  Specific measurements of browsed and unbrowsed shoots in specified plots are taken each spring
-# 	     prior to the onset of growth.  Comparison of the spring measurements to the previous fall's shoot measurements allows calculation of winter offtake by
-# 	    herbivores.
-# 	
-# Data security, disaster recovery	
-# 	In addition to residing on the O:..>EVMP subdirectory as noted above, the data workbook is backed up on the hard drive (C:) of the field wildlife  
-# 	     biologist's office computer after each data entry session
-# 	
-# 	Hard copy of spring offtake shoot measurements are held in the supervisory biologist's (T. Johnson) files (originals) and photocopies are kept in the field wildlife  
-# 	    biologist's files
-# 	
-# 	Fall shoot measurements are conducted in the office, and entered directly into the worksheet, without hard copy
 # 	
 # Looking for baseline data?  	
 # 	Baseline data was collected over 2 seasons: 2008 and 2009.  
@@ -3745,50 +4544,110 @@ ADDITIONAL_SHOOT (Additional shoot 1=yes, 0=no)
 # 	
 # SITE_TYPE (WC=Willow core, WNC= Willow noncore, WK= Willow Kawuneeche Valley)	
 # 	
-# COLOR_OF_STEM_MARKER (BR=brown, G=green, BL=black, Y=yellow, GR=gray, BR-N=brown notched, W=white)	
-# 	
-# NUMBER_BROWSED_CAG_SHOOTS (# Browsed Current Annual Growth Shoots)	
-# 	
-# NUMBER_UNBROWSED_CAG_SHOOTS (# Unbrowsed Current Annual Growth Shoots)	
-# 	
-# BROWSED_OR_UNBROWSED (Measured shoot browsed (B) or unbrowsed (U)?)	
-# 	
-# ADDITIONAL_SHOOT (Additional shoot 1=yes, 0=no)	
+
+```
+
+
+```{r, eval=TRUE, echo = FALSE}
+
+# data/EVMP_20181010/TenYearReview/Willow_Cumulative_Data_Baseline_Through_2018.xlsx
+offt <- readxl::excel_sheets("./data/EVMP_data/TenYearReview/Willow_Offtake_Data_2009_Through_2018.xlsx") %>% 
+  set_names()
+
+offt %>% 
+  enframe() %>% select(-value) %>% 
+  gt() %>% 
+  tab_header(title = "Tabs in workbook")
+
+offt.sheets <- excel_sheets(path = "data/EVMP_data/TenYearReview/Willow_Offtake_Data_2009_Through_2018.xlsx")
+
+## read in all of the tabs as 'data' in list column
+offt.raw <- offt.sheets %>%
+  enframe() %>% 
+  rename(sheet = value) %>% 
+  mutate(path = ("./data/EVMP_data/TenYearReview/Willow_Offtake_Data_2009_Through_2018.xlsx")) %>% 
+  mutate(data = map2(.x = path,.y = sheet,.f = read_excel,col_types = "text")) %>% 
+  select(-c(name))
+
+# the directions
+# offt.raw %>% 
+#   filter(str_detect(sheet,pattern = "DIRECTIO", negate = FALSE)) %>% 
+#   pluck(4)
+
+```
+
+```{r}
+## remove the meta tab and create new field for season
+offt.raw <- offt.raw %>% 
+  filter(str_detect(sheet,pattern = "DIRE",negate = TRUE)) %>% 
+  mutate(season = case_when(str_detect(sheet,pattern = "Spring") ~ "spring",
+                            TRUE ~ "fall"))
+
+# spring data
+offt.raw.spr <- offt.raw %>%
+  filter(season == "spring")
+
+offt.raw.spr <- offt.raw.spr %>% 
+  mutate(yr = as.integer(str_sub(sheet,1,4)))
+
+# offt.raw.spr %>% glimpse()
+
+# unnest
+offt.raw.spr.tidy <- offt.raw.spr %>%
+  unnest(cols = data) %>% 
+  janitor::clean_names()
+
+## type convert
+offt.raw.spr.tidy <- offt.raw.spr.tidy %>% 
+  # glimpse()
+  mutate_at(.vars = c('number_browsed_cag_shoots','number_unbrowsed_cag_shoots', 'dia_base_of_shoot_mm','dia_tip_of_shoot_mm','shoot_length_cm','total_stem_count'),.funs = as.numeric) 
+
+
+# data <- files %>%
+#   map(read_csv) %>%    # read in all the files individually, using
+#   reduce(rbind)        # reduce with rbind into one dataframe
+# data  
+  
+```
+
+```{r}
+## some cleaning
+######### DEAL WITH NA #############
+na_strings <- c(".", "na", "NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt available")
+
+offt.raw.spr.tidy <- offt.raw.spr.tidy %>%
+  naniar::replace_with_na_all(condition = ~.x %in% na_strings)
+
 
 
 ```
 
 
-```{r, eval=FALSE, echo = FALSE}
 
-# data/EVMP_20181010/TenYearReview/Willow_Cumulative_Data_Baseline_Through_2018.xlsx
-offt <- readxl::excel_sheets("./data/EVMP_data/TenYearReview/Willow_Offtake_Data_2009_Through_2018.xlsx")
+```{r}
+offt.raw.spr.tidy %>%
+  # sample_n(10000) %>% 
+  visdat::vis_dat() +
+  theme_minimal() +
+  coord_flip() +
+  labs(caption = "offtake - spring")
 
+# offt.raw.spr.tidy %>%
+#   tabyl(yr)
 
+# offt.raw.spr.tidy %>% 
+#   vtree::vtree(.,"species_code yr", palette = 9)
+  # vtree::vtree(.,"yr site_type", pattern = TRUE, palette = 9)
 
-u17.raw <- u17.raw %>% 
-  rename(wilid = wildid) %>% 
-  rename(species = spp) %>% 
-  rename(pl_ht_cm = ht_cm) %>%
-  rename(live_dead = live) %>% 
-  mutate(season = "spring") %>% 
-  mutate(yr = as.character("2017"))
+```
 
-
-path.offt <- ("./data/EVMP_data/TenYearReview/Willow_Offtake_Data_2009_Through_2018.xlsx")
-
-
-# Willow_Offtake_Data_2009_Through_2018.xlsx
-
-#### Read in the worksheets and create list of df
-# each tab is a df in the list object
-offtake <- path.offt %>% 
-  excel_sheets() %>%
-  str()
-  set_names() %>% 
-  map(read_excel, path = path) # 
+# >
+```{r}
+# 'number_browsed_cag_shoots','number_unbrowsed_cag_shoots', 'dia_base_of_shoot_mm','dia_tip_of_shoot_mm','shoot_length_cm','total_stem_count'
+```
 
 
+```{r, eval = FALSE, echo=FALSE}
 ###### Get the names of the macroplot tabs as vector with datapasta
 wo.d %>% 
   names() %>% 
@@ -3833,8 +4692,6 @@ df.names %>%
 #   "2017 Macroplot Inventory",
 #   "2018 Macroplot Inventory"),
 #   ~ wo.d[.]) 
-
-
 
 ```
 
@@ -4015,7 +4872,15 @@ asp1 <- read_excel("data/EVMP_data/TenYearReview/Aspen_Data_Baseline_through_201
 # >aspen sapling table 4.sas  
 # >aspen sapling table 5.sas 
 ```
- 
+
+
+#### Offtake comparisons and relation management goals
+
+
+
+```{r}
+
+```
 
 
 
@@ -4082,7 +4947,6 @@ bl.sel %>%
   na.omit() 
 
 ```
-
 
 
 ```{r, echo=FALSE}

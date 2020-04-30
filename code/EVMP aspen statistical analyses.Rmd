@@ -1,0 +1,692 @@
+---
+title: "EVMP Aspen Statistical Analyses"
+author: ""
+date: ""
+output: 
+  html_document: 
+    theme: journal
+    toc: yes
+    toc_depth: 4
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align = 'center')
+opts_knit$set(root.dir=normalizePath('../')) # this is required if Rmd is nested below the project directory
+opts_chunk$set(fig.path = "../output/figures/") # corrected path and added dev. Needed to specify a subdirectory for figs
+```
+
+```{r}
+set.seed(123)
+```
+
+
+```{r,echo=FALSE}
+# library(here)
+# here()
+# install.packages("bindrcpp")
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(fs))
+suppressPackageStartupMessages(library(sf))
+# library(raster)
+suppressPackageStartupMessages(library(janitor))
+suppressPackageStartupMessages(library(readxl))
+# library(glue)
+suppressPackageStartupMessages(library(mapview))
+# library(ggmap)
+# library(ggrepel)
+suppressPackageStartupMessages(library(viridis))
+# library(ggExtra)
+suppressPackageStartupMessages(library(ggstance))
+suppressPackageStartupMessages(library(readxl))
+suppressPackageStartupMessages(library(DT))
+# library(kableExtra)
+suppressPackageStartupMessages(library(lubridate))
+suppressPackageStartupMessages(library(skimr)) 
+suppressPackageStartupMessages(library(dataMaid))
+# library(ggmap)
+library(lubridate)
+library(mapview)
+library(vtree)
+
+library(emmeans)
+## bayesian
+library(rstanarm)
+library(bayestestR)
+# library(easystats)
+
+library(rstatix) # rstatix: Pipe-Friendly Framework for Basic Statistical Tests
+
+# devtools::install_github("dkahle/ggmap")
+library(ggmap)
+library(gt)
+library(ggrepel)
+
+# install.packages("devtools")
+# devtools::install_github("easystats/easystats")
+
+## vroom https://vroom.r-lib.org/articles/vroom.html
+```
+
+## Functions
+
+```{r}
+
+```
+
+
+## Aspen Density
+```{r}
+## read in data
+
+# Aspen ht
+ht_perc1 <- read_csv("./output/exported_data/asp_ht_perc1_20200309.csv")
+ht_perc1 %>% 
+  glimpse()
+
+ht_perc1 %>% 
+  visdat::vis_dat()
+
+```
+
+
+
+
+
+### Traditional AOV
+```{r}
+# options(contrasts = c('contr.sum', 'contr.poly'))
+
+data("puzzles", package = "BayesFactor")
+
+# puzzles %>% 
+  # str()
+```
+
+```{r}
+# ht_perc1 <- as.data.frame(ht_perc1)
+
+aov_model_asp_htperc <- aov(stemDen.ha ~ RANGE_TYPE*timeClass + Error(SITE_ID/(RANGE_TYPE*timeClass)), data = ht_perc1)
+
+
+#### example
+# stress.aov <- with(myData.mean,
+#                    aov(stress ~ music * image +
+#                        Error(PID / (music * image)))
+# )
+# Error() term we threw in there? Pretty simple: what we’re saying is that we want to look at how stress changes as a function of the music and image that participants were shown. (Thus the stress ~ music * image) The asterisk specifies that we want to look at the interaction between the two IVs as well. But since this was a repeated measures design, we need to specify an error term that accounts for natural variation from participant to participant. We do this with the Error() function: specifically, we are saying that we want to control for that between-plot variation over all of our within-subjects variables.
+
+
+```
+
+
+```{r, eval=FALSE}
+library(rstanarm)
+
+stan_model <- stan_lmer(RT ~ shape*color + (1 | ID), data = puzzles,
+                        prior = cauchy(0,c(0.707,0.707,0.5)), 
+                        prior_intercept = student_t(3,0,10),                                     prior_aux = exponential(.1),
+                        prior_covariance = decov(1,1,1,1))
+
+```
+
+fit a Bayesian mixed model equivalent to the repeated measures ANOVA above, manually specifying weakly informative priors on its effects:
+
+
+
+
+### Bayesian Analyses
+
+A Bayesian analysis returns a posterior distribution for each parameter (or effect). To minimally describe these distributions. Report the following:
+
+*a point-estimate of centrality  
+*information characterizing the estimation uncertainty (the dispersion).  
+* Additionally, one can also report indices of effect existence and/or significance.
+
+Suggest reporting the median as an index of centrality, as it is more robust compared to the mean or the MAP estimate. However, in case of severly skewed posterior distributions, the MAP estimate could be a good alternative
+
+The 89% Credible Interval (CI) appears as a reasonable range to characterize the uncertainty related to the estimation, being more stable than higher thresholds (such as 90% and 95%). We also recommend computing the CI based on the HDI rather than quantiles, favouring probable, - over central - values.
+
+The rstanarm package automates several data preprocessing steps making its use very similar to that of lme4 in the following way.
+
+Missing Data - rstanarm automatically discards observations with NA values for any variable used in the model.
+
+Identifiers - rstanarm does not require identifiers to be sequential. It is good practice for all cluster and unit identifiers, as well as categorical variables be stored as factors. This applies to using lme4 as much as it does to rstanarm. One can check the structure of the variables by using the str() function.
+
+#### weekly informative priors, repeated measures
+
+```{r}
+## filter out in-between years
+ht_perc1 <- ht_perc1 %>%
+  filter(timeClass %in% c("BL","2013", "2018")) 
+
+### factor relevel
+ht_perc1 <- ht_perc1 %>% 
+  mutate(timeClass = as.factor(timeClass)) %>% 
+  mutate(timeClass = fct_relevel(timeClass, "BL", "2013", "2018")) %>% 
+  mutate(RANGE_TYPE = as.factor(RANGE_TYPE)) %>% 
+  mutate(RANGE_TYPE = fct_relevel(RANGE_TYPE, "core winter range","non-core winter range","Kawuneeche Valley"))   
+
+
+                                  
+# ht_perc1 %>% 
+#   distinct(RANGE_TYPE)
+# aov_model_asp_htperc <- aov(stemDen.ha ~ RANGE_TYPE + Error(SITE_ID/(RANGE_TYPE)), data = ht_perc1)
+
+
+```
+
+Fit model - STAN_LMER
+
+```{r}
+
+
+
+stan_model <- stan_lmer(stemDen.ha ~ timeClass*RANGE_TYPE + (1 | SITE_ID), data = ht_perc1,
+                        prior = cauchy(0,c(0.707,0.707,0.5)), 
+                        prior_intercept = student_t(3,0,10),                                     prior_aux = exponential(.1),
+                        prior_covariance = decov(1,1,1,1))
+
+prior_summary(stan_model)
+
+
+```
+
+```{r, eval=FALSE}
+## guess at some more informative priors
+stan_model_b <- stan_glmer(stemDen.ha ~ timeClass*RANGE_TYPE + (1 | SITE_ID), 
+                           data = ht_perc1,
+                           family = binomial(link = "logit"),
+                           prior = cauchy(0,c(0.707,0.707,0.5)),
+                      prior_intercept = student_t(0,0,1),                                     prior_aux = exponential(.1),
+                        prior_covariance = decov(1,1,1,1))
+
+
+stan_glm(Days ~ Sex/(Age + Eth*Lrn), data = MASS::quine, seed = 123,
+         family = neg_binomial_2, QR = TRUE, algorithm = "optimizing")
+```
+
+
+Describe posterior
+
+```{r}
+describe_posterior(
+  stan_model,
+  effects = "all",
+  component = "all",
+  test = c("p_direction", "p_significance"),
+  centrality = "all"
+)
+
+```
+
+```{r, eval = FALSE}
+desc.post1 <- function(model){
+  describe_posterior(
+  model,
+  effects = "all",
+  component = "all",
+  test = c("p_direction", "p_significance"),
+  centrality = "all"
+) %>% 
+    as_tibble() %>% 
+    DT::datatable(caption = "Posterior description")
+}
+
+desc.post1(stan_model)
+```
+
+Posterior: point estimates
+
+```{r}
+centrality <- point_estimate(stan_model)  # Get indices of centrality
+centrality
+```
+
+
+```{r}
+# null prior
+stan_model2 <- stan_lmer(stemDen.ha ~ timeClass*RANGE_TYPE + (1 | SITE_ID), data = ht_perc1,
+                        prior = NULL)
+```
+
+```{r}
+pp_check(stan_model)
+pp_check(stan_model2)
+pp_check(stan_model_b)
+
+```
+
+
+
+get posteriors
+
+```{r}
+posteriors <- insight::get_parameters(stan_model)
+posteriors2 <- insight::get_parameters(stan_model2)
+
+# head(posteriors) %>% 
+#   datatable()# Show the first 6 rows
+# glimpse(posteriors)
+
+posteriors.t1 <- posteriors %>%
+  # names()
+  pivot_longer(cols = starts_with("time"), names_to = "variable", values_to = "values")
+
+
+library(ggridges)
+
+posteriors.t1 %>% 
+  ggplot() +
+  ggridges::geom_density_ridges(aes(x = values, y = variable))
+
+posteriors.t1 %>% 
+  ggplot() +
+  geom_density(aes(fill = variable, x = values, color = variable), alpha = .12) +
+  theme_minimal()
+
+
+library(emmeans)
+pairs.timeClass <- pairs(emmeans(stan_model, ~ timeClass))
+pairs.timeClass
+plot(pairs.timeClass) +
+  labs(title = "Aspen density")
+
+
+
+```
+
+```{r}
+pairs.range_type <- pairs(emmeans(stan_model, ~ RANGE_TYPE))
+pairs.range_type
+plot(pairs.range_type) +
+  theme_minimal() +
+  labs(x = "Median estimate", y = "", caption = "pairs.range_type")
+```
+
+
+```{r}
+
+pairs.timeClassxRange <- emmeans(stan_model, ~timeClass * RANGE_TYPE)
+pairs(pairs.timeClassxRange, by = "timeClass") # simple effects for color
+plot(pairs.timeClassxRange) +
+  theme_minimal() +
+  labs(x = "Median estimate", y = "", caption = "pairs.timeClassxRange") 
+
+
+```
+
+Compute Confidence/Credible/Compatibility Intervals (CI) or Support Intervals (SI) for Bayesian and frequentist models. 
+
+bayestestR provides two methods to compute credible intervals, the Highest Density Interval (HDI) (hdi()) and the Equal-tailed Interval (ETI) (eti()). These methods can also be changed via the method argument of the ci() function.
+
+```{r}
+# Compute HDI and ETI
+ci_hdi <- ci(posteriors, method = "HDI")
+ci_eti <- ci(posteriors, method = "ETI")
+
+# Plot the distribution and add the limits of the two CIs
+# posteriors %>% 
+#   select(timeClass2:RANGE_TYPE2) %>% 
+#   estimate_density(extend=TRUE) %>% 
+#   ggplot(aes(x=x, y=y)) +
+#   geom_area(fill="orange") +
+#   theme_classic() +
+#   # HDI in blue
+#   geom_vline(xintercept=ci_hdi$CI_low, color="royalblue", size=3) +
+#   geom_vline(xintercept=ci_hdi$CI_high, color="royalblue", size=3) +
+#   # Quantile in red
+#   geom_vline(xintercept=ci_eti$CI_low, color="red", size=1) +
+#   geom_vline(xintercept=ci_eti$CI_high, color="red", size=1)
+
+```
+
+
+
+
+Using the fantastic emmeans package, we can explore and extract marginal effects and estimates from our fitted model. For example, we can estimate the main effect for color
+
+We can also estimate (based on posterior draws) the difference between the two simple effects for color between the levels of shape:
+
+```{r}
+
+pairs.timeClassxRange <- emmeans(stan_model, ~timeClass * RANGE_TYPE)
+pairs(pairs.timeClassxRange, by = "timeClass") # simple effects for color
+plot(pairs.timeClassxRange) +
+  theme_minimal() +
+  labs(x = "Median estimate", y = "", caption = "pairs.timeClassxRange") 
+
+
+```
+
+
+```{r}
+# c_color_shape_interaction <- contrast(stan_model, interaction = c("pairwise","pairwise"))
+# c_color_shape_interaction
+```
+
+
+#### stan_aov
+
+```{r}
+
+# my_prior <- normal(location = c(-10, 0), scale = c(5, 2), autoscale = FALSE)
+# stan_glm(y ~ x1 + x2, data = dat, prior = my_prior)
+
+stav <- stan_aov(stemDen.ha ~ RANGE_TYPE*timeClass, data = ht_perc1, prior = NULL)
+
+
+```
+
+
+
+```{r}
+# Using the fantastic emmeans package, we can explore and extract marginal effects and estimates from our fitted model. For example, we can estimate the main effect for color:
+# 
+library(emmeans)
+pairs.timeClass <- pairs(emmeans(stav, ~ timeClass))
+pairs.timeClass
+
+pairs.range_type <- pairs(emmeans(stav, ~ RANGE_TYPE))
+pairs.range_type
+
+
+plot(pairs.timeClass)
+plot(pairs.range_type)
+
+
+# We can also estimate (based on posterior draws) the difference between the two simple effects for color between the levels of shape:
+
+em.timeClassxRange <- emmeans(stav, ~timeClass * RANGE_TYPE)
+pairs(em.timeClassxRange, by = "timeClass") # simple effects for color
+plot(em.timeClassxRange)
+
+```
+
+>EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE). Also, in multi-factor situations, you may specify by factor(s) to perform the comparisons separately at the levels of those factors.
+
+
+### different data and workflow
+Test data:
+https://cran.r-project.org/package=HSAUR3
+
+
+
+## Willow height - macroplot
+
+### Read in and munge for modeling
+
+```{r}
+willow <- read_csv("./output/exported_data/willow_mcro.csv")
+
+willow <- willow %>% 
+  select(-c(pType, WILDERNESS, contains("UTM"))) 
+
+willow.ht <- willow %>% 
+  filter(!is.na(PLANT_HT_CM)) %>% 
+  # distinct(yr)
+  mutate(timeClass = case_when(yr == 2008 ~ "BL",
+                              yr == 2009 ~ "BL", 
+                              TRUE ~ as.character(yr))) 
+
+willow.ht <- willow.ht %>% 
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018")
+
+# willow.ht %>% distinct(timeClass)
+
+```
+
+### STAN model: willow height ~ timeClass * RANGE_TYPE
+
+```{r}
+willow.ht <- willow.ht %>% 
+  mutate(timeClass = as.factor(timeClass)) %>% 
+  mutate(timeClass = fct_relevel(timeClass, "BL", "2013", "2018"))
+```
+
+
+```{r}
+
+# willow.ht %>% glimpse()
+stan_mcroHt1 <- stan_lmer(PLANT_HT_CM ~ timeClass*RANGE_TYPE + (1 | SITE_ID), data = willow.ht,
+                          iter = 3000,
+                        prior = cauchy(0,c(0.707,0.707,0.5)), 
+                        prior_intercept = student_t(3,0,10),                                     prior_aux = exponential(.1),
+                        prior_covariance = decov(1,1,1,1))
+
+
+```
+
+#### Describe posterior
+
+```{r}
+# describe_posterior(
+#   stan_mcroHt1,
+#   effects = "all",
+#   component = "all",
+#   test = c("p_direction", "p_significance"),
+#   centrality = "all"
+# )
+
+post1.fencedRT <- describe_posterior(
+  stan_mcroHt1,
+  effects = "all",
+  ci = 0.9,
+  ci_method = "hdi",
+  component = "all",
+  test = c("p_direction", "p_significance"),
+  centrality = "all"
+)
+
+post1.fencedRT %>% 
+  as_tibble() %>% 
+  datatable()
+
+```
+
+Posterior: point estimates
+
+```{r}
+centrality.mcroHt1 <- point_estimate(stan_mcroHt1)  # Get indices of centrality
+
+centrality.mcroHt1
+
+```
+
+
+### STAN model: fenced vs unfenced and range type
+
+```{r}
+##
+stan_mcroHt1_fenced1 <- stan_lmer(PLANT_HT_CM ~ timeClass*RANGE_TYPE*FENCED + (1 | SITE_ID), data = willow.ht,
+                        prior = cauchy(0,c(0.707,0.707,0.5)), 
+                        prior_intercept = student_t(3,0,10),                                     prior_aux = exponential(.1),
+                        prior_covariance = decov(1,1,1,1))
+
+
+stan_mcroHt1_fenced1
+
+```
+
+```{r, eval = FALSE}
+
+## shinystan
+# install.packages("shinystan")
+library("shinystan")
+# launch_shinystan_demo()
+# More info
+
+## shiny eval
+launch_shinystan(stan_mcroHt1_fenced1)
+
+```
+
+
+```{r}
+pp_check(stan_mcroHt1_fenced1)
+```
+
+
+```{r}
+# Compute indices
+pd <- p_direction(stan_mcroHt1_fenced1)
+percentage_in_rope <- rope(stan_mcroHt1_fenced1, ci=1)
+
+# Visualise the pd
+plot(pd)
+```
+
+
+% latex table generated in R 3.6.1 by xtable 1.8-4 package
+% Fri Mar 13 12:05:39 2020
+\begin{table}[ht]
+\centering
+\begin{tabular}{lrrrrrrr}
+  \toprule
+Parameter & Rhat & n\_eff & mean & sd & 2.5\% & 50\% & 97.5\% \\ 
+  \midrule
+mu & 1.0 & 1030 & 8.4 & 5.4 & -2.4 & 8.2 & 18.8 \\ 
+  theta[1] & 1.0 & 1022 & 12.5 & 8.7 & -2.3 & 11.3 & 33.1 \\ 
+   \bottomrule
+\end{tabular}
+\end{table}
+
+```{r}
+
+
+
+```
+
+
+#### posterior datatable: fenced range type
+
+```{r}
+post1.fencedRT <- describe_posterior(
+  stan_mcroHt1_fenced1,
+  effects = "all",
+  ci = 0.9,
+  ci_method = "hdi",
+  component = "all",
+  test = c("p_direction", "p_significance"),
+  centrality = "all"
+)
+
+post1.fencedRT %>% 
+  as_tibble() %>% 
+  datatable()
+
+```
+
+# func
+
+
+### Scrap
+
+#### Repeated measures
+
+```{r, echo=FALSE, eval=FALSE}
+# worked R bloggers example
+# see: https://www.r-bloggers.com/two-way-anova-with-repeated-measures/
+
+set.seed(5250)
+
+myData <- data.frame(PID = rep(seq(from = 1,
+                               to = 50, by = 1), 20),
+                     stress = sample(x = 1:100,
+                                     size = 1000,
+                                     replace = TRUE),
+                     image = sample(c("Happy", "Angry"),
+                                    size = 1000,
+                                    replace = TRUE),
+                     music = sample(c("Disney", "Horror"),
+                                    size = 1000,
+                                    replace = TRUE)
+)
+
+myData <- within(myData, {
+  PID   <- factor(PID)
+  image <- factor(image)
+  music <- factor(music)
+})
+
+myData <- myData[order(myData$PID), ]
+head(myData)
+
+PID stress image  music
+  1     90 Happy Disney
+  1     70 Angry Horror
+  1     61 Angry Horror
+  1     87 Happy Horror
+  1     79 Happy Disney
+  1     95 Happy Horror
+So we see that we have one row per observation per participant. If your dataset is in wide form rather than long, I’d suggest checking out our article on converting between wide and long since everything from this point out assumes that your data look like what’s shown above!
+
+Extracting Condition Means
+Before we can run our ANOVA, we need to find the mean stress value for each participant for each combination of conditions. We’ll do that with:
+
+myData.mean <- aggregate(myData$stress,
+                      by = list(myData$PID, myData$music,
+                              myData$image),
+                      FUN = 'mean')
+
+colnames(myData.mean) <- c("PID","music","image","stress")
+
+myData.mean <- myData.mean[order(myData.mean$PID), ]
+head(myData.mean)
+
+PID  music   image   stress
+  1 Disney   Angry 39.33333
+  1 Horror   Angry 65.50000
+  1 Disney   Happy 68.00000
+  1 Horror   Happy 69.57143
+  1 Disney Neutral 40.00000
+  1 Horror Neutral 52.66667
+So now we’ve gone from one row per participant per observation to one row per participant per condition. At this point we’re ready to actually construct our ANOVA!
+
+Building the ANOVA
+Now, our actual ANOVA is going to look something like this:
+
+stress.aov <- with(myData.mean,
+                   aov(stress ~ music * image +
+                       Error(PID / (music * image)))
+)
+But what’s all that mean? What’s with that funky Error() term we threw in there? Pretty simple: what we’re saying is that we want to look at how stress changes as a function of the music and image that participants were shown. (Thus the stress ~ music * image) The asterisk specifies that we want to look at the interaction between the two IVs as well. But since this was a repeated measures design, we need to specify an error term that accounts for natural variation from participant to participant. (E.g., I might react a little differently to scary music than you do because I love zombie movies and you hate them!) We do this with the Error() function: specifically, we are saying that we want to control for that between-participant variation over all of our within-subjects variables.
+
+Now that we’ve specified our model, we can go ahead and look at the results:
+
+summary(stress.aov)
+
+Error: PID
+          Df Sum Sq Mean Sq F value Pr(>F)
+Residuals 49   8344   170.3               
+
+Error: PID:music
+          Df Sum Sq Mean Sq F value Pr(>F)
+music      1      1    0.78   0.003  0.954
+Residuals 49  11524  235.19               
+
+Error: PID:image
+          Df Sum Sq Mean Sq F value Pr(>F)
+image      1     61   61.11   0.296  0.589
+Residuals 49  10127  206.66               
+
+Error: PID:music:image
+            Df Sum Sq Mean Sq F value Pr(>F)
+music:image  1    564   563.8   2.626  0.112
+Residuals   49  10520   214.7  
+We see that there is no main effect of either music:
+
+F(1, 49) = 0.003; p-value = 0.954
+or image:
+
+F(1, 49) = 0.296; p-value = 0.589
+on participant stress. Likewise, we see that there is not a significant interaction effect between the two independent variables:
+
+F(1, 49) = 2.626; p-value = 0.112
+```
+
+
+```{r}
+
+```
+
