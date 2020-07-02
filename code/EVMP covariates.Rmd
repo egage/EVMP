@@ -153,6 +153,47 @@ top_swe %>%
 ```
 
 ## Elk
+```{r}
+
+elk.raw <- read_csv("./data/covariates/elk/RMNP_Population_summary.csv") %>% 
+  janitor::clean_names()
+
+```
+
+```{r}
+elk.raw <- elk.raw %>% 
+  mutate(year = as.integer(year))
+
+## write to disk
+# write_csv(elk.raw, "./data/covariates/elk/RMNP_elk_pop_summary_cln.csv")
+
+elk.raw %>% 
+  ggplot(aes(x = year, y = median)) +
+  geom_point(color = "blue") +
+  geom_line(color = "blue") +
+  geom_line(aes(y = p025), color = "red", lty = "dashed") +
+  geom_line(aes(y = p975), color = "red", lty = "dashed") +
+  theme_minimal() +
+  labs(x = "Year", y = "Median elk populatiop estimate", caption = "Modeled elk pop: RMNP_Population_summary.csv ")
+
+# ggsave("./output/figures_exported/elk_population.png", width = 5, height = 4, dpi = 300)
+```
+
+```{r}
+elk.raw %>% 
+  gt::gt() %>% 
+  gt::gtsave("./output/tables/elkpop.rtf")
+
+elk.raw %>% 
+  summarytools::descr(median) 
+
+elk.raw %>% 
+  arrange(desc(median))
+
+elk.raw %>% 
+  arrange((median))
+```
+
 
 ## Moose
 

@@ -71,7 +71,6 @@ https://vroom.r-lib.org/articles/vroom.html
 ### Function definitions
 ```{r, utilityFuncDefn, echo=FALSE, warning=FALSE,message=FALSE, comment=FALSE}
 # define some utility functions...
-
 #--------------------
 # SO: http://stackoverflow.com/questions/11610377/how-do-i-change-the-formatting-of-numbers-on-an-axis-with-ggplot
 # ...gives proper 'x10(superscript)5' notation on the axes. 
@@ -93,7 +92,6 @@ fancy_scientific <- function(l) {
 #    geom_point() +
 #    scale_y_continuous(labels=fancy_scientific) 
 
-
 ## fun to add r2
 # GET EQUATION AND R-SQUARED AS STRING
 # SOURCE: http://goo.gl/K4yh
@@ -109,16 +107,6 @@ lm_eqn <- function(df){
 
 # p1 <- p + geom_text(x = 25, y = 300, label = lm_eqn(df), parse = TRUE)
 
-
-########
-## from https://www.r-bloggers.com/using-purrr-with-dplyr/
-cut_equal_sizes <- function(x, n = 3, ...) {
-  ggplot2::cut_number(x, n, ...)
-}
-
-cut_equal_ranges <- function(x, n = 10, ...) {
-  cut(x, n, include.lowest = TRUE, ...)
-}
 
 
 # ######### DEAL WITH NA #############
@@ -140,7 +128,7 @@ theme_smFacet2 <- theme_bw() + theme(strip.text.x = element_text(size = 6))
 
 ```
 
-```{r, echo=FALSE, warning=FALSE,message=FALSE, comment=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE}
 
 read_sheets <- function(file){
   xlsx_file <- file
@@ -229,6 +217,14 @@ names.dt <- function(df){
 }
 
 
+### Table funcs
+# gt_tally_site_plot_yr_season <- function(df){
+#   df %>%
+#   group_by(yr, plot, season, site) %>%
+#   tally() %>%
+#     gt::gt() %>% 
+#     tab_header(title = "tally")
+# }
 ```
 
 ```{r}
@@ -1380,7 +1376,8 @@ sp.lu <- sinfo.df %>%
 
 ## make sure the 'SITE_ID' columns are consistent
 sp.lu <- sp.lu %>% 
-  mutate(SITE_ID = case_when(SITE_ID == "WC1" ~ "WC01",
+  mutate(SITE_ID = case_when(
+    SITE_ID == "WC1" ~ "WC01",
                        SITE_ID == "WC2" ~ "WC02",
                        SITE_ID == "WC3" ~ "WC03", 
                        SITE_ID == "WC4" ~ "WC04", 
@@ -1456,13 +1453,6 @@ plotly::ggplotly()
 #### Macroplot
 csv.all.lc.mcro <- csv.all.lc %>% 
   filter(vType == "Macroplot") 
-
-# csv.all.lc.mcro %>%
-#   # unnest(data)
-#   unnest(field_names) %>% 
-#   distinct(file_name_abr,field_names) %>% 
-#   # write_csv("output/temp_4_review/macroplot_fld_names.csv")
-#   datatable(rownames = FALSE, caption = "Macroplot inventory variable names.")
 
 ```
 
@@ -1559,11 +1549,14 @@ csv.all.lc.mcro.df <- left_join(csv.all.lc.mcro.df, sp.lu, by = "SITE_ID")
 ```
 
 
-```{r}
+```{r, eval=FALSE}
+## not working anymore. 202-05-01
 #### Missingness across years 
-mplot1 <- csv.all.lc.li.df %>% 
-  mutate(yr = year(DATE)) %>% 
-  mutate(yr = as.factor(yr)) %>% 
+temp.m <- csv.all.lc.li.df %>% 
+  mutate(yr = year(DATE))
+
+temp.m %>% 
+  mutate(yr = as.factor(yr)) %>%
   naniar::gg_miss_fct(yr) +
   theme_minimal() + 
   labs(title = 'Missing data', y = "", x="Year", fill = "% missing")
@@ -1674,10 +1667,15 @@ csv.all.lc.mcro <- csv.all.lc.mcro %>%
 #   # write_csv("output/temp_4_review/macroplot_fld_names.csv")
 #   datatable(rownames = FALSE, caption = "Macroplot inventory variable names.")
 
+
+
+```
+
+```{r}
 ## combine all using purrr, ninja-style:
-csv.all.lc.mcro.df <- csv.all.lc.mcro %>% 
-  pluck(4) %>% # note the specific index position
-  reduce(.f = rbind)
+# csv.all.lc.mcro.df <- csv.all.lc.mcro %>% 
+#   pluck(4) %>% # note the specific index position
+#   reduce(.f = rbind) # did this above
 
 ## add yr and month columns
 csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>% 
@@ -1685,9 +1683,11 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
   mutate(mo = lubridate::month(DATE))
 
 ## join the site info
-csv.all.lc.mcro.df <- left_join(csv.all.lc.mcro.df, site.info.clean, by = "SITE_ID")
+# csv.all.lc.mcro.df <- left_join(csv.all.lc.mcro.df, site.info.clean, by = "SITE_ID")
 
+# View(csv.all.lc.mcro.df)
 ```
+
 
 ```{r, eval=FALSE, echo=FALSE}
 ## species codes are a mess
@@ -1765,10 +1765,17 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
   mutate(FENCED = case_when(is.na(FENCED) ~ "N", 
                             TRUE ~ as.character(FENCED))) 
 
+
 # csv.all.lc.mcro.df %>% 
 #   group_by(SITE_ID, FENCED) %>% 
 #   tally()
 
+```
+
+```{r}
+csv.all.lc.mcro.df %>% 
+  names()
+  visdat::vis_dat()
 ```
 
 
@@ -1778,10 +1785,16 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
 ```
 
 
-
 # Results 
 
 ## Shrub height [line intercept]
+
+```{r write_li_to_disk, eval = FALSE}
+csv.all.lc.li.df
+
+# write_csv(csv.all.lc.li.df, "./data/EVMP_derived/li_derived.csv")
+```
+
 
 ```{r, echo=FALSE}
 # > From discussions with HA in the field, the orientation of line-intercept transects may not have had a consistent orientation from sampling interval to interval.
@@ -2464,7 +2477,7 @@ facet_wrap(~BURNED)
 
 ```
 
-## shrub height
+### shrub height - LI
 
 ```{r}
 ## shrub height
@@ -2504,78 +2517,6 @@ csv.all.lc.li.df %>%
 ```
 
 
-```{r, echo=FALSE}
-
-# Unpaired two samples t-test (parametric)
-# What is unpaired two-samples t-test?
-# Research questions and statistical hypotheses
-# Formula of unpaired two-samples t-test
-# Visualize your data and compute unpaired two-samples t-test in R
-# R function to compute unpaired two-samples t-test
-# Visualize your data using box plots
-# Preliminary test to check independent t-test assumptions
-# Compute unpaired two-samples t-test
-
-# Unpaired Two-Samples Wilcoxon Test (non-parametric).
-
-## see: https://rpkgs.datanovia.com/rstatix/reference/anova_test.html
-## https://rpkgs.datanovia.com/rstatix/reference/wilcox_test.html
-```
-
-```{r, eval=FALSE, echo=FALSE}
-## examples
-# library(rstatix)
-
-# Load data
-#:::::::::::::::::::::::::::::::::::::::
-data("ToothGrowth")
-df <- ToothGrowth
-
-# One-sample test
-#:::::::::::::::::::::::::::::::::::::::::
-df %>% wilcox_test(len ~ 1, mu = 0)#> Error in UseMethod("wilcox_test"): pas de méthode pour 'wilcox_test' applicable pour un objet de classe "data.frame"
-
-# Two-samples unpaired test
-#:::::::::::::::::::::::::::::::::::::::::
-df %>% wilcox_test(len ~ supp)#> Error in UseMethod("wilcox_test"): pas de méthode pour 'wilcox_test' applicable pour un objet de classe "data.frame"
-
-# Two-samples paired test
-#:::::::::::::::::::::::::::::::::::::::::
-df %>% wilcox_test (len ~ supp, paired = TRUE)#> Error in UseMethod("wilcox_test"): pas de méthode pour 'wilcox_test' applicable pour un objet de classe "data.frame"
-
-# Compare supp levels after grouping the data by "dose"
-#::::::::::::::::::::::::::::::::::::::::
-df %>%
-  group_by(dose) %>%
-  wilcox_test(data =., len ~ supp) %>%
-  adjust_pvalue(method = "bonferroni") %>%
-  add_significance("p.adj")#> Error in add_significance(., "p.adj"): The column p.adj does not exist in the data
-# pairwise comparisons
-#::::::::::::::::::::::::::::::::::::::::
-# As dose contains more than two levels ==>
-# pairwise test is automatically performed.
-df %>% wilcox_test(len ~ dose)#> Error in UseMethod("wilcox_test"): pas de méthode pour 'wilcox_test' applicable pour un objet de classe "data.frame"
-# Comparison against reference group
-#::::::::::::::::::::::::::::::::::::::::
-# each level is compared to the ref group
-df %>% wilcox_test(len ~ dose, ref.group = "0.5")#> Error in UseMethod("wilcox_test"): pas de méthode pour 'wilcox_test' applicable pour un objet de classe "data.frame"
-
-# Comparison against all
-#::::::::::::::::::::::::::::::::::::::::
-df %>% wilcox_test(len ~ dose, ref.group = "all")#> Error in UseMethod("wilcox_test"): pas de méthode pour 'wilcox_test' applicable pour un objet de classe "data.frame"
-
-```
-
-```{r, echo=FALSE, eval=FALSE}
-## reporting example
-A two-way repeated measures ANOVA was performed to evaluate the effect of different diet treatments over time on self-esteem score.
-
-There was a statistically significant interaction between treatment and time on self-esteem score, F(2, 22) = 30.4, p < 0.0001. Therefore, the effect of treatment variable was analyzed at each time point. P-values were adjusted using the Bonferroni multiple testing correction method. The effect of treatment was significant at t2 (p = 0.036) and t3 (p = 0.00051) but not at the time point t1 (p = 1).
-
-Pairwise comparisons, using paired t-test, show that the mean self-esteem score was significantly different between ctr and Diet trial at time points t2 (p = 0.012) and t3 (p = 0.00017) but not at t1 (p = 0.55).
-```
-
-
 ## Willow macroplot data
 
 
@@ -2597,6 +2538,15 @@ mcro.canopy.diam.sum <- csv.all.lc.mcro.df %>%
   
 ```
 
+```{r}
+csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>% 
+  mutate(timeClass = case_when(yr == 2008 ~ "BL",
+                              yr == 2009 ~ "BL", 
+                              TRUE ~ as.character(yr))) %>% 
+  mutate(timeClass = as.factor(timeClass)) %>% 
+  mutate(timeClass = fct_relevel(timeClass, "2018", "2013", "BL"))
+
+```
 
 
 #### Beaver and Moose Presence in 2018
@@ -2711,11 +2661,9 @@ sinfo.df %>%
 ```
 
 
-```{r Moose, eval=FALSE}
+```{r Moose, eval=TRUE}
 #### Observations of moose presence noted in plots
-# 
 # > How best to use these obserations? 
-# 
 # **Variable: MOOSE_PRESENCE**
   
 csv.all.lc.mcro.df %>% 
@@ -2728,23 +2676,50 @@ csv.all.lc.mcro.df %>%
 
 
 csv.all.lc.mcro.df %>% 
+  distinct(timeClass)
+
+
+mcro.moose <- csv.all.lc.mcro.df %>% 
+  mutate(moose = case_when(MOOSE_PRESENCE == "Absence_" ~ "Absent",
+                           MOOSE_PRESENCE != "Absent" ~ "Present",
+                           TRUE ~ MOOSE_PRESENCE))
+
+mcro.moose %>% 
+  tabyl(moose)
+
+mcro.moose.tally <- mcro.moose %>% 
   # distinct(MOOSE_PRESENCE)
-  group_by(SITE_ID, MOOSE_PRESENCE, yr, LOCATION) %>% 
+  group_by(SITE_ID, moose, yr, LOCATION) %>% 
   filter(MOOSE_PRESENCE != "Absence_") %>%
   tally() %>% 
   dplyr::select(-n) %>% 
   ungroup() %>%
-  group_by(yr, MOOSE_PRESENCE, LOCATION) %>% 
+  group_by(yr, moose, LOCATION) %>% 
   tally() %>% 
   ungroup() %>%
-  mutate(yr = as.character(yr)) %>% 
-  ggplot(aes(yr, MOOSE_PRESENCE)) +
+  mutate(yr = as.character(yr)) 
+
+mcro.moose.tally %>% 
+  ggplot(aes(yr, moose)) +
   geom_tile(aes(fill = n)) +
-  facet_wrap(~LOCATION)
+  facet_wrap(~LOCATION) +
+  theme_minimal()
 
   # datatable()
 
 ```
+
+```{r}
+
+```
+
+```{r}
+
+fun.desc.post1.gt(kv.stmod_stmcnt1) %>% 
+  gt::gtsave(filename = "./output/tables/AK_kv.stmod_stmcnt1_posteriors.rtf")
+
+```
+
 
 ----
 
@@ -2773,6 +2748,8 @@ csv.all.lc.mcro %>%
 
 
 ```
+
+
 
 #### Canopy Diameter
 
@@ -3004,20 +2981,12 @@ csv.all.lc.mcro.df %>%
 
 ```
 
-```{r}
-# csv.all.lc.mcro.df %>% 
-#   write_csv("./output/exported_data/willow_mcro.csv")
+```{r, eval=FALSE}
+csv.all.lc.mcro.df %>%
+  write_csv("./output/exported_data/willow_mcro.csv")
 
 ```
 
-
-#### Repeated measures: willow height
-
-```{r}
-#### Repeated measures: willow height
-
-
-```
 
 
 ## Aspen 
@@ -3781,6 +3750,10 @@ ht.dbh.class <- left_join(asp.tally.ht.tidy, asp.dbh2join) %>%
   filter(LIVE_DEAD != "DEAD") %>% 
   select(c(SITE_TYPE, SITE_ID, timeClass, stemTally, stemDen.ac, BURNED, FENCED, RANGE_TYPE, VALLEY, DBHclGp01, HTclass, shortTall))
 
+ht.dbh.class <- ht.dbh.class %>%
+    mutate(RANGE_TYPE = case_when(grepl("AC", SITE_ID) & is.na(RANGE_TYPE) ~ "core winter range",
+                            TRUE ~ RANGE_TYPE))
+
 ```
 
 
@@ -3790,33 +3763,55 @@ ht.dbh.class <- left_join(asp.tally.ht.tidy, asp.dbh2join) %>%
 ### suckering classes: by range type
 # the following combines the tally for stems between 1.5 and 2.5 m
 suckering.vtype <- ht.dbh.class %>%
-  # distinct(HTclass)
-  filter(HTclass == "HT_151_200_CM" |HTclass == "HT_201_250_CM") %>%
-  group_by(SITE_ID, RANGE_TYPE, timeClass) %>% 
+    filter(HTclass == "HT_151_200_CM" |HTclass == "HT_201_250_CM") %>%
+  group_by(SITE_ID, RANGE_TYPE, FENCED, timeClass) %>% 
   summarise(stemTally.1p5to2m = sum(stemTally)) %>%
   mutate(stemDen.ac = stemTally.1p5to2m *161.8744) %>% # converts stems/2m2 plot to stems/acre) %>% 
-  mutate(suckering_class = case_when(stemDen.ac < 1700 ~ "Poor (<1,700 stems/acre)",
-                                   stemDen.ac >=1700 & stemDen.ac <4500 ~ "Moderate (1,700-4,500 stems/acre)",
-                                   stemDen.ac >=4500 ~ "High (>4500 stems/acre)")) 
+  # mutate(suckering_class = case_when(stemDen.ac < 1700 ~ "Poor (<1,700 stems/acre)",
+  #                                  stemDen.ac >=1700 & stemDen.ac <4500 ~ "Moderate (1,700-4,500 stems/acre)",
+  #                                  stemDen.ac >=4500 ~ "High (>4500 stems/acre)")) %>% 
+  mutate(suckering_class = case_when(stemDen.ac < 1700 ~ "Poor",
+                                   stemDen.ac >=1700 & stemDen.ac <4500 ~ "Moderate",
+                                   stemDen.ac >=4500 ~ "High")) %>% 
+  ungroup()
 
+## fenced and unfenced
 suckering.vtype %>%
-  filter(!is.na(RANGE_TYPE)) %>% 
+  filter(!is.na(RANGE_TYPE)) %>%
+  filter(RANGE_TYPE != "Kawuneeche Valley") %>%
   filter(timeClass %in% c("BL","2013","2018")) %>% 
   ggplot(aes(timeClass, SITE_ID)) +
   geom_tile(aes(fill = suckering_class), color = "white") +
-  scale_fill_manual(values = c("red","pink","grey90")) +
+  scale_fill_manual(values = c("darkgreen","green","grey90")) +
   theme_minimal() +
   theme(legend.position = "top") +
-  labs(x = "", y = "Site ID", fill = "", caption = "Suckering: Stem denisty 1.5 m to 2.5 m in ht") +
+  labs(x = "", y = "Site ID", fill = "", caption = "Suckering: Stem density 1.5 m to 2.5 m in ht") +
   facet_wrap(~RANGE_TYPE, scales = "free_y")
 
-# ggsave("./output/figures_exported/suckering_1p5to2p5m.png", width = 7, height = 7)
+# ggsave("./output/figures_exported/suckering_1p5to2p5m_AC_AN.png", width = 6.5, height = 7)
 
 suckering.vtype %>%
   filter(!is.na(RANGE_TYPE)) %>% 
   filter(timeClass %in% c("BL","2013","2018")) %>% 
   arrange(-stemDen.ac) %>% 
   datatable(rownames = FALSE, caption = "stemDen.ac aspen suckering 1.5 m to 2.5 m", filter = "top")
+
+## broken out by fenced, just for AC
+suckering.vtype %>%
+  filter(!is.na(RANGE_TYPE)) %>%
+  filter(RANGE_TYPE == "core winter range") %>%
+  # filter(RANGE_TYPE != "Kawuneeche Valley") %>%
+  filter(timeClass %in% c("BL","2013","2018")) %>% 
+  ggplot(aes(timeClass, SITE_ID)) +
+  geom_tile(aes(fill = suckering_class), color = "white") +
+  scale_fill_manual(values = c("darkgreen","green","grey90")) +
+  theme_minimal() +
+  # theme(legend.position = "top") +
+  labs(x = "", y = "Site ID", fill = "", caption = "Suckering: Stem density 1.5 m to 2.5 m in ht. AC plots only") +
+  # facet_grid(FENCED~RANGE_TYPE)
+  facet_wrap(~FENCED, scales = "free_y")
+
+# ggsave("./output/figures_exported/suckering_1p5to2p5m_AC_fenced.png", width = 5.5, height = 5)
 
 ```
 
@@ -3836,41 +3831,45 @@ prop.fun <- function(x, cnt){
 
 # suckering.vtype %>% distinct(SITE_ID)
 
+suckering.vtype <- suckering.vtype %>% 
+  mutate(RANGE_TYPE = case_when(grepl("AC", SITE_ID) & is.na(RANGE_TYPE) ~ "core winter range",
+                            TRUE ~ RANGE_TYPE)) 
 #### calc the percent 
 percent_suckering_class <- suckering.vtype %>% 
   filter(!is.na(RANGE_TYPE)) %>% 
   mutate(timeClass = as.character(timeClass)) %>%
   filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>%
-  group_by(timeClass, suckering_class) %>% 
+  group_by(timeClass, RANGE_TYPE, suckering_class) %>% 
   summarise(sum_class = n()) %>% 
   ungroup() %>% 
   # tally()
-  group_by(timeClass) %>% 
+  group_by(timeClass, RANGE_TYPE) %>% 
   mutate(n_allTimes = sum(sum_class)) %>% 
   ungroup() %>% 
-  mutate(percent_in_class = round(100*(sum_class/n_allTimes)),3)
+  mutate(percent_in_class = 100*(sum_class/n_allTimes)) %>% 
+  mutate(percent_in_class = round(percent_in_class, 1)) %>% 
+  arrange(timeClass, suckering_class)
   
 percent_suckering_class %>% 
-  datatable()
+  gt()
   
 
 
 ```
 
-
+# >>> see up
 
 ```{r}
 # fig for report
-
 percent_suckering_class %>% 
   mutate(timeClass = as_factor(timeClass)) %>%
   mutate(timeClass = relevel(timeClass, "BL")) %>% 
   ggplot(aes(timeClass, percent_in_class)) +
-  geom_col(aes(fill = suckering_class), color = "white") +
+  geom_col(aes(fill = suckering_class),  color = "white") +
   theme_minimal() +
   scale_fill_manual(values = c("darkgreen","lightgreen","ivory3")) +
   labs(x = "", y = "Percent of plots", fill = "") # +
-  # teme(legend.position = "top")
+  facet_wrap()# teme(legend.position = "top")
 
 # ggsave("./output/figures_exported/suckering_proportion_all_plots_ht_class.png", width = 7, height = 3.85)
 
@@ -3891,6 +3890,7 @@ percent_suckering_class.vtype <- suckering.vtype %>%
   mutate(percent_in_class = 100*sum_class/n_allTimes) %>% 
   mutate(percent_in_class = round(percent_in_class, 1))
   
+
 percent_suckering_class.vtype %>% 
   datatable()
 
@@ -4410,13 +4410,13 @@ asp.tally.dbh.tidy %>%
   mutate(sumStem = sum(stemTally)) %>% 
   ungroup() %>% 
   mutate(percentTot = stemTally/sumStem) 
+
 ```
 
 
-### Aspen repeated measures
-
 ```{r, echo=FALSE}
-
+### Aspen repeated measures
+# not run. See "EVMP aspen statistical analyses.Rmd"
 ## Repeated measures: Assumptions
 # The repeated measures ANOVA makes the following assumptions about the data:
 # 
@@ -4482,8 +4482,40 @@ Progressive shift in the distribution of stem sizes toward the desired future co
 
 ```{r}
 
+## identify the "in desired future condition" plots
+ht.perc01 <- ht.perc01 %>%
+  mutate(inDesFC = case_when(
+    stemDen.ha >= 400 & HTclass2 == "151-200cm" ~ "in_dfc",
+    stemDen.ha >= 400 & HTclass2 == "201-250cm" ~ "in_dfc",
+    TRUE ~ "out_dfc"))
+
+# ht.perc01 %>% 
+#   View()
+
+ht.perc01 %>%  distinct(RANGE_TYPE)
+
+## in DFC summary
+asp_inDFC_summary <- ht.perc01 %>% 
+  group_by(RANGE_TYPE, FENCED, timeClass, inDesFC) %>%
+  summarise(n_dfc = n()) %>% 
+  ungroup() %>% 
+  group_by(RANGE_TYPE, FENCED, timeClass) %>%
+  mutate(n_tot = sum(n_dfc)) %>%
+  ungroup() %>% 
+  mutate(perc_inDFC = n_dfc/n_tot * 100) %>% 
+  mutate(perc_inDFC = round(perc_inDFC, 1))
+
+asp_inDFC_summary %>% 
+  gt()
+
 ```
 
+```{r}
+asp_inDFC_summary %>%
+  filter(inDesFC == "in_dfc") %>% 
+  gt()
+  ggplot()
+```
 
 
 ## Willow Offtake
@@ -4569,11 +4601,6 @@ offt.raw <- offt.sheets %>%
   mutate(data = map2(.x = path,.y = sheet,.f = read_excel,col_types = "text")) %>% 
   select(-c(name))
 
-# the directions
-# offt.raw %>% 
-#   filter(str_detect(sheet,pattern = "DIRECTIO", negate = FALSE)) %>% 
-#   pluck(4)
-
 ```
 
 ```{r}
@@ -4583,25 +4610,44 @@ offt.raw <- offt.raw %>%
   mutate(season = case_when(str_detect(sheet,pattern = "Spring") ~ "spring",
                             TRUE ~ "fall"))
 
+offt.raw <- offt.raw %>% 
+  mutate(yr = as.integer(str_sub(sheet,1,4))) %>% 
+  filter(!is.na(yr))
+
+# offt.raw %>% 
+#   filter(is.na(yr)) # these are all fall sheets
+
 # spring data
 offt.raw.spr <- offt.raw %>%
   filter(season == "spring")
 
-offt.raw.spr <- offt.raw.spr %>% 
-  mutate(yr = as.integer(str_sub(sheet,1,4)))
+### there are these  "willow twig" sheets. 
+willow.twigs.sheets <- offt.raw %>% 
+  filter(is.na(yr))
 
 # offt.raw.spr %>% glimpse()
+# offt.raw.spr %>% visdat::vis_dat()
 
 # unnest
 offt.raw.spr.tidy <- offt.raw.spr %>%
   unnest(cols = data) %>% 
   janitor::clean_names()
 
+offt.raw.spr.tidy %>% visdat::vis_dat()
+
+## these sheets are missing diameters
+offt.raw.spr.tidy %>% 
+  filter(is.na(dia_base_of_shoot_mm)) %>% 
+  distinct(sheet)
+## these sheets are missing counts
+offt.raw.spr.tidy %>% 
+  filter(is.na(number_browsed_cag_shoots) & !is.na(total_stem_count)) %>% 
+  datatable()
+
 ## type convert
 offt.raw.spr.tidy <- offt.raw.spr.tidy %>% 
   # glimpse()
-  mutate_at(.vars = c('number_browsed_cag_shoots','number_unbrowsed_cag_shoots', 'dia_base_of_shoot_mm','dia_tip_of_shoot_mm','shoot_length_cm','total_stem_count'),.funs = as.numeric) 
-
+  mutate_at(.vars = c('number_browsed_cag_shoots','number_unbrowsed_cag_shoots', 'dia_base_of_shoot_mm','dia_tip_of_shoot_mm','shoot_length_cm','total_stem_count', 'shoot_ratio','calculated_count_of_shoots','plant_id_number','additional_shoot'),.funs = as.numeric) 
 
 # data <- files %>%
 #   map(read_csv) %>%    # read in all the files individually, using
@@ -4613,16 +4659,24 @@ offt.raw.spr.tidy <- offt.raw.spr.tidy %>%
 ```{r}
 ## some cleaning
 ######### DEAL WITH NA #############
-na_strings <- c(".", "na", "NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt available")
-
-offt.raw.spr.tidy <- offt.raw.spr.tidy %>%
-  naniar::replace_with_na_all(condition = ~.x %in% na_strings)
-
-
+# na_strings <- c(".", "na", "NA", "N A", "N / A", "N/A", "N/ A", "Not Available", "NOt available")
+# 
+# offt.raw.spr.tidy <- offt.raw.spr.tidy %>%
+#   naniar::replace_with_na_all(condition = ~.x %in% na_strings)
 
 ```
 
 
+```{r}
+#### clean up mis entered site_id
+
+offt.raw.spr.tidy <- offt.raw.spr.tidy %>% 
+  mutate(site_id = case_when(
+    site_id == "WC 39" ~ "WC39",
+    site_id == "WC 50" ~ "WC50",
+    TRUE ~ site_id)) 
+
+```
 
 ```{r}
 offt.raw.spr.tidy %>%
@@ -4632,14 +4686,500 @@ offt.raw.spr.tidy %>%
   coord_flip() +
   labs(caption = "offtake - spring")
 
-# offt.raw.spr.tidy %>%
-#   tabyl(yr)
+```
 
+# >>>>
+```{r}
+## 1. create unique stem id
+offt.raw.spr.tidy <- offt.raw.spr.tidy %>% 
+  mutate(stid = paste0(site_id,"-",microplot_location,"-",plant_id_number,"-", stem_id_letter))
+
+## diagnose and fix issues with b/u
+# these are not 
+offt.raw.spr.tidy %>% 
+  tabyl(browsed_or_unbrowsed) %>% 
+  # distinct(browsed_or_unbrowsed) %>% 
+  gt() %>% 
+  tab_header("Distinct 'browsed_unbrowsed",subtitle = "need to stanrdized encoding and deal with NA")
+
+# offt.raw.spr.tidy %>% 
+#   tabyl(stid)
+
+offt.raw.spr.tidy <- offt.raw.spr.tidy %>%
+  mutate(browsed_or_unbrowsed = case_when(
+    str_detect(browsed_or_unbrowsed,pattern = "u") ~ "U", 
+    str_detect(browsed_or_unbrowsed,pattern = "b") ~ "B",              
+                            TRUE ~ browsed_or_unbrowsed))
+
+# !!!
+### clean: 0 browsed doesn't make sense, right?
+### here the records
+offt.raw.spr.tidy %>%
+  filter(browsed_or_unbrowsed == 0) %>% 
+  datatable()
+
+offt.raw.spr.tidy <- offt.raw.spr.tidy %>%
+  filter(browsed_or_unbrowsed != 0) 
+
+## table of NA. 
+offt.raw.spr.tidy %>% 
+  filter(browsed_or_unbrowsed == "NA") %>% 
+  datatable(caption = "NA for B/U")
+
+## eliminate NA. Should look at these, though
+offt.raw.spr.tidy <- offt.raw.spr.tidy %>% 
+  filter(browsed_or_unbrowsed != "NA")
+
+```
+
+### Missing plant id
+```{r}
+
+offt.raw.spr.tidy %>% 
+  filter(is.na(plant_id_number)) %>% 
+  select(sheet,  yr, plant_id_number) %>% 
+  tabyl(sheet) %>% 
+  gt() %>% 
+  tab_header(title = "No plant id for these records in the orignal data")
+
+## based on above, will try another stid with spp
+offt.raw.spr.tidy <- offt.raw.spr.tidy %>% 
+  mutate(stid.alt = paste0(site_id,"-",microplot_location,"-", species_code))
+
+```
+
+
+### tally the u and b
+
+```{r}
+# test
+# offt.cln.spr.tidy %>% 
+#   pivot_wider(names_from = browsed_or_unbrowsed, values_from = )
+```
+
+
+```{r}
+
+### new object
+offt.cln <- offt.raw.spr.tidy %>% 
+  group_by(stid, yr, browsed_or_unbrowsed) %>% 
+  mutate(stem.tally = n()) %>% 
+  ungroup()
+
+## replacing NA for 'additioal shoot' with 0 as this seems implied
+offt.cln <- offt.cln %>% 
+  mutate(additional_shoot = replace_na(additional_shoot, 0))
+
+# offt.cln %>% 
+#   tabyl(additional_shoot)
+
+# offt.cln.spr.tidy %>% 
+#   group_by(stid, yr, browsed_or_unbrowsed) %>% 
+#   distinct(shoot_ratio) %>% 
+#   ungroup()
+
+offt.cln %>%
+  names()
+```
+
+### multiply the stem tally by shoot ratio 
+
+
+```{r}
+#### Address issues with 'shoot ratio'
+# !!!
+# Missing shoot ratio. Making these '1'
+# replacing '0' with '1'. Why? As multiplier with count, will be '0' if count is zero.
+offt.cln <- offt.cln %>% 
+  mutate(shoot_ratio = replace_na(shoot_ratio, 1)) %>% 
+  mutate(shoot_ratio = case_when(
+    shoot_ratio == 0 ~ 1,
+    TRUE ~ shoot_ratio
+  ))
+
+```
+
+
+```{r}
+## multiply the stem tally by shoot ratio 
+offt.cln <- offt.cln %>% 
+  mutate(total_bu_pre_addshoot = stem.tally*shoot_ratio) %>% 
+  mutate(total_bu = total_bu_pre_addshoot + additional_shoot)
+
+```
+
+```{r, eval = FALSE}
+## !!! distinct records. 27 k to 18
+offt.cln <- offt.cln %>% 
+  distinct() 
+```
+
+```{r, eval= FALSE}
+offt.cln %>% 
+  filter(is.na(shoot_ratio)) %>% 
+  datatable()
+
+```
+
+
+```{r, eval = FALSE}
+###
+offt.cln %>% 
+  filter(!is.na(plant_id_number)) %>% 
+  tabyl(site_id, yr) %>% 
+  gt()
+#######   need to find 2019! a little 2014 too have missing plant id
+
+## sample
+offt.cln %>% 
+  sample_n(1000) %>% 
+  datatable()
+
+offt.cln %>% 
+  visdat::vis_dat()
+```
+
+### calc total number of stems (b + u)
+
+```{r}
+## calc total number of stems (b + u)
+offt.cln <- offt.cln %>% 
+  group_by(stid, yr) %>% 
+  mutate(tot_allstems_per_shoot = sum(total_bu)) %>% 
+  ungroup()
+```
+
+### calc the % of shoots browsed per STEM (step 2a n Zeigenfuss 2011) 
+```{r}
+## calc the % of shoots browsed per STEM (step 2a n Zeigenfuss 2011)
+
+offt.cln <- offt.cln %>% #names() 
+  group_by(stid, yr) %>% 
+  mutate(sum_bu_per_stem = sum(total_bu)) %>% 
+  ungroup() 
+
+offt.cln <- offt.cln %>% 
+  mutate(percent_bu_per_stem = total_bu/sum_bu_per_stem*100) %>%
+  mutate(percent_bu_per_stem = round(percent_bu_per_stem,1)) 
+
+```
+
+```{r}
+## fix species code
+## eliminate "DEAD" species
+offt.cln <- offt.cln %>%
+  filter(species_code != "DEAD") %>%
+  filter(species_code != "0") %>% 
+  mutate(species_code = case_when(
+    species_code == "Sabe" ~ "SABE",
+    species_code == "Sage" ~ "SAGE",
+    species_code == "Samo" ~ "SAMO",
+    species_code == "SA-" ~ "SAXX",
+    TRUE ~ species_code
+  ))
+
+```
+
+### summary plots
+```{r}
+offt.percbrowsed <- offt.cln %>% 
+  filter(browsed_or_unbrowsed == "B") %>% 
+  select(c(yr, site_type, site_id, species_code, sum_bu_per_stem, percent_bu_per_stem))
+
+offt.percbrowsed %>% 
+  distinct(species_code)
+
+```
+
+```{r}
+offt.percbrowsed %>%
+  ggplot(aes(x = as_factor(yr), y = percent_bu_per_stem)) +
+  geom_boxplot(fill = "ivory2", outlier.shape = NA) +
+  labs(x = "Year",y = "% leader use") +
+  facet_wrap(~site_type) +
+  theme_minimal()
+
+offt.percbrowsed %>% 
+  ggplot(aes(x = percent_bu_per_stem, y = as_factor(yr))) +
+  geom_density_ridges(rel_min_height = 0.005,panel_scaling = TRUE) +
+  scale_y_discrete(expand = c(0.01, 0)) +
+  scale_x_continuous(expand = c(0.01, 0)) +
+  theme_minimal() +
+  labs(x = "% leader use", y = "", caption = "all species") +
+  facet_wrap(~site_type) 
+ggsave("./output/figures_exported/ggridge_percleaderuse_site_type_20200602.png", width = 8.5, height = 6, dpi = 300)
+
+offt.percbrowsed %>%
+  filter(site_type != "WK") %>% 
+  ggplot(aes(y = percent_bu_per_stem)) +
+  geom_histogram() +
+  # theme_minimal() +
+  theme_bw() +
+  labs(y = "% leader use", x = "count", caption = "all species") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  # facet_grid(as_factor(yr) ~site_type)
+  facet_grid(site_type ~ as_factor(yr))
+  # facet_wrap(~site_type, scales = "free_x") 
+ggsave("./output/figures_exported/histo_percleaderuse_wc_wnc_20200602.png", width = 9.5, height = 4.5, dpi = 300)
+
+offt.percbrowsed %>% 
+  ggplot(aes(x = percent_bu_per_stem)) +
+  # geom_histogram() +
+  geom_density(aes(color = as_factor(yr))) +
+  facet_wrap(~site_type) +
+  theme_minimal() +
+  labs(x = "% leader use", y = "")
+
+# WC density  
+offt.percbrowsed %>% 
+  filter(site_type == "WC") %>%
+  ggplot(aes(x = percent_bu_per_stem)) +
+  # geom_histogram() +
+  geom_density(aes(color = as_factor(yr))) +
+  facet_wrap(~site_type) +
+  theme_minimal() +
+  labs(x = "% leader use", y = "", color = "")
+ggsave("./output/figures_exported/desnity_percleaderuse_wc_20200602.png", width = 4.5, height = 3.75, dpi = 300)
+
+# WNC density  
+offt.percbrowsed %>% 
+  filter(site_type == "WNC") %>%
+  ggplot(aes(x = percent_bu_per_stem)) +
+  # geom_histogram() +
+  geom_density(aes(color = as_factor(yr))) +
+  facet_wrap(~site_type) +
+  theme_minimal() +
+  labs(x = "% leader use", y = "", color = "")
+# ggsave("./output/figures_exported/desnity_percleaderuse_wnc_20200602.png", width = 4.5, height = 3.75, dpi = 300)
+```
+
+```{r}
+### summary by site
+offt.percbrowsed.summary <- offt.percbrowsed %>% 
+  group_by(yr, site_type) %>% 
+  summarytools::descr(var = percent_bu_per_stem, round.digits = 1) %>% 
+  summarytools::tb()
+
+offt.percbrowsed.summary %>% 
+  gt() %>% 
+  tab_header(title = "Willow Offtake (% leader use)") %>% 
+  fmt_number(
+    columns = 4:18,
+    decimals = 1,
+    suffixing = TRUE
+  )
+
+```
+
+```{r}
+
+offt.percbrowsed.summary %>%
+  ggplot(aes(yr, med)) +
+  geom_col(fill = 'ivory3') +
+  geom_errorbar(aes(ymin = med - mad, ymax = med + mad)) +
+  facet_wrap(~site_type) +
+  theme_minimal()
+
+```
+
+### summary by site and species
+
+```{r}
+offt.percbrowsed.summary <- offt.percbrowsed %>% 
+  group_by(yr, site_type) %>% 
+  summarytools::descr(var = percent_bu_per_stem, round.digits = 1) %>% 
+  summarytools::tb()
+
+offt.percbrowsed.summary %>% 
+  gt() %>% 
+  tab_header(title = "Willow Offtake (% leader use)") %>% 
+  fmt_number(
+    columns = 4:18,
+    decimals = 1,
+    suffixing = TRUE
+  )
+
+```
+
+### Calculate DD1, the avg proportion of shoot consumed per stem (step 3 in Zeigenfuss 2011)
+
+DD1 = (Dp - Dt)/(Db -Dt)
+
+Dp = shoot diameter at point of browsing
+Dt = Avg diam of of unbrowsed stems
+Db = diamter at base of shoot
+
+```{r, eval=FALSE}
+offt.cln %>% 
+  names()
+  # visdat::vis_dat()
+
+## Calculate: 
+## Dp = shoot diameter at point of browsing &
+## Db = diamter at base of shoot
+offt.cln <- offt.cln %>%
+  mutate(Db = dia_base_of_shoot_mm) %>% 
+  mutate(Dp = dia_tip_of_shoot_mm)
+
+## calculate Dt - Avg diam of of unbrowsed stems  
+Dt.table <- offt.cln %>% 
+  filter(browsed_or_unbrowsed == "U") %>% 
+  group_by(stid, yr) %>% 
+  summarise(Dt = mean(Dp, na.rm = TRUE)) %>% 
+  
+
+## Dtsite
+Dtsite.table <- offt.cln %>% 
+  filter(browsed_or_unbrowsed == "U") %>% 
+  group_by(site_id, species_code, yr) %>% 
+  summarise(Dtsite = mean(Dp, na.rm = TRUE))
+
+## Dtspecies
+Dtspp.table <- offt.cln %>% 
+  filter(browsed_or_unbrowsed == "U") %>% 
+  group_by(species_code, yr) %>% 
+  summarise(Dtspp = mean(Dp, na.rm = TRUE)) %>% 
+  mutate(Dtspp = case_when(
+    species_code == "SALA" ~ 0.748, # setting to Dt of SAXX, since there are NaN for SALA and SAWO
+    species_code == "SAWO" ~ 0.748,
+    TRUE ~ Dtspp
+  ))
+
+## join in the Dt values
+offt.cln.br <- offt.cln %>% 
+  filter(browsed_or_unbrowsed == "B") %>% 
+  left_join(.,Dt.table)
+
+## join Dtsite for BROWSED
+offt.cln.br <- offt.cln %>% 
+  filter(browsed_or_unbrowsed == "B") %>%
+  left_join(.,Dtsite.table)
+
+## join in Dtspp for BROWSED
+offt.cln.br <- offt.cln %>% 
+  filter(browsed_or_unbrowsed == "B") %>%
+  left_join(.,Dtspp.table)
+
+offt.cln.br %>%
+  visdat::vis_dat(warn_large_data = FALSE)
+
+## IF Dt is NA after sub in Dtsite (if available. Will still be Na, but fewer)
+offt.cln.br <- offt.cln.br %>%
+  mutate(Dtadj = case_when(
+    is.na(Dt) ~ Dtsite,
+    TRUE ~ Dt
+    )
+  )
+## IF Dt is still NA after subbing in Dtsite, replace with Dtspp
+offt.cln.br <- offt.cln.br %>%
+  mutate(Dtadj = case_when(
+    is.na(Dtadj) ~ Dtspp,
+    TRUE ~ Dtadj
+    )
+  )
+
+## if Dt is negative or greater than zero (part 3 in Zeigenfuss 2011). Where Dt is < Dtspp, replace with Dtspp
+offt.cln.br <- offt.cln.br %>%
+  mutate(Dtadj = case_when(
+    Dt <= Dtspp ~ Dtspp,
+    TRUE ~ Dtadj
+    )
+  )
+
+## covert values >1 to 1 (can't have more than 100%) -- see Zeigenfuss
+offt.cln.br <- offt.cln.br %>%
+  mutate(Dtadj = case_when(
+    Dtadj > 1 ~ 1,
+    TRUE ~ Dtadj
+    )
+  )
+
+# offt.cln.br %>% 
+#   summarytools::descr(Dtadj) %>% 
+#   summarytools::tb()
+
+
+```
+
+# DD1stem >>>
+```{r}
+### calc DD1
+offt.cln.br %>% names()
+offt.cln.br <- offt.cln.br %>%
+  group_by(stid, yr) %>% 
+  mutate(DD1 = ((Dp - Dtadj)/(Db - Dtadj))) %>% 
+  ungroup()
+
+offt.cln.br %>% 
+  View()
+
+offt.cln.br %>% 
+  filter(!is.na(DD1)) %>% 
+  summarytools::descr(DD1,na.rm = TRUE)
+
+```
+
+# ^^^^
+```{r, eval = FALSE}
+## Notes for above from Ziegenfuus 2011
+## There are some cases where no unbrowsed shoots were measured on an individual stem and thus an average unbrowsed tip diameter (Dt) for the stem cannot be calculated. In this case, an average unbrowsed tip diameter for all the stems of a particular species within a site is calculated (Dtsite) and then substituted for Dt. If there were no unbrowsed shoots of a species found within an individual site, then an average unbrowsed shoot tip can be calculated from all shoot measurements of that species (Dtsp) that were collected from other willow-monitoring sites measured within the same year and this average is substituted for Dt.
+
+```
+
+### calc the % of shoots browsed per SITE (step 2b n Zeigenfuss 2011)
+
+```{r}
+## calc the % of shoots per site and year (step 2b in Z 2011)
+offt.cln.site.allwillow <- offt.cln %>%
+  group_by(site_id, species_code)
+  
+
+
+## calc the proporation of browsed/unbrowsed stems out of total
+offt.cln <- offt.cln %>% 
+  mutate(perc_bu_shoots = total_bu/tot_allstems*100)
+
+browsed_percent <- a.stid.cnt.bu %>% 
+  filter(browsed_or_unbrowsed == "B") %>% 
+  dplyr::select(stid, yr, species_code, browsed_or_unbrowsed, perc_bu_shoots)
+
+browsed_percent %>% 
+  filter(!is.na(perc_bu_shoots)) %>% 
+  distinct() %>% 
+  View()
+
+offt.cln.spr.tidy <- offt.cln.spr.tidy %>%   
+  filter(is.na(shoot_ratio))
+  tabyl(shoot_ratio)
+```
+
+
+```{r}
+## try some cleaning
+offt.cln.spr.tidy <- offt.raw.spr.tidy %>% 
+  filter(!is.na(dia_tip_of_shoot_mm))   
+  
+  
 # offt.raw.spr.tidy %>% 
 #   vtree::vtree(.,"species_code yr", palette = 9)
   # vtree::vtree(.,"yr site_type", pattern = TRUE, palette = 9)
+```
+
+
+```{r}
+offt.raw.spr.tidy %>% 
+  names()
+    
+##### define function
+# dd2 = function(df){
+#   b = df$number_browsed_cag_stems
+#   u = df$number_unbrowsed_cag_stems
+#   Dp = df$
+# } 
+
 
 ```
+
 
 # >
 ```{r}
@@ -4972,6 +5512,106 @@ Zeigenfuss, L., Johnson, T., and Wiebe, Z., 2011, Monitoring plan for vegetation
 Zeigenfuss, L.C., and T.L. Johnson, 2015, Monitoring of vegetation response to elk population and habitat management in Rocky Mountain National Park, 2008–14: U.S. Geological Survey Open-File Report 2015–1216, 44 p., http://dx.doi.org/10.3133/ofr20151216.
 
 
+
+
+## wild basin
+
+```{r}
+
+```
+
+## Comparison plot: willow height by valley, with wild basin
+
+Wild Basin willow data survey 2018.csv
+
+```{r}
+wbasin <- read_csv("./data/wild_basin/Wild Basin willow data survey 2018.csv")
+
+wbasin <- wbasin %>%
+  janitor::clean_names()
+  
+wbasin.sel <- wbasin %>% 
+  rename(plant_ht_cm = max_ht_cm) %>% 
+  mutate(yr = 2018) %>% 
+  mutate(fenced = "N") %>% 
+  mutate(site_type = "WB") %>% 
+  mutate(site_id = paste0("WB",point)) %>% 
+  dplyr::select(c(yr, site_type, site_id, plant_ht_cm, species, fenced, location)) %>% 
+  distinct()
+  
+
+```
+
+
+```{r}
+# exp lu
+csv.all.lc.mcro.df.cln <- csv.all.lc.mcro.df %>% 
+  clean_names()
+
+  
+willow.mcro.evmp <- csv.all.lc.mcro.df.cln %>%
+  rename(species = species_code) %>% 
+  dplyr::select(yr, site_type, species, site_id, plant_ht_cm, fenced, location) %>% 
+  distinct()
+
+
+willow.mcro.evmp18 <- willow.mcro.evmp %>% 
+  filter(yr == 2018)
+
+#### bind wb with 2018 evmp
+wb.evmp18 <- bind_rows(wbasin.sel, willow.mcro.evmp18) %>% 
+  distinct()
+
+```
+
+## Willow height comparison amonng WBasin and EVMP
+```{r}
+## compare WILLOW height
+
+wb.evmp18 %>%
+  filter(str_detect(species, "^S")) %>% 
+  ggplot() +
+  geom_density(aes(fill = site_type, color = site_type, lty = site_type, x = plant_ht_cm), alpha = 0.05) +
+  theme_minimal() +
+  labs(x = "Willow height (cm)", y  = "Density", lty= "Site type", color = "Site type", fill = "Site type", caption = "willow height, WB + EVMP, Salix only")
+
+# ggsave("./output/figures_exported/WB_EVMP_willow_height.png", dpi = 300, width = 4.75, height = 3.75)
+```
+
+```{r}
+wb.evmp18.willows <- wb.evmp18 %>%
+  filter(str_detect(species, "^S"))
+
+gt.wbevmp.tbl <- wb.evmp18.willows %>% 
+  select(-yr) %>% 
+  group_by(site_type) %>% 
+  summarytools::descr() %>% 
+  summarytools::tb() %>% 
+  select(-c(variable, se.skewness, kurtosis, pct.valid)) %>% 
+  gt()
+  
+gt.wbevmp.tbl <- gt.wbevmp.tbl %>% 
+  tab_header(title = "Willow Height (cm)") %>% 
+  fmt_number(
+    columns = 2:12,
+    decimals = 1,
+    suffixing = TRUE
+  ) 
+
+## save
+# gt.wbevmp.tbl %>% 
+#   gt::gtsave(filename = "./output/tables/WB_vs_EVMP_willowHt.rtf")
+# 
+
+```
+
+
+
+# Covariates: Elk
+```{r}
+elk <- read_csv("./data/covariates/elk/RMNP_elk_pop_summary_cln.csv")
+
+```
 
 
 # Appendix 1. Data notes from E. Ertl
