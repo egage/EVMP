@@ -59,8 +59,9 @@ library(rstatix)
 # devtools::install_github("dkahle/ggmap")
 library(ggmap)
 library(gt)
+library(summarytools)
 library(ggrepel)
-
+library(ggtext)
 
 ## vroom https://vroom.r-lib.org/articles/vroom.html
 ```
@@ -2548,6 +2549,14 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
 
 ```
 
+```{r}
+## cleaning the LOCATION tab
+csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
+  mutate(LOCATION = case_when(is.na(LOCATION) & SITE_TYPE == "WK" ~ "Kawuneeche",
+                              TRUE ~ LOCATION))%>%
+  mutate(LOCATION = str_replace(LOCATION, "_", " ")) %>%
+  mutate(LOCATION = str_replace(LOCATION, "_", " ")) 
+```
 
 #### Beaver and Moose Presence in 2018
 ```{r beaver18, eval=FALSE}
@@ -2568,6 +2577,44 @@ sinfo.df %>%
     decimals = 2
     )
 
+sinfo.df %>%
+  mutate(BEAVER_PRESENCE = recode(BEAVER_PRESENCE, 
+                         "Absence_" = "Absence",
+                         "Food_cache_cuttings"="Cuttings")) %>%
+  group_by(BEAVER_PRESENCE) %>%
+  tally()
+
+bv.tally <- sinfo.df %>%
+  mutate(LOCATION = case_when(is.na(LOCATION) & SITE_TYPE == "WK" ~ "Kawuneeche",
+                              TRUE ~ LOCATION))%>%
+  mutate(LOCATION = str_replace(LOCATION, "_", " ")) %>%
+  mutate(LOCATION = str_replace(LOCATION, "_", " ")) %>% 
+  mutate(BEAVER_PRESENCE = recode(BEAVER_PRESENCE, 
+                         "Absence_" = "Absence",
+                         "Food_cache_cuttings"="Cuttings")) %>%
+  group_by(LOCATION) %>% 
+  mutate(n_site = n()) %>% 
+  ungroup()
+
+bv.tally %>% 
+  group_by(LOCATION, BEAVER_PRESENCE, n_site) %>%
+  tally() %>% 
+  ggplot(aes(x = reorder(LOCATION, n_site), y = n)) +
+  geom_col(aes(fill = BEAVER_PRESENCE)) +
+  coord_flip() +
+  labs(x = "", y = "Number of plots", fill = "", caption = "2018 Beaver presence") +
+  scale_fill_manual(values = c("ivory3", "cyan3")) +
+  theme_minimal()
+
+ggsave("./output/figures_exported/beaver_presence01.png", width = 6.25, height = 3.75, dpi=300)
+
+  
+bv.tally %>% 
+  group_by(LOCATION, BEAVER_PRESENCE, n_site) %>%
+  tally() %>% 
+  ungroup() %>% 
+  mutate(perc.cut = n/n_site*100) %>% 
+  filter(BEAVER_PRESENCE == "Cuttings")
 
 ```
 
@@ -2590,6 +2637,33 @@ sinfo.df %>%
                          "Absence_" = "Absence",
                          "Food_cache_cuttings"="Cuttings")) %>% 
   vtree::vtree(z = .,vars = "LOCATION FENCED BURNED")
+```
+
+```{r}
+bv.mcro <- csv.all.lc.mcro.df %>% 
+  mutate(BEAVER_PRESENCE = recode(BEAVER_PRESENCE, 
+                         "Absence_" = "Absence",
+                         "Food_cache_cuttings"="Cuttings")) 
+
+bv.mcro %>% 
+  distinct(BEAVER_PRESENCE)
+
+bv.mcro.sum <- bv.mcro %>% 
+  select(SITE_ID, timeClass,BEAVER_PRESENCE,LOCATION, SITE_TYPE) %>%
+  distinct() %>% 
+  group_by(timeClass,BEAVER_PRESENCE, SITE_TYPE) %>%
+  tally() %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = BEAVER_PRESENCE, values_from = n) %>%
+  mutate(perc.cuttings = 100* Cuttings/(Cuttings + Absence)) %>% 
+  mutate(perc.abs = 100 - perc.cuttings)
+
+bv.mcro.sum %>%
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>%
+  arrange(desc(SITE_TYPE,timeClass)) %>% 
+  gt()
+  
+
 ```
 
 
@@ -2665,7 +2739,69 @@ sinfo.df %>%
 #### Observations of moose presence noted in plots
 # > How best to use these obserations? 
 # **Variable: MOOSE_PRESENCE**
+
+
+mcro.moose <- csv.all.lc.mcro.df %>% 
+  mutate(moose = case_when(MOOSE_PRESENCE == "Absence_" ~ "Absent",
+                           MOOSE_PRESENCE != "Absent" ~ "Present",
+                           TRUE ~ MOOSE_PRESENCE))
+
+mcro.moose.tally <- mcro.moose %>% 
+  select(c(SITE_ID, moose, yr, LOCATION, BURNED, FENCED, timeClass)) %>% 
+  distinct() %>% 
+  group_by(timeClass, LOCATION) %>% 
+  mutate(n_plots_in_loc = n()) %>% 
+  ungroup() 
+
+mcro.moose.tally <- mcro.moose.tally %>%
+  filter(!is.na(LOCATION)) %>%
+  group_by(timeClass, moose, LOCATION, n_plots_in_loc) %>% 
+  # mutate(n_plots_in_loc_sign = n()) %>% 
+  tally() %>%
+  ungroup() %>%
+  mutate(perc_moose = n/n_plots_in_loc * 100) 
+
+mcro.moose.tally.n <- mcro.moose.tally %>% 
+  group_by(timeClass, moose, LOCATION) %>%
+  tally() %>% 
+  ungroup()
+```
+
+```{r}
+## moose plotting
+mcro.moose.tally %>%
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>% 
+  filter(LOCATION != "Kawuneeche") %>% 
+  mutate(timeClass = forcats::fct_rev(timeClass)) %>%
+  ggplot(aes(x = timeClass, y = perc_moose)) +
+  geom_col(aes(fill = moose), width = .7) +
+  facet_wrap(~LOCATION, ncol = 3) +
+  theme_minimal() +
+  labs(x = "", y = "% plots", fill = "") +
+  scale_fill_manual(values = c("ivory3", "cyan3"))
+
+# ggsave("./output/figures_exported/moose_presence_absence01.png", width = 6.25, height = 3.75, dpi=300)
+
+mcro.moose.tally %>%
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>% 
+  filter(LOCATION != "Kawuneeche") %>% 
+  filter(moose =="Present") %>% 
+  mutate(timeClass = forcats::fct_rev(timeClass))%>%
+  ggplot(aes(x = timeClass, y = perc_moose)) +
+  geom_col(aes(fill = moose), width = 0.7) +
+  facet_wrap(~LOCATION, ncol = 3) +
+  theme_minimal() +
+  labs(x = "", y = "% plots", fill = "") +
+  scale_fill_manual(values = c("ivory4", "blue")) +
+  theme(legend.position = "none") 
   
+# ggsave("./output/figures_exported/moose_presence01.png", width = 6.25, height = 3.75, dpi=300)
+
+mcro.moose.tally %>%
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>%
+  datatable()
+
+
 csv.all.lc.mcro.df %>% 
   # distinct(MOOSE_PRESENCE)
   group_by(SITE_ID, MOOSE_PRESENCE, yr) %>% 
@@ -2674,49 +2810,12 @@ csv.all.lc.mcro.df %>%
   dplyr::select(-n) %>% 
   datatable()
 
-
-csv.all.lc.mcro.df %>% 
-  distinct(timeClass)
-
-
-mcro.moose <- csv.all.lc.mcro.df %>% 
-  mutate(moose = case_when(MOOSE_PRESENCE == "Absence_" ~ "Absent",
-                           MOOSE_PRESENCE != "Absent" ~ "Present",
-                           TRUE ~ MOOSE_PRESENCE))
-
-mcro.moose %>% 
-  tabyl(moose)
-
-mcro.moose.tally <- mcro.moose %>% 
-  # distinct(MOOSE_PRESENCE)
-  group_by(SITE_ID, moose, yr, LOCATION) %>% 
-  filter(MOOSE_PRESENCE != "Absence_") %>%
-  tally() %>% 
-  dplyr::select(-n) %>% 
-  ungroup() %>%
-  group_by(yr, moose, LOCATION) %>% 
-  tally() %>% 
-  ungroup() %>%
-  mutate(yr = as.character(yr)) 
-
-mcro.moose.tally %>% 
-  ggplot(aes(yr, moose)) +
-  geom_tile(aes(fill = n)) +
-  facet_wrap(~LOCATION) +
-  theme_minimal()
-
-  # datatable()
-
 ```
 
 ```{r}
 
-```
-
-```{r}
-
-fun.desc.post1.gt(kv.stmod_stmcnt1) %>% 
-  gt::gtsave(filename = "./output/tables/AK_kv.stmod_stmcnt1_posteriors.rtf")
+# fun.desc.post1.gt(kv.stmod_stmcnt1) %>% 
+#   gt::gtsave(filename = "./output/tables/AK_kv.stmod_stmcnt1_posteriors.rtf")
 
 ```
 
@@ -2761,63 +2860,176 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
   # names() %>% 
   mutate(CANOPY_DIA_CM_avg = (CANOPY_DIA_1_CM + CANOPY_DIA_2_CM)/2)
 
-# csv.all.lc.mcro.df %>% 
-#   head()
-
+## clean up
+csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>% 
+  mutate(FENCED = case_when(FENCED == "Y_but_fence_down_since_2013" ~ "Unfenced",
+                             FENCED == "Y" ~ "Fenced",
+                             FENCED == "N" ~ "Unfenced"))
 ```
 
-
-
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 
 # **Summary table of canopy diameter by species **
 csv.all.lc.mcro.df %>% 
   filter(str_detect(SPECIES_CODE, "^SA")) %>% 
-  filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SABO" & SPECIES_CODE !="SAER") %>%
+  filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SABO" & SPECIES_CODE !="SAER" & SPECIES_CODE !="SABE" & SPECIES_CODE !="SADR" & SPECIES_CODE !="SALA") %>%
   filter(SITE_TYPE == "WC") %>%
   # filter(SITE_TYPE != "WNC") %>% 
   mutate(yr = as.character(yr)) %>%
   # mutate(yr = as.integer(yr)) %>%
   # mutate(yr = as.character(yr)) %>% 
   # filter(yr == 2013 | yr == 2018) %>%
-  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
-  group_by(yr,SPECIES_CODE) %>% 
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>%
+  mutate(timeClass = forcats::fct_rev(timeClass)) %>%   
+  group_by(timeClass,SPECIES_CODE) %>% 
   skimr::skim(CANOPY_DIA_CM_avg) %>% 
   # names()
   # select(-c(formatted, level)) %>% 
-  select(yr, contains("skim"),SPECIES_CODE, contains("c.m"), contains("c.s")) %>%
+  select(timeClass, contains("skim"),SPECIES_CODE, contains("c.m"), contains("c.s")) %>%
   select(-skim_type) %>% 
-  ggplot(aes(yr, SPECIES_CODE)) +
+  ggplot(aes(timeClass, SPECIES_CODE)) +
   geom_tile(aes(fill = numeric.mean)) +
   geom_text(aes(label = round(numeric.mean,1)), color = "white") +
-  scale_fill_viridis() +
-  labs(x = "Year", y = "Species", fill = "mean", title = "Mean Canopy Diameter - Core Range")
-  
-# **Summary table of canopy diameter by species **
-csv.all.lc.mcro.df %>% 
-  # filter(str_detect(SPECIES_CODE, "^SA")) %>%
-  # filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SABO" & SPECIES_CODE !="SAER") %>%
-  filter(!(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SABO" & SPECIES_CODE !="SAER")) %>%
-  filter(SPECIES_CODE !="SAXX") %>% 
-  filter(SITE_TYPE == "WC") %>%
-  # filter(SITE_TYPE != "WNC") %>% 
-  mutate(yr = as.character(yr)) %>%
-  # mutate(yr = as.integer(yr)) %>%
-  # mutate(yr = as.character(yr)) %>% 
-  # filter(yr == 2013 | yr == 2018) %>%
-  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
-  group_by(yr,SPECIES_CODE) %>% 
-  skimr::skim(CANOPY_DIA_CM_avg) %>% 
-  # names()
-  # select(-c(formatted, level)) %>% 
-  select(yr, contains("skim"),SPECIES_CODE, contains("c.m"), contains("c.s")) %>%
-  select(-skim_type) %>% 
-  ggplot(aes(yr, SPECIES_CODE)) +
-  geom_tile(aes(fill = numeric.mean)) +
-  geom_text(aes(label = round(numeric.mean,1)), color = "white") +
-  scale_fill_viridis() +
-  labs(x = "Year", y = "Species", fill = "mean", title = "Mean Canopy Diameter - Core Range")
+  # scale_fill_viridis(direction = -1) +
+  scale_fill_gradient(low = "grey70", high = "grey20") +
+  labs(x = "Year", y = "Species", fill = "Diameter (cm)", caption = "Mean Canopy Diameter - Core Range") +
+  theme_minimal()
 
+# ggsave("./output/figures_exported/WC_canopy_diamter_domSpp.png", width = 5.25, height = 3.55, dpi=300)
+
+## non core
+csv.all.lc.mcro.df %>% 
+  filter(str_detect(SPECIES_CODE, "^SA")) %>% 
+  filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SABO" & SPECIES_CODE !="SAER" & SPECIES_CODE !="SABE" & SPECIES_CODE !="SADR" & SPECIES_CODE !="SALA") %>%
+  filter(SITE_TYPE == "WNC") %>%
+  # filter(SITE_TYPE != "WNC") %>% 
+  mutate(yr = as.character(yr)) %>%
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>%
+  mutate(timeClass = forcats::fct_rev(timeClass)) %>%   
+  group_by(timeClass,SPECIES_CODE) %>% 
+  skimr::skim(CANOPY_DIA_CM_avg) %>% 
+  # names()
+  # select(-c(formatted, level)) %>% 
+  select(timeClass, contains("skim"),SPECIES_CODE, contains("c.m"), contains("c.s")) %>%
+  select(-skim_type) %>% 
+  ggplot(aes(timeClass, SPECIES_CODE)) +
+  geom_tile(aes(fill = numeric.mean)) +
+  geom_text(aes(label = round(numeric.mean,1)), color = "white") +
+  # scale_fill_viridis(direction = -1) +
+  scale_fill_gradient(low = "grey70", high = "grey20") +
+  labs(x = "Year", y = "Species", fill = "Diameter (cm)", caption = "Mean Canopy Diameter - NonCore Range") +
+  theme_minimal()
+
+# ggsave("./output/figures_exported/WNC_canopy_diamter_domSpp.png", width = 5.25, height = 3.55, dpi=300)
+
+```
+
+#### Calculate cover
+```{r}
+canopy.all.spp <- csv.all.lc.mcro.df %>%
+  mutate(PERCENT_PLANT_IN_PLOT = as.numeric(PERCENT_PLANT_IN_PLOT)/100) %>% 
+  mutate(PERCENT_PLANT_IN_PLOT = case_when(is.na(PERCENT_PLANT_IN_PLOT) ~ 1,
+         TRUE ~ PERCENT_PLANT_IN_PLOT)) %>%
+  mutate(PERCENT_PLANT_IN_PLOT = case_when(PERCENT_PLANT_IN_PLOT == 1.45 ~ .145,
+         TRUE ~ PERCENT_PLANT_IN_PLOT)) %>% # correct error in raw data
+  mutate(cano.area.m2 = PERCENT_PLANT_IN_PLOT   * (CANOPY_DIA_CM_avg/2)^2 * 3.141593 * 0.0001)
+
+canopy.all.spp <- canopy.all.spp %>% 
+  mutate(cover.plant = cano.area.m2/16 * 100) %>% 
+  mutate(cover.plant = case_when(cover.plant > 100 ~ 100,
+                           TRUE ~ cover.plant))
+## sum by species and calculate cover
+canopy.all.spp.sum <- canopy.all.spp %>%
+  group_by(timeClass, SITE_ID, SPECIES_CODE, SITE_TYPE, LOCATION, FENCED, BURNED) %>% 
+  dplyr::summarise(cano.sppsum.m2 = sum(cano.area.m2)) %>% 
+  mutate(cover.spp = cano.sppsum.m2/16*100) %>% 
+  mutate(cover.spp = case_when(cover.spp > 100 ~ 100,
+                               TRUE ~ cover.spp)) %>% 
+  ungroup()
+
+### calculate the sum and % cover for all willows combined
+canopy.all.willow.sum <- canopy.all.spp %>%
+  filter(str_detect(SPECIES_CODE, "^SA")) %>% 
+  group_by(timeClass, SITE_ID, SITE_TYPE, LOCATION, FENCED, BURNED) %>% 
+  dplyr::summarise(cano.sum.m2 = sum(cano.area.m2)) %>% 
+  mutate(cover.allwillow = cano.sum.m2/16*100) %>% 
+  mutate(cover.allwillow = case_when(cover.allwillow > 100 ~ 100,
+                               TRUE ~ cover.allwillow)) %>% 
+  ungroup()
+
+```
+
+```{r}
+## write to csv
+# canopy.all.willow.sum %>% 
+#   write_csv("./output/exported_data/willow_cover_20200706.csv")
+
+```
+
+
+#### Plot and describe cover for all willow spp
+
+**WC**
+```{r}
+canopy.all.willow.sum %>% 
+  group_by(timeClass, SITE_TYPE) %>% 
+  descr(cover.allwillow) %>% 
+  summarytools::tb() %>% 
+  datatable(filter = "top")
+
+## Filter to just 5 yr resample and WC
+canopy.all.willow.sum %>% 
+  mutate(timeClass = forcats::fct_rev(timeClass)) %>%
+  filter(SITE_TYPE == "WC") %>% 
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>% 
+  ggplot(aes(timeClass, cover.allwillow)) +
+  geom_boxplot(fill = "ivory2") +
+  facet_wrap(~FENCED) +
+  labs(caption = "WC all willows combined macroplot cover", y = "% cover", x = "") +
+  theme_minimal()
+
+# ggsave("./output/figures_exported/cover_wc_boxplot01.png", width = 6.25, height = 3.75, dpi=300)
+# ggsave("./output/figures_exported/cover_wc_boxplot01.pdf", width = 6.25, height = 3.75)
+
+## create summary table
+canopy.all.willow.sum %>% 
+  mutate(timeClass = forcats::fct_rev(timeClass)) %>%
+  filter(SITE_TYPE == "WC") %>% 
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>% 
+  group_by(timeClass, SITE_TYPE, FENCED) %>% 
+  summarytools::descr(cover.allwillow) %>% 
+  summarytools::tb() %>% 
+  select(1,3,5:13, n.valid) %>% 
+  gt()
+
+```
+
+```{r}
+## WNC
+## Filter to just 5 yr resample and WC
+canopy.all.willow.sum %>% 
+  mutate(timeClass = forcats::fct_rev(timeClass)) %>%
+  filter(SITE_TYPE == "WNC") %>% 
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>% 
+  ggplot(aes(timeClass, cover.allwillow)) +
+  geom_boxplot(fill = "ivory2") +
+  # facet_wrap(~FENCED) +
+  labs(caption = "WNC all willows combined macroplot cover", y = "% cover", x = "") +
+  theme_minimal()
+
+# ggsave("./output/figures_exported/cover_wnc_boxplot01.png", width = 3.75, height = 3.75, dpi=300)
+# ggsave("./output/figures_exported/cover_wnc_boxplot01.pdf", width = 3.75, height = 3.75)
+
+## create summary table
+canopy.all.willow.sum %>% 
+  mutate(timeClass = forcats::fct_rev(timeClass)) %>%
+  filter(SITE_TYPE == "WNC") %>% 
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>% 
+  group_by(timeClass, SITE_TYPE, FENCED) %>% 
+  summarytools::descr(cover.allwillow) %>% 
+  summarytools::tb() %>% 
+  select(1,3,5:13, n.valid) %>% 
+  gt()
 ```
 
 
@@ -4543,22 +4755,23 @@ _Master excel file: Willow_Offtake_Data_2009_Through_2018.xlsx_
 
 ```
 
-The Kawuneeche willow plots (KW 1 thru 8) were established in August/Sept 2011, just prior to the installation of the exclosure near Timber Creek CG.
-
-_KEY:_	
-	
-SITE_TYPE (WC=Willow core, WNC= Willow noncore, WK= Willow Kawuneeche Valley)	
-	
-COLOR_OF_STEM_MARKER (BR=brown, G=green, BL=black, Y=yellow, GR=gray, BR-N=brown notched, W=white)	
-	
-NUMBER_BROWSED_CAG_SHOOTS (# Browsed Current Annual Growth Shoots)	
-	
-NUMBER_UNBROWSED_CAG_SHOOTS (# Unbrowsed Current Annual Growth Shoots)	
-	
-BROWSED_OR_UNBROWSED (Measured shoot browsed (B) or unbrowsed (U)?)	
-	
-ADDITIONAL_SHOOT (Additional shoot 1=yes, 0=no)	
-
+```{r, echo=FALSE}
+# The Kawuneeche willow plots (KW 1 thru 8) were established in August/Sept 2011, just prior to the installation of the exclosure near Timber Creek CG.
+# 
+# _KEY:_	
+# 	
+# SITE_TYPE (WC=Willow core, WNC= Willow noncore, WK= Willow Kawuneeche Valley)	
+# 	
+# COLOR_OF_STEM_MARKER (BR=brown, G=green, BL=black, Y=yellow, GR=gray, BR-N=brown notched, W=white)	
+# 	
+# NUMBER_BROWSED_CAG_SHOOTS (# Browsed Current Annual Growth Shoots)	
+# 	
+# NUMBER_UNBROWSED_CAG_SHOOTS (# Unbrowsed Current Annual Growth Shoots)	
+# 	
+# BROWSED_OR_UNBROWSED (Measured shoot browsed (B) or unbrowsed (U)?)	
+# 	
+# ADDITIONAL_SHOOT (Additional shoot 1=yes, 0=no)	
+```
 
 ```{r, eval=FALSE}
 
@@ -4732,9 +4945,9 @@ offt.raw.spr.tidy <- offt.raw.spr.tidy %>%
 
 ```
 
-### Missing plant id
-```{r}
 
+```{r}
+### Missing plant id
 offt.raw.spr.tidy %>% 
   filter(is.na(plant_id_number)) %>% 
   select(sheet,  yr, plant_id_number) %>% 
@@ -4749,7 +4962,7 @@ offt.raw.spr.tidy <- offt.raw.spr.tidy %>%
 ```
 
 
-### tally the u and b
+#### Tally u and b
 
 ```{r}
 # test
@@ -4782,7 +4995,7 @@ offt.cln %>%
   names()
 ```
 
-### multiply the stem tally by shoot ratio 
+#### Multiply the stem tally by shoot ratio 
 
 
 ```{r}
@@ -4839,7 +5052,7 @@ offt.cln %>%
   visdat::vis_dat()
 ```
 
-### calc total number of stems (b + u)
+#### Calc total number of stems (b + u)
 
 ```{r}
 ## calc total number of stems (b + u)
@@ -4849,7 +5062,7 @@ offt.cln <- offt.cln %>%
   ungroup()
 ```
 
-### calc the % of shoots browsed per STEM (step 2a n Zeigenfuss 2011) 
+#### Calc the % of shoots browsed per STEM (step 2a n Zeigenfuss 2011) 
 ```{r}
 ## calc the % of shoots browsed per STEM (step 2a n Zeigenfuss 2011)
 
@@ -4880,8 +5093,9 @@ offt.cln <- offt.cln %>%
 
 ```
 
-### summary plots
+
 ```{r}
+### summary plots
 offt.percbrowsed <- offt.cln %>% 
   filter(browsed_or_unbrowsed == "B") %>% 
   select(c(yr, site_type, site_id, species_code, sum_bu_per_stem, percent_bu_per_stem))
@@ -5497,30 +5711,13 @@ bl.sel %>%
 # 1.Progressive increase in aspen regeneration above the baseline level of 13 percent to at least 45 percent of winter range stands (presence of stems less than 2 cm dbh reaching 1.5–2.5 m tall).
 ```
 
-
-
-# References  
-
-Johnson, T. L., L. C. Zeigenfuss, N. Thompson, and J. A. Mack. 2016. The role of science through a century of elk and habitat management at Rocky Mountain National Park. Park Science 32(2):70–72
-
-U.S. Department of the Interior, 2007, Elk and vegetation management plan, Rocky Mountain National Park, Colorado: Washington D.C., National Park Service, unpaged, accessed online May 6, 2013 at http://www.nps.gov/romo/parkmgmt/elkveg_mgmt_plan_feis.htm.
-
-U.S. Department of the Interior, 2008, Record of decision, Final environmental impact statement, Elk and vegetation management plan, Rocky Mountain National Park, Colorado: Washington D.C., National Park Service, 21 p., accessed online May 6, 2013 at www.nps.gov/romo/parkmgmt/upload/rod_evmp_signed_2-15-08.pdf.
-
-Zeigenfuss, L., Johnson, T., and Wiebe, Z., 2011, Monitoring plan for vegetation responses to elk management in Rocky Mountain National Park: U.S. Geological Survey Open-File Report 2011–1013, 85 p.
-
-Zeigenfuss, L.C., and T.L. Johnson, 2015, Monitoring of vegetation response to elk population and habitat management in Rocky Mountain National Park, 2008–14: U.S. Geological Survey Open-File Report 2015–1216, 44 p., http://dx.doi.org/10.3133/ofr20151216.
-
-
-
-
-## wild basin
+## Wild basin
 
 ```{r}
 
 ```
 
-## Comparison plot: willow height by valley, with wild basin
+### Comparison plot: willow height by valley, with wild basin
 
 Wild Basin willow data survey 2018.csv
 
@@ -5613,6 +5810,20 @@ elk <- read_csv("./data/covariates/elk/RMNP_elk_pop_summary_cln.csv")
 
 ```
 
+
+
+
+# References  
+
+Johnson, T. L., L. C. Zeigenfuss, N. Thompson, and J. A. Mack. 2016. The role of science through a century of elk and habitat management at Rocky Mountain National Park. Park Science 32(2):70–72
+
+U.S. Department of the Interior, 2007, Elk and vegetation management plan, Rocky Mountain National Park, Colorado: Washington D.C., National Park Service, unpaged, accessed online May 6, 2013 at http://www.nps.gov/romo/parkmgmt/elkveg_mgmt_plan_feis.htm.
+
+U.S. Department of the Interior, 2008, Record of decision, Final environmental impact statement, Elk and vegetation management plan, Rocky Mountain National Park, Colorado: Washington D.C., National Park Service, 21 p., accessed online May 6, 2013 at www.nps.gov/romo/parkmgmt/upload/rod_evmp_signed_2-15-08.pdf.
+
+Zeigenfuss, L., Johnson, T., and Wiebe, Z., 2011, Monitoring plan for vegetation responses to elk management in Rocky Mountain National Park: U.S. Geological Survey Open-File Report 2011–1013, 85 p.
+
+Zeigenfuss, L.C., and T.L. Johnson, 2015, Monitoring of vegetation response to elk population and habitat management in Rocky Mountain National Park, 2008–14: U.S. Geological Survey Open-File Report 2015–1216, 44 p., http://dx.doi.org/10.3133/ofr20151216.
 
 # Appendix 1. Data notes from E. Ertl
 
