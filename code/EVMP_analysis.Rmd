@@ -445,14 +445,6 @@ site.info.all <- site.info.all %>%
                           )
          ) 
 
-# site.info.all %>% 
-#   dplyr::na_if(.,"NA") %>%  # nice clean way of replacing all the text NA with real NA
-#   filter(!is.na(UTM_E_NAD83)) %>% # only keeping points with coordinates
-#   filter(!is.na(UTM_N_NAD83)) %>% 
-#   filter(!is.na(REMOVED)) %>% 
-#   gt::gt() %>%
-#   tab_header(title = md("**EVMP plots listed as 'Removed'**"))
-
 ####################### Clean #########################
 #### Remove records with "NA" for coordinates or ones with
 #### Any non-NA for the "REMOVE" field 
@@ -474,15 +466,6 @@ site.info.clean <- site.info.all %>%
 site.info.clean <- site.info.clean %>% 
   mutate(FENCED = case_when(is.na(FENCED) ~ "N", 
                             TRUE ~ as.character(FENCED)))
-
-## Reclassify 'NA' for fenced to 'N'
-# csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>% 
-#   mutate(FENCED = case_when(is.na(FENCED) ~ "N", 
-#                             TRUE ~ as.character(FENCED))) %>%  
-#   mutate(BURNED = if_else(is.na(BURNED),
-#                           "N", BURNED))
-
-# UNC61
 
 ```
 
@@ -513,8 +496,8 @@ valley_lu <- read_csv("./data/EVMP_derived/VALLEY_lu.csv")
 ## join in the valley info
 site.info.clean <- left_join(site.info.clean, valley_lu, by = "VALLEY") 
 
-# I'm going to convert all these into y and n until I get guidance from Hanem
-# I'm also eliminating all the vague burned categories, collapsing them to a binary burned/not-burned category
+# Convert all these into y and n until I get guidance from Hanem
+# Eliminate all the vague burned categories, collapsing them to a binary burned/not-burned category
 
 site.info.clean <- 
   site.info.clean %>% 
@@ -524,39 +507,48 @@ site.info.clean <-
                             BURNED == "Moderately" ~ "Burned",
                             BURNED == "Moderately to Completely" ~ "Burned",
                             BURNED == "Y" ~ "Burned",
-                            BURNED == "N" ~ "Unburned")
-         )
+                            BURNED == "N" ~ "Unburned",
+                            TRUE ~ BURNED)
+         ) %>% 
+  mutate(FENCED = case_when(FENCED == "Y_but_fence_down_since_2013" ~ "Unfenced",
+                             FENCED == "Y" ~ "Fenced",
+                             FENCED == "N" ~ "Unfenced"))
 
-## write csv
-# write_csv(site.info.clean, "./data/EVMP_derived/site_info_clean.csv")
+###
+## WK03 missing VALLEY attribute
+site.info.clean <- site.info.clean %>%
+  mutate(VALLEY = case_when(SITE_ID == "WK03" ~ "KV",
+                            TRUE ~ VALLEY)) %>% 
+  mutate(valley_full = case_when(SITE_ID == "WK03" ~ "Kawuneeche Valley",
+                            TRUE ~ valley_full))
 
 ```
 
+```{r, eval = FALSE}
+## write site info to csv
+write_csv(site.info.clean, "./data/EVMP_derived/site_info_clean.csv")
+```
+
 ```{r}
-### Tables 
+### Table of removed plots 
 # Problem records lacking coordinates 
 site.info.all %>% 
-  dplyr::na_if(.,"NA") %>%  # nice clean way of replacing all the text NA with real NA
+  dplyr::na_if(.,"NA") %>%  # replace all the text NA with real NA
   filter(!is.na(UTM_E_NAD83)) %>% # only keeping points with coordinates
   filter(!is.na(UTM_N_NAD83)) %>%
   filter(!is.na(REMOVED)) %>% # filter out plots notes as "removed"
   select(-WILDERNESS) %>% 
-  # tally()
   gt::gt() %>%
   tab_header(title = md("**EVMP plots listed as 'Removed'**"))
+# A total of 15 plots were removed from subsequent steps. Confirm the final status of these records.
 ```
-
-A total of 15 plots were removed from subsequent steps. Confirm the final status of these records. 
-
 
 **Site information:**
 ```{r}
 ## create some tables
-
 site.info.clean %>%
   dplyr::select(-REMOVED) %>% 
   datatable(caption = "Valid EVMP plots")
-
 
 ```
 
@@ -810,9 +802,9 @@ site.info.clean.sf %>%
 ```{r}
 site.info.clean.sf %>%
   as_tibble() %>% 
-  filter(!is.na(VALLEY)) %>%
+  filter(is.na(VALLEY)) %>%
   tabyl(valley_full, FENCED) %>%
-  arrange(-(Y)) %>% 
+  #arrange(-(Y)) %>% 
   rename('Location' = valley_full) %>%
   gt::gt() %>% 
   tab_header(title = "Fenced/non-fenced")
@@ -978,23 +970,6 @@ site.info.clean.sf %>%
 #### Counts of plots in fenced and unfenced contexts
 
 ```{r}
-
-# site.info.clean.sf %>%
-#   group_by(FENCED,pType) %>%
-#   tally() %>%
-#   # na.omit() %>%  ### NEED TO ATTRIBUTE THESE. BUT FOR TESTING....
-#   ggplot(aes(reorder(FENCED, n),n)) +
-#   # ggplot( aes(VALLEY, n, size = n, color=VALLEY)) +
-#   geom_point(color="white", size = 6) +
-#   geom_pointrange(ymin=0, aes(ymax=n)) +
-#    geom_point(color="ivory3", size = 10) +
-#   geom_text(aes(label=n), size=6) +
-#   # scale_x_log10() +
-#   theme_bw() +
-#   # theme_minimal() +
-#   coord_flip() +
-#   labs(y="Count", x = "Range type", title = "Count of EVMP sampling sites by 'Range type'") +
-#   facet_wrap(~pType)
 
 pl.hm1 <- site.info.clean.sf %>%
   filter(!is.na(FENCED)) %>%
@@ -1316,10 +1291,6 @@ csv.all.lc.li.df <- csv.all.lc.li %>%
 # just discovered that SITE_ID columns are NOT CONSISTENTLY NAMED
 # eg WC1 and WC01
 
-# csv.all.lc.mcro.df %>% 
-#   filter(SITE_NUMBER <10) %>% 
-#   distinct(SITE_ID) %>% 
-#   datapasta::vector_paste()
 
 csv.all.lc.li.df <- csv.all.lc.li.df %>% 
   mutate(SITE_ID = case_when(SITE_ID == "WC1" ~ "WC01",
@@ -1369,18 +1340,20 @@ csv.all.lc.li.df <- csv.all.lc.li.df %>%
   mutate(yr = as.factor(year(DATE))) %>%
   mutate(mo = month(DATE))
 
-## convert "NA" for fencing to "N". CHECK WITH PARK ON THIS
+## convert "NA" for fencing to "Unfenced". 
 
 csv.all.lc.li.df <- csv.all.lc.li.df %>% 
-  mutate(FENCED = case_when(is.na(FENCED) ~ "N",
+  mutate(FENCED = case_when(is.na(FENCED) ~ "Unfenced",
                             TRUE ~ as.character(FENCED)))
 
 
-# csv.all.lc.li.df %>% 
-#   filter(!is.na(MAX_HEIGHT_CM)) %>%
-#   # names() %>% 
-#   group_by(yr,SITE_TYPE, SITE_NUMBER, SITE_ID, MAX_HEIGHT_CM) %>% 
-#   summarize()
+## create timeClass field with BL including 2008 and 2009
+csv.all.lc.li.df <- csv.all.lc.li.df %>% 
+  mutate(timeClass = case_when(yr == 2008 ~ "BL",
+                              yr == 2009 ~ "BL", 
+                              TRUE ~ as.character(yr))) %>% 
+  mutate(timeClass = as.factor(timeClass)) %>% 
+  mutate(timeClass = fct_relevel(timeClass, "2018", "2013", "BL"))
 
 ```
 
@@ -1399,7 +1372,6 @@ sp.lu <- sp.lu %>%
                        SITE_ID == "WC2" ~ "WC02",
                        SITE_ID == "WC3" ~ "WC03", 
                        SITE_ID == "WC4" ~ "WC04", 
-                       SITE_ID == "WC4" ~ "WC04",
                        SITE_ID == "WC5" ~ "WC05",
                        SITE_ID == "WC6" ~ "WC06", 
                        SITE_ID == "WC7" ~ "WC07", 
@@ -1429,41 +1401,14 @@ sp.lu <- sp.lu %>%
                        TRUE ~ as.character(SITE_ID))
   )
 
+
+
 # csv.all.lc.li.df <- left_join(csv.all.lc.li.df, sp.lu, by= "SITE_ID")
 
 ```
 
-```{r, eval=FALSE}
+```{r}
 
-csv.all.lc.li.df %>% 
-  skimr::skim() %>% 
-  kable(caption = "Basic information on 'line intercept' imported dataset.")
-
-```
-
-
-
-```{r, eval=FALSE, echo=FALSE}
-
-#  NOT run. A work in in progress
-
-## filter to 2013 and 2018
-csv.all.lc.li.df %>% 
-  filter(yr == 2013 | yr == 2018) %>%
-  # group_by(SITE_ID,SPECIES_CODE,DATE) %>%
-  # names()
-  group_by(SITE_ID,SITE_TYPE, FENCED, SPECIES_CODE,yr) %>% 
-  summarise(mean.max = mean(MAX_HEIGHT_CM, na.rm=TRUE), sd.max = sd(MAX_HEIGHT_CM, na.rm=TRUE), n.max = n()) %>% 
-  # filter(SPECIES_CODE == "SAMO") %>% 
-  ungroup() %>%
-  filter(n.max >1) %>% 
-  ggplot(aes(yr,mean.max)) +
-  geom_point() +
-  geom_line(aes(x=yr, y = mean.max)) +
-  facet_wrap(~SPECIES_CODE)
-
-plotly::ggplotly()
-# tidyr::spread(key = yr, value = MAX_HEIGHT_CM, convert = FALSE)
 ```
 
 
@@ -1474,15 +1419,6 @@ csv.all.lc.mcro <- csv.all.lc %>%
 
 ```
 
-```{r, eval=FALSE}
-csv.all.lc.mcro %>% 
-  unnest(field_names) %>% 
-  # tabyl(file_name_abr)
-  tabyl(file_name_abr,field_names) %>% 
-  # write_csv("output/temp_4_review/macroplot_fld_names.csv")
-  datatable(rownames = FALSE, caption = "Macroplot inventory variable names.")
-
-```
 
 
 ```{r}
@@ -1502,11 +1438,6 @@ FunSelMacro <- function(x){
 
 csv.all.lc.mcro <- csv.all.lc.mcro %>% 
   mutate(data.sel = map(.x = data, FunSelMacro))
-
-# csv.all.lc.li %>% 
-#   unnest(field_names) %>% 
-#   distinct(field_names)%>% 
-#   datapasta::dpasta()
 
 
 ## purrr ninja move:
@@ -1565,56 +1496,6 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
 csv.all.lc.mcro.df <- left_join(csv.all.lc.mcro.df, sp.lu, by = "SITE_ID")
 
 
-
-```
-# valley full
-```{r}
-csv.all.lc.li.df %>% 
-  select(SITE_ID, VALLEY) %>% 
-  distinct()
-
-```
-
-
-```{r, eval=FALSE}
-## not working anymore. 202-05-01
-#### Missingness across years 
-temp.m <- csv.all.lc.li.df %>% 
-  mutate(yr = year(DATE))
-
-temp.m %>% 
-  mutate(yr = as.factor(yr)) %>%
-  naniar::gg_miss_fct(yr) +
-  theme_minimal() + 
-  labs(title = 'Missing data', y = "", x="Year", fill = "% missing")
-
-```
-
-
-```{r, eval=FALSE}
-## line intercept: missing data analysis
-csv.all.lc.li.df %>% 
-  group_by(yr) %>% 
-  nest() %>% 
-  map(data, naniar::vis_miss)
-
-naniar::vis_miss(csv.all.lc.li.df) %>% 
-  facet_wrap(~)
-```
-
-
-
-```{r, eval=FALSE}
-## line intercept: missing data analysis
-#### Missingness across months 
-csv.all.lc.li.df %>% 
-  mutate(mo = month(DATE)) %>% 
-  naniar::gg_miss_fct(SITE_ID) +
-  labs(title = "Variables: Missing data by month", x="Month") +
-  scale_fill_viridis(discrete = FALSE, option = "A")
-
-## note the site info variables are not all present in the equiv var in the
-## li data. For example 'BURNED'  and 'UTM_N_NAD83'
 
 ```
 
@@ -1719,57 +1600,8 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
 # create a lookup table
 csv.all.lc.mcro.df %>%
   mutate(SPECIES_CODE = toupper(SPECIES_CODE)) %>%
-  distinct(SPECIES_CODE) # %>% 
-  # datapasta::tribble_paste()
+  distinct(SPECIES_CODE) 
 
-# sp.lu <- tibble::tribble(
-#                   ~SPECIES_CODE,
-#                          "DAFR",
-#                          "SAMO",
-#                          "SAPL",
-#                          "BEGL",
-#                          "SAGE",
-#                          "BEOC",
-#                          "SAXX",
-#                          "NONE",
-#                          "ACGL",
-#                          "ALIN",
-#                          "JUCO",
-#                          "PIPU",
-#                          "POTR",
-#                          "RICE",
-#                          "RIIN",
-#                          "RUID",
-#                          "RUXX",
-#                          "SABE",
-#                          "PICO",
-#                          "SADR",
-#                          "SALA",
-#                          "SAPE",
-#                          "ROWO",
-#                          "POAN",
-#                          "BEXX",
-#                          "RUDE",
-#                          "DAFL",
-#                          "LOIN",
-#                              NA,
-#                          "SALU",
-#                          "SAWO",
-#                          "SALE",
-#                          "RINN",
-#                          "RUIN",
-#                          "SABO",
-#                          "SABR",
-#                          "SAER"
-#                   )
-
-# create skeleton for populating a species lookup table
-# write_csv(sp.lu, "./data/EVMP_derived/species_code_lu.csv")  
-# manually enter codes in excel and bring back in for joining
-# note that there are some questionable species codes that will require 
-# more help from NPS to resolve
-
-## read in lu table
 ```
 
 ```{r}
@@ -1803,208 +1635,217 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
 ```
 
 # Results  
-## Shrub height [line intercept]
+### Line intercept: Shrub height
 
 ```{r write_li_to_disk, eval = FALSE}
-csv.all.lc.li.df
 
 # write_csv(csv.all.lc.li.df, "./data/EVMP_derived/li_derived.csv")
 ```
 
 
-```{r, echo=FALSE}
+```{r, eval = FALSE, echo=FALSE}
 # > From discussions with HA in the field, the orientation of line-intercept transects may not have had a consistent orientation from sampling interval to interval.
 ```
 
-**Max shrub height in-line intercept: Core winter range**
 ```{r}
+## Make NA unburned
+csv.all.lc.li.df <- csv.all.lc.li.df %>%
+  mutate(BURNED = case_when(is.na(BURNED) ~ "Unburned",
+                            BURNED == "Not burned" ~ "Unburned",
+                            TRUE ~ BURNED))
+
+## reverse factor levels
+csv.all.lc.li.df <- csv.all.lc.li.df %>%
+  mutate(timeClass = forcats::fct_rev(timeClass))
+
+## Reorder levels
+csv.all.lc.li.df <- csv.all.lc.li.df %>% 
+  mutate(SITE_TYPE = as_factor(SITE_TYPE)) %>% 
+  mutate(SITE_TYPE = forcats::fct_relevel(SITE_TYPE, "WK", after = 2))
+```
+
+#### All Shrubs  
+##### All shrubs, site type
+```{r}
+## Boxplot
 csv.all.lc.li.df %>% 
-  filter(SITE_TYPE == "WC") %>% 
+  filter(pType == "willow") %>%
   mutate(yr = as.character(yr)) %>%
-  # mutate(yr = as.integer(yr)) %>%
-  # mutate(yr = as.character(yr)) %>% 
-  # filter(yr == 2013 | yr == 2018) %>%
   filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
-  # mutate(yr = as.double(yr)) %>%
-  ggplot(aes(yr, MAX_HEIGHT_CM)) +
+  ggplot(aes(timeClass, MAX_HEIGHT_CM)) +
   geom_boxplot(aes(fill = FENCED), outlier.shape = NA) +
   ylim(0,300) +
-  labs(x="Year", y= "Height (cm)", title = "Maximum shrub height", subtitle = "All shrub species in line intercept plots") +
-  scale_fill_manual(values = c("ivory2","grey")) +
-  theme_minimal() +
-  theme(axis.text.x=element_text(angle = 45, hjust = 1)) #+
-  # facet_grid(.~SITE_TYPE)
+  labs(x="", y= "Height (cm)", title = "Maximum shrub height", caption = "WC, All shrub species line intercept plots") +
+  scale_fill_manual(values = c("grey90","grey50")) +
+  theme_minimal() + 
+  # theme(axis.text.x=element_text(angle = 45, hjust = 1)) #+
+  facet_wrap(~SITE_TYPE)
 
-# ggsave("./output/figures_exported/all_shrub_LI_boxplot_WC.png", width = 6.5, height = 4.875)
+# ggsave("./output/figures_exported/WCWNCWK_LI_shrubHt_boxplot.png", width = 6.5, height = 4.875)
 
 ```
 
-#### and a table for above
 ```{r}
+#### Table of mean max height
 csv.all.lc.li.df %>% 
-  filter(SITE_TYPE == "WC") %>% 
-  mutate(yr = as.character(yr)) %>%
-  # mutate(yr = as.integer(yr)) %>%
-  # mutate(yr = as.character(yr)) %>% 
-  # filter(yr == 2013 | yr == 2018) %>%
-  filter(yr == 2008 | yr == 2013 | yr == 2018) %>% 
-  group_by(yr, FENCED) %>% 
-  summarise_if(.predicate = is.numeric,.funs = median,na.rm=TRUE) %>% 
-  select(FENCED, yr, MAX_HEIGHT_CM) %>% 
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>% 
+  group_by(timeClass, SITE_TYPE) %>%
+  descr(MAX_HEIGHT_CM, stats = "common") %>% 
+  summarytools::tb() %>% 
+  mutate(across(c('mean','sd','pct.valid'), ~round(.,digits = 1))) %>% 
   gt() %>% 
-  tab_header(title = "Median max height", subtitle = "All shrub species, WC")
+  tab_header(title = "LI, Mean max height", subtitle = "All shrub species, all site types")
 
 ```
 
-
-#### line intercept core winter range
-
-```{r}
-# csv.all.lc.li.df %>% 
-#   distinct(SPECIES_CODE) %>% 
-#   gt::gt()
-
-## yr,FENCED, SPECIES_CODE
-tabl.li.meanht1 <- csv.all.lc.li.df %>% 
-  # distinct(SITE_TYPE)
-  # filter(SITE_TYPE != "WNC") %>%
-  filter(SITE_TYPE == "WC") %>% 
-  mutate(yr = as.character(yr)) %>%
-  # mutate(yr = as.integer(yr)) %>%
-  # mutate(yr = as.character(yr)) %>% 
-  # filter(yr == 2013 | yr == 2018) %>%
-  filter(SPECIES_CODE != "NONE" & SPECIES_CODE != "SAXX") %>% 
-  filter(yr == 2008 | yr == 2009 | yr == 2013 | yr == 2018) %>%
-  mutate(yr_cat = case_when(yr == "2008" | yr == "2009" ~ "bl",
-                            TRUE ~ yr)) %>% 
-  group_by(yr_cat,FENCED, SPECIES_CODE) %>%
-  # janitor::clean_names() %>% 
-  summarise(mean.max.ht = round(mean(MAX_HEIGHT_CM, na.rm=TRUE),0)) %>% 
-  pivot_wider(names_from = yr_cat, values_from = mean.max.ht)
-  
-tabl.li.meanht1 <- tabl.li.meanht1 %>%
-  janitor::clean_names()
-
-# tabl.li.meanht1 %>%
-#   gt()
-
-```
+##### All shrubs, site type, fenced/unfenced
 
 ```{r}
-tabl.li.meanht1 <- tabl.li.meanht1 %>% 
-  as_tibble() %>% 
-  mutate(gross_diff_bl_13 = x2013 - bl) %>%
-  mutate(gross_diff_bl_18 = x2018 - bl) %>% 
-  mutate(gross_diff_13_18 = x2018 - x2013) %>% 
-  mutate(perc_diff_13_18 = (gross_diff_bl_13 - bl)/bl) %>% 
-  mutate(perc_diff_bl_13 = (gross_diff_bl_18 - bl)/bl) %>%
-  mutate(perc_diff_bl_18 = (gross_diff_13_18 - x2013)/x2013) 
-
-  
-tabl.li.meanht1 %>% 
-  datatable()
-
-# tabl.li.meanht1 %>% 
-#   gt::gt()
-```
-
-
-### Height summary
-```{r}
-##
+#### Table of mean max height
 csv.all.lc.li.df %>% 
-  # filter(!is.na(FENCED)) %>% 
-  filter(!is.na(MAX_HEIGHT_CM)) %>%
-  # group_by(yr,SITE_TYPE, FENCED, SITE_ID, SPECIES_CODE) %>%
-  filter(SITE_TYPE == "WC") %>% 
-  group_by(yr,SITE_TYPE, FENCED, SPECIES_CODE, BURNED) %>%
-  summarise(mean.max.ht = round(mean(MAX_HEIGHT_CM, na.rm=TRUE),1),
-            sd.max.ht = round(sd(MAX_HEIGHT_CM, na.rm=TRUE),1)) %>% 
-  filter(FENCED != "Y_but_fence_down_since_2013") %>% 
-  filter(SPECIES_CODE != "SAXX") %>% 
-  datatable() # kable(caption = "Core winter range")
-
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>% 
+  group_by(timeClass, SITE_TYPE, FENCED) %>%
+  descr(MAX_HEIGHT_CM, stats = "common") %>% 
+  summarytools::tb() %>% 
+  mutate(across(c('mean','sd','pct.valid'), ~round(.,digits = 1))) %>% 
+  gt() %>% 
+  tab_header(title = "LI, Mean max height", subtitle = "All shrubs, all site types, fenced/unfenced")
 
 ```
 
+##### All shrubs, site type, fenced/unfenced, burned/unburned
+
+```{r}
+## Boxplot
+csv.all.lc.li.df %>% 
+  filter(pType == "willow") %>%
+  mutate(yr = as.character(yr)) %>%
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  ggplot(aes(timeClass, MAX_HEIGHT_CM)) +
+  geom_boxplot(aes(fill = FENCED), outlier.shape = NA) +
+  ylim(0,300) +
+  labs(x="", y= "Height (cm)", title = "Maximum shrub height", caption = "WC, All shrub species line intercept plots") +
+  scale_fill_manual(values = c("grey90","grey50")) +
+  theme_minimal() + 
+  # theme(axis.text.x=element_text(angle = 45, hjust = 1)) #+
+  facet_wrap(BURNED~SITE_TYPE)
+
+# ggsave("./output/figures_exported/WCWNCWK_LI_shrubHt_FenBur_boxplot.png", width = 6.5, height = 4.875)
+
+```
+
+#### Willows
+##### All willow, site type
+**Max shrub height in-line intercept**
+```{r}
+csv.wil.lc.li.df <- csv.all.lc.li.df %>% 
+  filter(str_detect(SPECIES_CODE, "^SA"))
+  
+
+## Boxplot
+csv.wil.lc.li.df %>% 
+  filter(pType == "willow") %>%
+  # filter(SITE_TYPE == "WC") %>% 
+  mutate(yr = as.character(yr)) %>%
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  # mutate(yr = as.double(yr)) %>%
+  ggplot(aes(timeClass, MAX_HEIGHT_CM)) +
+  geom_boxplot(aes(fill = FENCED), outlier.shape = NA) +
+  ylim(0,600) +
+  labs(x="", y= "Height (cm)", title = "Maximum willow height", caption = "WC, All willow species line intercept plots") +
+  scale_fill_manual(values = c("grey90","grey50")) +
+  theme_minimal() + 
+  # theme(axis.text.x=element_text(angle = 45, hjust = 1)) #+
+  facet_wrap(~SITE_TYPE)
+
+# ggsave("./output/figures_exported/WCWNCWK_LI_willHt_boxplot.png", width = 6.5, height = 4.875)
+
+```
+
+```{r}
+#### Table of mean max height
+csv.wil.lc.li.df %>% 
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>% 
+  group_by(timeClass, SITE_TYPE) %>%
+  descr(MAX_HEIGHT_CM, stats = "common") %>%
+  summarytools::tb() %>%
+  mutate(across(c('mean','sd','pct.valid'), ~round(.,digits = 1))) %>% 
+  gt() %>% 
+  tab_header(title = "LI, Mean max height", subtitle = "All willow species, all site types")
+
+```
+
+##### All willow, site type, fenced/unfenced
+
+```{r}
+#### Table of mean max height
+csv.wil.lc.li.df %>% 
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>% 
+  group_by(timeClass, SITE_TYPE, FENCED) %>%
+  descr(MAX_HEIGHT_CM, stats = "common") %>% 
+  summarytools::tb() %>% 
+  mutate(across(c('mean','sd','pct.valid'), ~round(.,digits = 1))) %>% 
+  gt() %>% 
+  tab_header(title = "LI, Mean max height", subtitle = "All willow, all site types, fenced/unfenced")
+
+```
+
+##### All willow, site type, fenced/unfenced, burned/unburned
+
+```{r}
+## Boxplot
+csv.wil.lc.li.df %>% 
+  filter(pType == "willow") %>%
+  mutate(yr = as.character(yr)) %>%
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  ggplot(aes(timeClass, MAX_HEIGHT_CM)) +
+  geom_boxplot(aes(fill = FENCED), outlier.shape = NA) +
+  ylim(0,600) +
+  labs(x="", y= "Height (cm)", title = "Maximum shrub height", caption = "WC, All willow species line intercept plots") +
+  scale_fill_manual(values = c("grey90","grey50")) +
+  theme_minimal() + 
+  # theme(axis.text.x=element_text(angle = 45, hjust = 1)) #+
+  facet_wrap(BURNED~SITE_TYPE)
+
+# ggsave("./output/figures_exported/WCWNCWK_LI_willHt_FenBur_boxplot.png", width = 6.5, height = 4.875)
+
+```
+
+
+```{r}
+#### Table of mean max height
+csv.wil.lc.li.df %>% 
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>% 
+  group_by(timeClass, SITE_TYPE, FENCED, BURNED) %>%
+  descr(MAX_HEIGHT_CM, stats = "common") %>% 
+  summarytools::tb() %>% 
+  mutate(across(c('mean','sd','pct.valid'), ~round(.,digits = 1))) %>% 
+  gt() %>% 
+  tab_header(title = "LI, Mean max height", subtitle = "All willow, all site types, fenced/unfenced, burned/unburned")
+
+```
 
 ```{r}
 # Shrub Line Intercept Datataset 
-
-csv.all.lc.li.df %>% 
+csv.wil.lc.li.df %>% 
+  filter(timeClass == "BL" | timeClass == "2013" |timeClass == "2018") %>% 
   filter(!is.na(FENCED)) %>% 
   filter(!is.na(MAX_HEIGHT_CM)) %>%
   # group_by(yr,SITE_TYPE, FENCED, SITE_ID, SPECIES_CODE) %>%
-  filter(SITE_TYPE == "WC") %>% 
-  group_by(yr,SITE_TYPE, FENCED, SPECIES_CODE) %>%
+  # filter(SITE_TYPE == "WC") %>% 
+  group_by(timeClass,SITE_TYPE, FENCED, SPECIES_CODE) %>%
   summarise(mean.max.ht = round(mean(MAX_HEIGHT_CM, na.rm=TRUE),0)) %>% 
   filter(FENCED != "Y_but_fence_down_since_2013") %>% 
   filter(SPECIES_CODE != "SAXX") %>% 
-  ggplot(aes(yr, SPECIES_CODE)) +
+  ggplot(aes(timeClass, SPECIES_CODE)) +
   geom_tile(aes(fill=mean.max.ht),color = 'white') +
   scale_fill_viridis(option = "A") +
   geom_text(aes(label=mean.max.ht), color = 'white', size = 3.75) +
   theme_minimal() +
   labs(title = "Maximum shrub height", subtitle = "Mean of shrub height pooled by fenced status", x = "Year", y = "Species", fill = "cm") +
-  facet_wrap(~FENCED, ncol= 2)
+  facet_grid(SITE_TYPE~FENCED)
 
-# ggsave("./output/figures/maxShrubHy_by_spp_WC_heatmap_lbl.png", width = 6.5, height = 6.5, dpi = 300)
-
-```
-
-
-```{r, eval=FALSE}
-# FIX NA for fenced
-### Elk winter range by individual site
-## tracking the individual SITE_ID
-csv.all.lc.li.df %>% 
-  mutate(yr = lubridate::year(DATE)) %>% 
-  filter(!is.na(FENCED)) %>% 
-  filter(!is.na(MAX_HEIGHT_CM)) %>%
-  filter(FENCED != "Y_but_fence_down_since_2013") %>% 
-  filter(SPECIES_CODE != "SAXX") %>%
-  group_by(yr,SITE_TYPE, FENCED, SITE_ID, SPECIES_CODE) %>%
-  filter(SITE_TYPE == "WC") %>% 
-  group_by(yr,SITE_TYPE, FENCED, SPECIES_CODE) %>%
-  ggplot(aes(yr, FENCED)) +
-  geom_tile(aes(fill = MAX_HEIGHT_CM)) +
-  # geom_text(aes(label = MAX_HEIGHT_CM)) +
-  # facet_grid(SITE_ID~SPECIES_CODE)
-  facet_wrap(~SITE_ID)
-  scale_fill_viridis(option = "A") +
-  geom_text(aes(label=mean.max.ht), color = 'white', size = 3.75) +
-  theme_minimal() +
-  labs(title = "Maximum shrub height", subtitle = "Mean of shrub height pooled by fenced status", x = "Year", y = "Species", fill = "cm") +
-  facet_wrap(~FENCED, ncol= 2)
-
-```
-
-
-
-```{r, echo=FALSE, eval = FALSE}
-
-## theres a problem with the spatial join. MAny records without attributes like "FENCED"
-# csv.all.lc.li.df %>% 
-#   filter(is.na(LOCATION)) %>% 
-#   View()
-
-## core winter range
-csv.all.lc.li.df %>% 
-  filter(!is.na(MAX_HEIGHT_CM)) %>%
-  # group_by(yr,SITE_TYPE, FENCED, SITE_ID, SPECIES_CODE) %>%
-  filter(SITE_TYPE == "WC") %>% 
-  filter(yr == 2008 | yr == 2013 | yr == 2018) %>% 
-  filter(str_detect(SPECIES_CODE, "^SA")) %>%
-  filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR"& SPECIES_CODE !="SAER") %>% 
-  ggplot(aes(yr,MAX_HEIGHT_CM)) +
-  geom_boxplot(aes(fill = LOCATION)) +
-  # scale_fill_viridis(option = "A") +
-    theme_minimal() +
-  labs(title = "Maximum shrub height", x = "Year", y = "Max shrub height (cm)") +
-  facet_grid(FENCED~SPECIES_CODE)
-  # facet_wrap(~SPECIES_CODE, ncol= 5)
-
-# >Need to determine how to properly deal with "NA" and "Y_but_fence_down_since_2013" in "FENCED" field.
+# ggsave("./output/figures_exported/WCWNCWK_maxWilHt_by_spp_lbl.png", width = 6.5, height = 6.5, dpi = 300)
 
 ```
 
@@ -2026,7 +1867,6 @@ csv.all.lc.li.df %>%
   labs(title = "Maximum shrub height", x = "Year", y = "Species") +
   facet_wrap(~SITE_TYPE, ncol = 3) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
 
 ```
 
@@ -2293,7 +2133,7 @@ csv.all.lc.li.df %>%
   filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
   filter(!is.na(MAX_HEIGHT_CM)) %>%
   # filter(str_detect(SPECIES_CODE, "^SA")) %>%
-  filter(FENCED == "N" | FENCED == "Y") %>% 
+  filter(FENCED == "Unfenced" | FENCED == "Fenced") %>% 
   group_by(yr, SPECIES_CODE, FENCED) %>% 
   # summarise(mean.ht = mean(MAX_HEIGHT_CM, na.rm = TRUE), sd.ht = sd(MAX_HEIGHT_CM, na.rm = TRUE)) %>%
   summarise(mean.ht = mean(MAX_HEIGHT_CM, na.rm = TRUE)) %>% 
@@ -2318,14 +2158,14 @@ csv.all.lc.li.df %>%
   filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
   filter(!is.na(MAX_HEIGHT_CM)) %>%
   filter(str_detect(SPECIES_CODE, "^SA")) %>%
-  filter(FENCED == "N" | FENCED == "Y") %>% 
+  filter(FENCED == "Unfenced" | FENCED == "Fenced") %>% 
   group_by(yr, FENCED) %>% 
-  # summarise(mean.ht = mean(MAX_HEIGHT_CM, na.rm = TRUE), sd.ht = sd(MAX_HEIGHT_CM, na.rm = TRUE)) %>%
-  summarise(mean.ht = mean(MAX_HEIGHT_CM, na.rm = TRUE)) %>% 
-  pivot_wider(names_from = yr, values_from = c(mean.ht)) %>% 
+  summarise(mean.ht = mean(MAX_HEIGHT_CM, na.rm = TRUE), sd.ht = sd(MAX_HEIGHT_CM, na.rm = TRUE)) %>% 
+  pivot_wider(names_from = yr, values_from = c(mean.ht,sd.ht)) %>% 
+  select(contains("2008"),contains("2013"), contains("2018")) %>% 
   gt::gt() %>% 
   fmt_number(
-    columns = vars('2008','2013','2018'),
+    columns = vars("mean.ht_2008","mean.ht_2013","mean.ht_2018","sd.ht_2008","sd.ht_2013", "sd.ht_2018"),
     decimals = 1,
     use_seps = FALSE
   ) %>% 
@@ -2344,7 +2184,6 @@ csv.all.lc.li.df %>%
   # filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER") %>%
   filter(SITE_TYPE == "WC") %>% 
   group_by(SPECIES_CODE,yr,FENCED) %>% 
-  # View()
   dplyr::summarise(mean.max.ht = mean(MAX_HEIGHT_CM, na.rm = TRUE)) %>%
   ungroup() %>% 
   mutate(yr = as.character(yr)) %>% 
@@ -2462,8 +2301,8 @@ csv.all.lc.li.df %>%
 
 ```
 
-```{r}
-
+```{r, eval=FALSE}
+##### IN PROGRESS
 # burned faceted
 csv.all.lc.li.df %>% 
   filter(BURNED != "BURNED") %>%
@@ -2471,10 +2310,10 @@ csv.all.lc.li.df %>%
   filter(str_detect(SPECIES_CODE, "^SA")) %>%
   filter(SPECIES_CODE != "SAXX") %>%
   filter(yr == 2008 | yr == 2009 | yr == 2013 | yr == 2018) %>%
-  filter(FENCED == "N" | FENCED == "Y") %>% 
+  filter(FENCED == "Unfenced" | FENCED == "Fenced") %>% 
   # filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER") %>%
   filter(SITE_TYPE == "WC") %>%
-  # distinct(SPECIES_CODE) %>% 
+  distinct(SPECIES_CODE) %>%
   mutate(yr = as.character(yr)) %>% 
   mutate(yr = anytime::anytime(yr)) %>% 
   # mutate(yr = as.integer(yr)) %>% 
@@ -2483,11 +2322,12 @@ csv.all.lc.li.df %>%
   geom_smooth(aes(color = FENCED), method = "lm", se = FALSE) +
   geom_point(aes(color = FENCED, shape = FENCED)) +
   # geom_boxplot(aes(fill=FENCED), color = 'black') +
-  # scale_fill_viridis(discrete = TRUE) +
+  scale_color_manual(values = c("red", "blue")) +
+  # scale_color_viridis(discrete = TRUE) +
   # theme_minimal() +
   theme_minimal() +
   # scale_fill_manual(values = c("ivory2","lightblue")) +
-  labs(title = "Core winter range sites: maximum shrub height by year, fencing", x = "Year", color = "Fenced?", shape = "Fenced?", y = "Height (cm)", caption = "SAMO,SAPL, SAGE, SABE,SADR,SAPE,SAER")  +
+  labs(title = "Core winter range: maximum shrub height, fencing, burning", x = "Year", color = "", shape = "", y = "Height (cm)", caption = "Pooled SAMO,SAPL, SAGE, SABE,SADR,SAPE,SAER")  +
   facet_grid(~BURNED)
 facet_wrap(~BURNED)
 
@@ -2508,7 +2348,6 @@ csv.all.lc.li.df %>%
   filter(SITE_TYPE == "WC") %>%
   # distinct(SPECIES_CODE) %>% 
   mutate(yr = as.character(yr)) %>% 
-  # mutate(yr = anytime::anytime(yr)) %>% 
   group_by(FENCED, valley_full,pType, yr) %>% 
   summarise(mean.MAX_HEIGHT_CM = mean(MAX_HEIGHT_CM, na.rm = TRUE)) %>% 
   gt::gt()
@@ -2840,16 +2679,12 @@ csv.all.lc.mcro.df %>%
 ----
 
 ```{r, eval=FALSE}
-
-# csv.all.lc %>% View()
-
 # unnest to get at field names
 # across all csv files
 csv.all.lc %>% 
   unnest(field_names) %>% 
   distinct(ffname,field_names) %>% 
   datatable()
-
 
 ```
 
@@ -3086,7 +2921,7 @@ canopy.all.willow.sum %>%
   ungroup() %>% 
   mutate(weight = n.cond.tc/n.tc) %>% 
   mutate(mean.cov.wt = weight*mean.cov) %>% 
-  View()
+  datatable()
 
 ```
 
@@ -3310,6 +3145,134 @@ csv.all.lc.mcro.df %>%
 ```{r, eval=FALSE}
 csv.all.lc.mcro.df %>%
   write_csv("./output/exported_data/willow_mcro.csv")
+
+```
+
+### macroplot willow height
+```{r}
+allshrub.mcro.all <- csv.all.lc.mcro.df %>%
+  mutate(yr = as.character(yr)) %>%
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  mutate(timeClass = forcats::fct_rev(timeClass)) %>%
+  clean_names()
+
+nonwillowshrub.mcro.all <- csv.all.lc.mcro.df %>%
+  mutate(yr = as.character(yr)) %>%
+  filter(str_detect(SPECIES_CODE, "^SA",negate = TRUE)) %>% 
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  mutate(timeClass = forcats::fct_rev(timeClass)) %>%
+  clean_names()
+
+willow.mcro.all <- csv.all.lc.mcro.df %>%
+  filter(str_detect(SPECIES_CODE, "^SA")) %>% 
+  # filter(SITE_TYPE == "WC") %>%
+  # filter(SITE_TYPE != "WNC") %>% 
+  mutate(yr = as.character(yr)) %>%
+  # mutate(yr = as.integer(yr)) %>%
+  # mutate(yr = as.character(yr)) %>% 
+  # filter(yr == 2013 | yr == 2018) %>%
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  mutate(timeClass = forcats::fct_rev(timeClass)) %>%
+  clean_names()
+
+```
+#### WC all shrub
+```{r}
+allshrub.mcro.all %>% 
+  filter(site_type == "WC") %>%
+  # filter(SITE_TYPE != "WNC") %>% 
+  ggplot(aes(time_class, plant_ht_cm)) +
+  geom_boxplot(aes(fill = fenced),outlier.shape = NA) +
+  scale_fill_manual(values = c("grey80", "grey40")) +
+  theme_minimal() +
+  ylim(0,320) +
+  labs(x = "", y = "Shrub height (cm)", fill = "", caption = "WC only, all shrubs")
+
+# ggsave("./output/figures_exported/WC_allshrub_ht_boxplot.png", width = 5.5, height = 3.5)
+
+nonwillowshrub.mcro.all %>% 
+  filter(site_type == "WC") %>%
+  # filter(SITE_TYPE != "WNC") %>% 
+  ggplot(aes(time_class, plant_ht_cm)) +
+  geom_boxplot(aes(fill = fenced),outlier.shape = NA) +
+  scale_fill_manual(values = c("grey80", "grey40")) +
+  theme_minimal() +
+  ylim(0,200) +
+  labs(x = "", y = "Shrub height (cm)", fill = "", caption = "WC only, allnon willow shrubs")
+
+```
+
+#### WC willow height
+```{r}
+willow.mcro.all %>%
+  filter(site_type == "WC") %>%
+  # filter(SITE_TYPE != "WNC") %>% 
+  ggplot(aes(time_class, plant_ht_cm)) +
+  geom_boxplot(aes(fill = fenced),outlier.shape = NA) +
+  scale_fill_manual(values = c("grey80", "grey40")) +
+  ylim(0,350) +
+  theme_minimal() +
+  labs(x = "", y = "Willow height (cm)", fill = "", caption = "Macroplot, WC only")
+
+# ggsave("./output/figures_exported/WC_willow_ht_boxplot.png", width = 5.5, height = 3.5)
+
+# ggsave("./output/figures_exported/WC_allnonwillow_ht_boxplot.png", width = 5.5, height = 3.5)
+```
+
+### WC by species
+```{r}
+willow.mcro.all %>%
+  filter(site_type != "WK") %>% 
+  # filter(site_type == "WC") %>%
+  # filter(SITE_TYPE != "WNC") %>% 
+  ggplot(aes(site_type, plant_ht_cm)) +
+  # geom_boxplot(aes(fill = fenced), outlier.shape = NA) +
+  geom_boxplot(fill = "grey70",outlier.shape = NA) +
+  # scale_fill_manual(values = c("grey80")) +
+  ylim(0,350) +
+  theme_minimal() +
+  labs(x = "", y = "Willow height (cm)", fill = "", caption = "Macroplot, all willow, WC only") +
+  facet_wrap(~time_class)
+
+# ggsave("./output/figures_exported/WC_willow_ht_boxplot_site_type.png", width = 5.5, height = 3.5)
+
+```
+
+#### WNC
+#### WC willow height
+```{r}
+willow.mcro.all %>%
+  # filter(site_type == "WC") %>%
+  filter(site_type == "WNC") %>%
+  ggplot(aes(time_class, plant_ht_cm)) +
+  geom_boxplot(aes(fill = fenced), outlier.shape = NA) +
+  scale_fill_manual(values = c("grey80", "grey40")) +
+  ylim(0,350) +
+  theme_minimal() +
+  labs(x = "", y = "Willow height (cm)", fill = "", caption = "macroplot, WNC only")
+
+ggsave("./output/figures_exported/WNC_willow_ht_boxplot.png", width = 5.5, height = 3.5)
+
+```
+
+#### WK
+```{r}
+willow.mcro.all %>%
+  filter(site_type == "WK") %>%
+  # filter(site_type == "WNC") %>%
+  ggplot(aes(time_class, plant_ht_cm)) +
+  geom_boxplot(aes(fill = fenced)) +
+  scale_fill_manual(values = c("grey80", "grey40")) +
+  theme_minimal() +
+  labs(x = "", y = "Willow height (cm)", fill = "", caption = "WK only")
+
+# ggsave("./output/figures_exported/WK_willow_ht_boxplot.png", width = 5.5, height = 3.5)
+
+```
+
+
+
+```{r}
 
 ```
 
@@ -3745,7 +3708,7 @@ dbh.perc.f <- asp.tally.dbh.tidy %>%
   # filter(is.na(REMOVED)) %>% 
   # filter(BURNED == "Unburned") %>%
   filter(LIVE_DEAD == "LIVE") %>%
-  filter(FENCED == "Y") %>%
+  filter(FENCED == "Fenced") %>%
   # filter(SITE_TYPE == "AC") %>%
   # filter(timeClass %in% c('BL','2013','2018')) %>%
   group_by(SITE_ID, timeClass) %>%
@@ -3798,7 +3761,7 @@ dbh.perc2 <- asp.tally.dbh.tidy %>%
   filter(is.na(REMOVED)) %>% 
   filter(BURNED == "Burned") %>%
   filter(LIVE_DEAD == "LIVE") %>%
-  filter(FENCED == "Y") %>%
+  filter(FENCED == "Fenced") %>%
   filter(SITE_TYPE == "AC") %>%
   # filter(timeClass %in% c('BL','2013','2018')) %>%
   group_by(SITE_ID, timeClass) %>%
@@ -3848,7 +3811,7 @@ dbh.perc3 <- asp.tally.dbh.tidy %>%
   filter(is.na(REMOVED)) %>% 
   # filter(BURNED == "Unburned") %>%
   filter(LIVE_DEAD == "LIVE") %>%
-  filter(FENCED == "N") %>%
+  filter(FENCED == "Unfenced") %>%
   filter(SITE_TYPE == "AC") %>%
   filter(timeClass %in% c('BL','2013','2018')) %>%
   group_by(SITE_ID, timeClass) %>%
@@ -3866,7 +3829,7 @@ dbh.perc3 <- asp.tally.dbh.tidy %>%
 #   theme_minimal() +
 #   labs(x = "DBH class", y = "", fill = "% total stems", title = "Proportion of Live Aspen Stems by DBH Class", subtitle = "Unfenced and unburned plots only")
 
-ggsave("./output/figures/Asp_unFenced_unburned_Live_AC_PropDBH_heatmap02.png", width = 7, height = 5, dpi = 300)
+# ggsave("./output/figures/Asp_unFenced_unburned_Live_AC_PropDBH_heatmap02.png", width = 7, height = 5, dpi = 300)
 
 # dbh.perc3 %>%
 #   filter(!is.nan(percentTot)) %>%
@@ -4118,7 +4081,7 @@ suckering.vtype.burned.allHt <- ht.dbh.class %>%
   mutate(stemDen.ha = round((stemTally.htclass*400),0)) # convert to ha
 
 
-####### burned
+####### burned ha
 suckering.vtype.burned.allHt %>%
   filter(!is.na(RANGE_TYPE)) %>%
   filter(BURNED == "Burned") %>% 
@@ -4138,7 +4101,26 @@ suckering.vtype.burned.allHt %>%
 # ggsave("./output/figures_exported/AC_suck_burned_ht_class_den_ha.png", width = 7.5, height = 3.25)
 # ggsave("./output/figures_exported/AC_suck_burned_ht_class_den_ha_bw.png", width = 7.5, height = 3.25)
 
-##
+####### burned acre
+suckering.vtype.burned.allHt %>%
+  filter(!is.na(RANGE_TYPE)) %>%
+  filter(BURNED == "Burned") %>% 
+  filter(RANGE_TYPE == "core winter range" ) %>%
+  filter(timeClass %in% c("BL","2013","2018")) %>% 
+  ggplot(aes(timeClass, SITE_ID)) +
+  geom_tile(aes(fill = stemDen.ac), color = "white") +
+  # geom_tile(aes(color = FENCED, fill = stemDen.ha)) + # scale_fill_grey() +
+  theme_minimal() +
+  # scale_fill_viridis(trans = "log") +
+  scale_fill_viridis() +
+  # scale_fill_gradient(low = "black", high = "grey") +
+  # theme(legend.position = "top") +
+  labs(x = "", y = "Site ID", fill = "stems/acre", caption = "Suckering: Stem density acre AC - BURNED") +
+  facet_wrap(~HTclass.lbl, ncol = 5)
+  
+# ggsave("./output/figures_exported/AC_suck_burned_ht_class_den_acre.png", width = 7.5, height = 3.25)
+
+## ha
 suckering.vtype.burned.allHt %>%
   filter(!is.na(RANGE_TYPE)) %>%
   filter(BURNED == "Burned") %>% 
@@ -4153,7 +4135,25 @@ suckering.vtype.burned.allHt %>%
   labs(x = "", y = "Site ID", fill = "stems/ha", caption = "Suckering: Stem density ha AC - BURNED") +
   facet_wrap(~HTclass.lbl, scales = "free_y", ncol = 5)
 
-### unburned
+####### burned acre
+suckering.vtype.burned.allHt %>%
+  filter(!is.na(RANGE_TYPE)) %>%
+  filter(BURNED == "Burned") %>% 
+  filter(RANGE_TYPE == "core winter range" ) %>%
+  filter(timeClass %in% c("BL","2013","2018")) %>% 
+  ggplot(aes(timeClass, SITE_ID)) +
+  geom_tile(aes(fill = stemDen.ac), color = "white") +
+  # geom_tile(aes(color = FENCED, fill = stemDen.ha)) + # scale_fill_grey() +
+  theme_minimal() +
+  # scale_fill_viridis(trans = "log") +
+  scale_fill_viridis() +
+  # scale_fill_gradient(low = "black", high = "grey") +
+  # theme(legend.position = "top") +
+  labs(x = "", y = "Site ID", fill = "stems/acre", caption = "Suckering: Stem density acre AC - BURNED")
+
+# ggsave("./output/figures_exported/AC_suck_burned_ht_class_den_acre.png", width = 7.5, height = 3.25)
+
+### unburned ha
 suckering.vtype.burned.allHt %>%
   filter(!is.na(RANGE_TYPE)) %>%
   filter(BURNED == "Unburned") %>% 
@@ -4169,7 +4169,25 @@ suckering.vtype.burned.allHt %>%
   labs(x = "", y = "Site ID", fill = "stems/ha", caption = "Suckering: Stem density ha AC - UNBURNED") +
   facet_wrap(~HTclass.lbl, ncol = 5)
 
-ggsave("./output/figures_exported/AC_suck_unburned_ht_class_den_ha.png", width = 7.5, height = 7.25)
+# ggsave("./output/figures_exported/AC_suck_unburned_ht_class_den_ha.png", width = 7.5, height = 7.25)
+
+### unburned acre
+suckering.vtype.burned.allHt %>%
+  filter(!is.na(RANGE_TYPE)) %>%
+  filter(BURNED == "Unburned") %>% 
+  filter(RANGE_TYPE == "core winter range" ) %>%
+  filter(timeClass %in% c("BL","2013","2018")) %>% 
+  ggplot(aes(timeClass, SITE_ID)) +
+  geom_tile(aes(fill = stemDen.ac), color = "white") +
+  # geom_tile(aes(color = FENCED, fill = stemDen.ha)) + # scale_fill_grey() +
+  theme_minimal() +
+  scale_fill_viridis() +
+  # scale_fill_gradient(low = "black", high = "grey") +
+  # theme(legend.position = "top") +
+  labs(x = "", y = "Site ID", fill = "stems/acre", caption = "Suckering: Stem density acre AC - UNBURNED") +
+  facet_wrap(~HTclass.lbl, ncol = 5)
+
+# ggsave("./output/figures_exported/AC_suck_unburned_ht_class_den_acre.png", width = 7.5, height = 7.25)
 
 ```
 
@@ -5279,8 +5297,7 @@ lz.bl13.twig2008 <- lz.bl13.wil %>%
   unnest(cols = c(data)) %>% 
   clean_names()
 
-# lz.bl13.offt.fall %>% 
-#   View()
+  
 ```
 
 
@@ -5510,13 +5527,6 @@ offt.raw.spr.tidy <- offt.raw.spr.tidy %>%
 #### Tally u and b
 
 ```{r}
-# test
-# offt.cln.spr.tidy %>% 
-#   pivot_wider(names_from = browsed_or_unbrowsed, values_from = )
-```
-
-
-```{r}
 
 ### new object
 offt.cln <- offt.raw.spr.tidy %>% 
@@ -5637,20 +5647,45 @@ offt.cln <- offt.cln %>%
 
 ```
 
+```{r}
+## join in the site info
+site.info.clean <- site.info.clean %>% 
+  clean_names()
+
+
+site.info.clean %>% 
+  filter(is.na(fenced))
+
+offt.cln <- left_join(offt.cln, site.info.clean, by = "site_id")
+
+
+
+```
 
 ```{r}
 ### summary plots
 offt.percbrowsed <- offt.cln %>% 
   filter(browsed_or_unbrowsed == "B") %>% 
-  select(c(yr, site_type, site_id, species_code, sum_bu_per_stem, percent_bu_per_stem))
+  select(c(yr, site_type, site_id, species_code, sum_bu_per_stem, percent_bu_per_stem, fenced))
 
 offt.percbrowsed %>% 
   distinct(species_code)
 
 ```
-
+# >>>>>>>>>
 ```{r}
+## offtake
+
 offt.percbrowsed %>%
+  ggplot(aes(x = as_factor(yr), y = percent_bu_per_stem)) +
+  geom_boxplot(fill = "ivory2", outlier.shape = NA) +
+  labs(x = "Year",y = "% leader use") +
+  # facet_wrap(~site_type) +
+  facet_grid(fenced~site_type) +
+  theme_minimal() +
+  scale_y_continuous(labels=scales::percent)
+
+offt.percbrowsed %>% 
   ggplot(aes(x = as_factor(yr), y = percent_bu_per_stem)) +
   geom_boxplot(fill = "ivory2", outlier.shape = NA) +
   labs(x = "Year",y = "% leader use") +
@@ -5839,7 +5874,7 @@ offt.cln.br %>%
 ```
 
 # BREAK
-```{r, eval=TRUE}
+```{r, eval=FALSE}
 ## IF Dt is NA after sub in Dtsite (if available. Will still be Na, but fewer)
 offt.cln.br <- offt.cln.br %>%
   mutate(Dtadj = case_when(
@@ -5879,7 +5914,7 @@ offt.cln.br <- offt.cln.br %>%
 ```
 
 # DD1stem >>>
-```{r}
+```{r, eval=FALSE}
 ### calc DD1
 offt.cln.br %>% names()
 
@@ -5887,9 +5922,6 @@ offt.cln.br <- offt.cln.br %>%
   group_by(stid, yr) %>% 
   mutate(DD1 = ((Dp - Dtadj)/(Db - Dtadj))) %>% 
   ungroup()
-
-offt.cln.br %>% 
-  View()
 
 offt.cln.br %>% 
   filter(!is.na(DD1)) %>% 
@@ -5906,7 +5938,7 @@ offt.cln.br %>%
 
 ### calc the % of shoots browsed per SITE (step 2b n Zeigenfuss 2011)
 
-```{r}
+```{r, eval = FALSE}
 ## calc the % of shoots per site and year (step 2b in Z 2011)
 offt.cln.site.allwillow <- offt.cln %>%
   group_by(site_id, species_code)
@@ -5921,30 +5953,29 @@ browsed_percent <- a.stid.cnt.bu %>%
   filter(browsed_or_unbrowsed == "B") %>% 
   dplyr::select(stid, yr, species_code, browsed_or_unbrowsed, perc_bu_shoots)
 
-browsed_percent %>% 
-  filter(!is.na(perc_bu_shoots)) %>% 
-  distinct() %>% 
-  View()
+# browsed_percent %>% 
+#   filter(!is.na(perc_bu_shoots)) %>% 
+#   distinct() %>% 
+#   View()
 
 offt.cln.spr.tidy <- offt.cln.spr.tidy %>%   
   filter(is.na(shoot_ratio))
   tabyl(shoot_ratio)
+  
+## try some cleaning
+offt.cln.spr.tidy <- offt.raw.spr.tidy %>% 
+  filter(!is.na(dia_tip_of_shoot_mm))  
 ```
 
 
 ```{r}
-## try some cleaning
-offt.cln.spr.tidy <- offt.raw.spr.tidy %>% 
-  filter(!is.na(dia_tip_of_shoot_mm))   
-  
-  
 # offt.raw.spr.tidy %>% 
 #   vtree::vtree(.,"species_code yr", palette = 9)
   # vtree::vtree(.,"yr site_type", pattern = TRUE, palette = 9)
 ```
 
 
-```{r}
+```{r, eval=FALSE}
 offt.raw.spr.tidy %>% 
   names()
     
@@ -5954,8 +5985,6 @@ offt.raw.spr.tidy %>%
 #   u = df$number_unbrowsed_cag_stems
 #   Dp = df$
 # } 
-
-
 ```
 
 
@@ -6259,6 +6288,7 @@ baseline <- baseline %>%
                              site_id == "UNC5" ~ "UNC05",
                              site_id == "UNC6" ~ "UNC06",
                              site_id == "UNC8" ~ "UNC08",
+                             site_id == "UNC9" ~ "UNC09",
                              TRUE ~ site_id))
 
 baseline %>%
@@ -6269,7 +6299,6 @@ baseline %>%
   tabyl(yr, site_type)
 
 baseline %>%
-  names()
   tabyl(yr, site_type, shrub_species)
 
 baseline <- baseline %>% 
@@ -6391,7 +6420,6 @@ baseline %>%
 #   geom_boxplot(aes(fill = site_type)) +
 #   facet_wrap(~shrub_species, scale = "free_y")
 
-# View(baseline)
 ```
 
 ### upland offtake
@@ -6640,9 +6668,6 @@ stateDownload <- read_csv("data/EVMP_derived/species_list/stateDownload.csv") %>
 
 spp.all <- spp.all %>% 
   left_join(.,stateDownload, by = "sppcode")
-
-# spp.all %>% 
-#   View()
 
 ```
 

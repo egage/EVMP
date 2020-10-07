@@ -322,6 +322,10 @@ modcomp_ac %>%
 print(comp, simplify = FALSE, digits = 3)
 ```
 
+```{r, eval = FALSE}
+## report
+# report::report(stmod_stally2)
+```
 
 ```{r, eval = FALSE}
 # note the function in the next chunk is good
