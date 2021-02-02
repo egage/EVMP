@@ -7,6 +7,10 @@ output:
     theme: journal
     toc: yes
     toc_depth: 3
+editor_options: 
+  markdown: 
+    wrap: 72
+bibliography: references.bib
 ---
 
 ```{r setup, include=FALSE}
@@ -131,12 +135,51 @@ ppc.plot <- function(model){
 
 ```
 
+# Introduction
+
+This document contains code for running statistical analyses of of Elk
+Vegetation Management Plan (EVMP) data collected through the 2018
+sampling season. Analyses are limited to macroplot data from plots
+established in riparian areas in areas of the elk winter range and
+Kawuneeche Valley and is provided as a supplement to the NPS NRR Report
+"Monitoring of Vegetation Response to Elk Population and Habitat
+Management in Rocky Mountain National Park - Analysis of Elk Vegetation
+Management Plan monitoring Data: 2008--2018". For information on
+sampling and the broader analysis and interpretation of the results,
+refer to this report, past analyses [@zeigenfuss2015], and the original
+EVMP monitoring plan [@zeigenfuss2011].
+
 # Methods
 
-Bayesian repeated measures analyses were fit separately for combined core and non-core winter range, core winter range (WC) and non-core winter range plots (WNC). For willow height, models were fit using weekly informative priors and a gamma distribution with the "stan_lmer" function in the "rstanarm" package (Brilleman et al. 2018, Goodrich et al. 2020).
+The code and results presented here start from and build upon derived
+data produced in a separate code document focused on ingesting,
+compiling, and cleaning raw data provided by RMNP staff. Extensive
+"munging" of raw files was required, so the decision was made to
+separate code used to pre-process raw data from code used for the
+analyses presented here. Likewise, separate code documents were
+developed for other distinct elements of the larger EVMP (e.g., aspen
+and upland plots).
 
-For willow cover...
-# add more above
+Bayesian repeated measures analyses were fit separately for combined
+core and non-core winter range, core winter range (WC) and non-core
+winter range plots (WNC). For willow height, models were fit using
+weekly informative priors and a gamma distribution with the "stan_lmer"
+function in the "rstanarm" package [@goodrich2020][@brilleman2018a].
+
+For continuous proportions such as plant cover (i.e, those not derived
+from count data), a common approach to modeling is to transform data
+then use ordinary linear models, however this creates problems for
+interpretation and inference [@douma2019]. Techniques relying on
+transformations make estimates on the transformed scale, requiring
+back‐transformation for reporting and interpretation. However, the
+relationship between the original and transformed proportions is often
+non‐linear, creating issues for interpretation [@douma2019]. Alternative
+approaches using beta regression [@cribari-neto2009][@ferrari2004] have
+been developed and are relied on here for modeling continuous
+proportions (e.g., willow cover). After fitting appropriate models using
+"rstanarm" functions, comparisons of estimated marginal means were made
+between time classes and management classes (e.g., fencing) using
+functions in the "emm" R package [@lenth2020].
 
 ```{r}
 #### Data import and munging
@@ -177,8 +220,11 @@ willow.ht <- willow.ht %>%
 willow.ht <- willow.ht %>% 
   mutate(time_class = fct_rev(time_class))
 
-```
+## factor reverse: fenced
+willow.ht <- willow.ht %>%
+  mutate(fenced = fct_rev(fenced))
 
+```
 
 ```{r}
 ## create separate df for WC, WNC, combined WC & WNC, and KV
@@ -195,12 +241,17 @@ willow.ht.wc.wnc <- willow.ht %>%
   # distinct(site_type)
   filter(site_type == "WNC" | site_type == "WC") 
 
-# kw
-willow.ht.kw <- willow.ht %>% 
-  filter(site_type == "WK") 
+# kw (note: different munging workflow needed b/c of different sampling yrs)
+willow.ht.wk <- willow %>%
+  clean_names() %>%
+  filter(str_detect(species_code, pattern = "SA")) %>% 
+  filter(site_type == "WK") %>% 
+  mutate(fenced = as.factor(fenced)) %>% 
+  filter(plant_ht_cm > 0) %>% 
+  mutate(time_class = as.factor(time_class)) %>% 
+  mutate(fenced = fct_rev(fenced))
 
 ```
-
 
 # Results
 
@@ -209,6 +260,7 @@ willow.ht.kw <- willow.ht %>%
 ```{r, cache=TRUE, include=FALSE, echo=FALSE}
 #### main factors only
 ## run with gamma
+
 wc.wnc.stmod_TCxF <- stan_glmer(plant_ht_cm ~ time_class*fenced +  (1 | site_id), data = willow.ht.wc.wnc,
                        family=Gamma(link="log"),
                       iter = 10000,
@@ -226,7 +278,6 @@ posteriors.wc.wnc.ht <- insight::get_parameters(wc.wnc.stmod_TCxF)
 posteriors.wc.wnc.ht.tidy <- posteriors.wc.wnc.ht %>%
   pivot_longer(cols = starts_with("time"), names_to = "variable", values_to = "values")
 
-
 ```
 
 ```{r}
@@ -235,7 +286,6 @@ ppc.plot(wc.wnc.stmod_TCxF) +
   labs(caption = "WC+WNC: willow_ht~TCxF")
 # ggsave("./output/figures_exported/wc_wnc_willowht_ppc1.png", dpi = 300, width = 4.75, height = 3.75)
 ```
-
 
 ```{r, echo=FALSE}
 #### Model posterior parameters to table
@@ -247,7 +297,6 @@ fun.desc.post1.gt(wc.wnc.stmod_TCxF) %>%
 # fun.desc.post1.gt(wc.wnc.stmod_TCxF) %>% 
 #   gt::gtsave(filename = "./output/tables/wc_wnc_stmod_TCxF_posteriors.rtf")
 ```
-
 
 ```{r, include=FALSE, echo=FALSE, eval = FALSE}
 # Posterior: just the point estimates
@@ -301,9 +350,11 @@ pd.table.wc.wnc
 #   gt::gtsave(filename = "./output/tables/wc_wnc_willowht_percent_in_ROPE.rtf")
 ```
 
-### Contrasts - WC & WNC time class
-```{r, include=TRUE, echo=FALSE}
+### Contrasts
+
+```{r, include=FALSE, echo=FALSE}
 # library(emmeans)
+# Note: EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE). Also, in multi-factor situations, you may specify by factor(s) to perform the comparisons separately at the levels of those factors.
 
 # main effects
 ## main effect: time class
@@ -333,7 +384,7 @@ HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Comb
 ```{r}
 ## Effect: TC x fencing
 wc.wnc.emm.TCxF <- emmeans(wc.wnc.stmod_TCxF, ~ fenced | time_class)
-wc.wnc.pairs.TCxF <- pairs(wc.wnc.emm.TCxF)
+wc.wnc.pairs.TCxF <- pairs(wc.wnc.emm.TCxF, reverse = TRUE)
 
 plot(wc.wnc.pairs.TCxF) +
   theme_minimal() +
@@ -346,163 +397,67 @@ HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Comb
 
 ## alternative ordering of main effects
 emmeans(wc.wnc.stmod_TCxF, ~ time_class | fenced) %>% 
-  pairs() 
+  pairs(reverse=TRUE) 
 
 emmeans(wc.wnc.stmod_TCxF, ~ time_class | fenced) %>% 
-  pairs() %>% 
+  pairs(reverse=TRUE) %>% 
   plot() +
   theme_minimal() +
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Core and Noncore Winter Range, Willow Height")
+
 # ggsave("./output/figures_exported/gg_emm_wc_wnc_ht_FxTC.pdf", width = 4.5, height = 3.55) # save plot
 # ggsave("./output/figures_exported/gg_emm_wc_wnc_ht_FxTC.png", width = 4.5, height = 3.55) # save plot
 
 ```
 
-
 Compute Confidence/Credible/Compatibility Intervals (CI)
 
 ```{r}
 # Compute HDI and ETI
-wc.wnc.ci_hdi <- ci(posteriors.wc.wnc.ht, method = "HDI")
-# nc.ci_eti <- ci(posteriors.nc.ht, method = "ETI")
-
-wc.wnc.ci_hdi %>% 
+ci(posteriors.wc.wnc.ht, method = "HDI", ci =0.95) %>% 
   gt()
 
-
 ```
 
+## Willow Height - Core Winter Range Macroplot Data
 
 ```{r}
-#### Describe posterior
-# Compute indices
-wc.wnc.pd <- p_direction(wc.wnc.stmod_ht1)
-percentage_in_rope.wc.wnc <- rope(wc.wnc.stmod_ht1, ci=1)
-
-# Visualise the pd
-plot(wc.wnc.pd) +
+### histograms of height
+willow.ht.wc %>% 
+  ggplot() +
+  geom_histogram(aes(plant_ht_cm), color = "black") +
+  labs(x="Plant height (cm)", y = "Count") +
   theme_minimal() +
-  labs(caption = "Willow height, Combined WC and WNC", subtitle = "plant_ht_cm ~ time_class +  (1 | site_id)")
-# ggsave("./output/figures_exported/pd_WC_WNC_willowht.png", dpi = 300, width = 6.75, height =3.75)
-```
+  facet_grid(fenced~time_class) +
+  labs(caption = "WC: willow height")
 
-
-## Willow Height - Core Winter Range Macroplot Data  
-
-```{r, echo=FALSE, eval=FALSE}
-#### Frequentist AOV. Single model: WC ~ TC*fenced
-aov_model_wc <- aov(plant_ht_cm ~ time_class*fenced + Error(1/site_id), data = willow.ht.wc)
-
-broom::tidy(aov_model_wc) %>% 
-  mutate(across(.cols = where(is.numeric),.fns = round, 3))
-
-## save as table (.csv)
-broom::tidy(aov_model_wc) %>% 
-  mutate(across(.cols = where(is.numeric),.fns = round, 3)) %>% 
-  write_csv("output/tables/aov_wc_ht_TC_fenced.csv")
-
-# report::report(aov_model_wc)
-
-# The repeated-measures ANOVA (formula: plant_ht_cm ~ time_class * fenced + Error(1/site_id)) suggests that:
-# 
-#   - The main effect of time_class is significant and small (F(2, 2494) = 74.88, p < .001; Eta2 (partial) = 0.06, 90% CI [0.04, 0.07])
-#   - The main effect of fenced is significant and small (F(1, 2494) = 65.27, p < .001; Eta2 (partial) = 0.03, 90% CI [0.02, 0.04])
-#   - The interaction between time_class and fenced is significant and small (F(2, 2494) = 53.01, p < .001; Eta2 (partial) = 0.04, 90% CI [0.03, 0.05])
-
-```
-
-```{r, echo=FALSE, eval=FALSE}
-## aov_model_wc <- aov(plant_ht_cm ~ time_class*fenced + Error(1/site_id), data = willow.ht.wc)
-willow.ht.stype.nest <- willow.ht %>% 
-  nest_by(site_type)
-
-### create AOV models
-
-# plant_ht_cm ~ time_class + Error(1/site_id)
-# not enough factor levels for WK
-mods.aov.willHt.tc <- willow.ht.stype.nest %>%
-  # filter(site_type == "WC") %>% 
-  filter(site_type != "WK") %>%
-  mutate(mod = list(aov(plant_ht_cm ~ time_class + Error(1/site_id), data = data)))
-```
-
-
-```{r, echo=FALSE, eval=FALSE}
-#######
-# plant_ht_cm ~ time_class*fenced + Error(1/site_id)
-# not enough factor levels for WK OR WNC
-mods.aov.willHt.tc.fen <- willow.ht.stype.nest %>%
-  filter(site_type == "WC") %>% 
-  mutate(mod = list(aov(plant_ht_cm ~ time_class*fenced + Error(1/site_id), data = data)))
-
-# GT table: location: WC only
-aov.willHt.tc.fen <- mods.aov.willHt.tc.fen %>% 
-  mutate(aov_summary = list(summary(mod))) %>% 
-  mutate(aov_tidy = list(broom::tidy(mod))) %>% 
-  unnest(aov_tidy) %>%
-  mutate(across(where(is.numeric), round, 3)) %>% 
-  select(site_type,term,df,sumsq,meansq,statistic,p.value) %>% 
-  gt::gt() %>% 
-  gt::tab_header(title = "aov: plant_ht_cm ~ time_class*fenced + Error(1/site_id)")
-
-# write csv
-# mods.aov.willHt.tc.fen %>% 
-#   mutate(aov_summary = list(summary(mod))) %>% 
-#   mutate(aov_tidy = list(broom::tidy(mod))) %>% 
-#   unnest(aov_tidy) %>%
-#   mutate(across(where(is.numeric), round, 3)) %>% 
-#   select(site_type,term,df,sumsq,meansq,statistic,p.value) %>%
-#   write_csv("output/aov_willHt_tc_fen.csv")
-
-```
-
-
-```{r}
-## some zero values, not running with gamma
-willow.ht.wc <- willow.ht.wc %>% 
-  mutate(plant_ht_cm = plant_ht_cm + 0.01)
+# ggsave("./output/figures_exported/gg_wc_ht_histogram.png", dpi = 300, width = 4.75, height = 5.75)
+# ggsave("./output/figures_exported/gg_wc_ht_histogram.pdf", width = 4.75, height = 5.75)
 
 ```
 
 ```{r, eval = TRUE, cache=TRUE}
-## original
-stmod_ht1 <- stan_lmer(plant_ht_cm ~ time_class*fenced + (1 | site_id), data = willow.ht.wc,
-                      iter = 5000)
-
-# citation(package = "rstanarm")
-```
-
-
-
-```{r, echo=FALSE, include=FALSE, cache=TRUE}
 #### null model
 # run for comparisons but not otherwise reported
-## run with gamma
-stmod_ht.0 <- stan_glmer(plant_ht_cm ~ 1 + (1 | site_id), data = willow.ht.wc,
-                       family=Gamma(link="log"),
-                      iter = 10000,
-                      )
+# stmod_ht.0 <- stan_glmer(plant_ht_cm ~ 1 + (1 | site_id), data = willow.ht.wc,
+#                        family=Gamma(link="log"),
+#                       iter = 10000,
+#                       )
 
-prior_summary(stmod_ht.0)
-pp_check(stmod_ht.0)
+# prior_summary(stmod_ht.0)
+# pp_check(stmod_ht.0)
 
-```
-
-
-```{r, cache=TRUE, include=FALSE}
 #### main factors only
 ## Run, but not used for reporting after model comparisons
-## run with gamma
 stmod_ht1 <- stan_glmer(plant_ht_cm ~ time_class + fenced + (1 | site_id), data = willow.ht.wc,
                       family=Gamma(link="log"),
                       iter = 10000,
                       )
-prior_summary(stmod_ht1)
-pp_check(stmod_ht1)
+# prior_summary(stmod_ht1)
+# pp_check(stmod_ht1)
 
 ```
-
 
 ```{r, cache=TRUE}
 #### main factors + interactions
@@ -513,26 +468,16 @@ stmod_ht2 <- stan_glmer(plant_ht_cm ~ time_class*fenced + (1 | site_id), data = 
                       iter = 10000,
                       )
 
+## extract posterior
+posteriors.wc.ht <- insight::get_parameters(stmod_ht2)
 ```
 
-```{r}
+```{r, echo=FALSE, eval=FALSE}
 # summary(stmod_ht2)
 prior_summary(stmod_ht2)
-
-# %>%
-#   gt() %>% 
-#   tab_header(title="WC willow height",subtitle = "plant_ht_cm ~ time_class*fenced + (1 | site_id)")
-
-ppc_wc_willowht_mod2 <- pp_check(stmod_ht2)
-
-ppc_wc_willowht_mod2 +
-  labs(x = "Value", y = "Density") +
-  theme_minimal()
-
 ```
 
-
-```{r, eval=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 ## model comparison.
 ## Run originally and code retained
 loo1 <- loo(stmod_ht1,
@@ -544,295 +489,42 @@ print(comp, simplify = FALSE, digits = 2)
 
 ```
 
-
-```{r, include=FALSE, echo=FALSE, eval = FALSE}
-#### rope
-
-
-# #### Model 2 - flat priors, repeated measures
-# null prior
-stmod_ht1_noPrior <- stan_lmer(plant_ht_cm ~ time_class*fenced + (1 | site_id), data = willow.ht.wc, prior = NULL, iter = 8000)
-
-```
-
 ```{r}
 ### model checks
-# Compare the model with weak priors and the one with the null
-#pp_check(stmod_ht2)
-
-ppc.plot(stmod_ht2)
+ppc.plot(stmod_ht2) +
+  labs(x = "Value", y = "Density") +
+  theme_minimal()
 # ggsave("./output/figures_exported/wc_willowht_ppc1.png", dpi = 300, width = 4.75, height = 3.75)
-# pp_check(stmod_ht2)
-# pp_check(stmod_ht1_noPrior)
-
 ```
 
 ```{r}
 # Posterior: point estimates
-point_estimate(stmod_ht2) %>%
-  gt() %>% 
-  tab_header(title = "Indices of centrality",subtitle = "plant_ht_cm ~ time_class*fenced + (1 | site_id)")# Get indices of centrality
+# point_estimate(stmod_ht2) %>%
+#   gt() %>% 
+#   tab_header(title = "Indices of centrality",subtitle = "plant_ht_cm ~ time_class*fenced + (1 | site_id)")# Get indices of centrality
 
 # full
-stmod.ht2.post <- describe_posterior(
+describe_posterior(
   stmod_ht2,
   effects = "fixed",
   component = "all",
   test = c("p_direction", "p_significance"),
   centrality = "all"
-)
-stmod.ht2.post %>% 
+) %>% 
   gt() %>% 
-  tab_header(title = "Model information", subtitle = "plant_ht_cm ~ time_class*fenced + (1 | site_id)")
+  tab_header(title = "Model information", subtitle = "WC: plant_ht_cm ~ time_class*fenced + (1 | site_id)")
 
 ```
 
-
-```{r, eval=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 ### Model posterior parameters to table
 fun.desc.post1.gt(stmod_ht2) %>% 
   gt::gtsave(filename = "./output/tables/wc_wh_stmod2_posteriors.rtf")
 
 ```
 
+### PD
 
-```{r}
-# get posteriors
-posteriors.wc.ht <- insight::get_parameters(stmod_ht2)
-
-# posteriors.wc.ht %>% 
-#   glimpse()
-
-## expo
-posteriors.wc.ht.exp <- posteriors.wc.ht %>% 
-  mutate_if(.predicate = is.numeric,.funs = exp)
-
-# tidy the posteriors
-posteriors.wc.ht.exp.tidy <- posteriors.wc.ht.exp %>%
-  # names()
-  pivot_longer(cols = starts_with("time"), names_to = "variable", values_to = "values")
-
-```
-
-```{r}
-library(ggridges)
-
-posteriors.wc.ht.exp.tidy %>% 
-  ggplot() +
-  ggridges::geom_density_ridges(aes(x = values, y = variable)) +
-  theme_minimal()
-
-# posteriors.wc.ht.exp.tidy %>% 
-#   ggplot() +
-#   geom_density(aes(fill = variable, x = values, color = variable), alpha = .12) +
-#   theme_minimal()
-
-```
-
-
-```{r, eval = FALSE}
-### shinystan
-# install.packages("shinystan")
-library("shinystan")
-## shiny eval
-launch_shinystan(stmod_ht2)
-
-```
-
-
-
-### Contrasts - WC time class
-```{r}
-# Use the emmeans package to explore and extract marginal effects and estimates from fitted model. 
-# Estimate (based on posterior draws) the difference between the two simple effects for timeclass between the fenced:
-
-# library(emmeans)
-wc.emm <- emmeans(stmod_ht2, ~ time_class)
-
-pairs.timeClass <- pairs(wc.emm)
-
-pairs.timeClass <- pairs(emmeans(stmod_ht2, ~ time_class))
-
-# contrast(warp.emm, "trt.vs.ctrl", ref = "M")
-
-pairs.timeClass.exp <- pairs.timeClass %>% 
-  as_tibble() %>% 
-  mutate_if(.predicate = is.numeric,.funs = exp)
-  
-gg.emm.wc.ht <- plot(pairs.timeClass) +
-  theme_minimal() +
-  labs(subtitle = "Point estimate displayed: median 
-HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Willow Height")
-
-gg.emm.wc.ht
-# ggsave("./output/figures_exported/gg_emm_wc_ht.png", width = 4.5, height = 3.55, dpi=300)
-
-fun.contrast.plot(pairs.timeClass.exp)
-
-```
-
-
-```{r}
-# library(emmeans)
-pairs.fenced <- pairs(emmeans(stmod_ht2, ~ fenced))
-pairs.fenced
-
-plot(pairs.fenced) +
-  theme_minimal() +
-  labs(title = "Point estimate displayed: median 
-HPD interval probability: 0.95")
-
-```
-
-
-```{r, eval = FALSE}
-
-pairs.timeClassxfenced <- emmeans(stmod_ht2, ~time_class * fenced)
-
-pairs(pairs.timeClassxfenced, by = "time_class") # simple effects for color
-plot(pairs.timeClassxfenced) +
-  theme_minimal() +
-  # labs(x = "Median estimate", y = "", caption = "pairs.timeClassxRange") +
-  labs(subtitle = "Point estimate displayed: median 
-HPD interval probability: 0.95", x = "Median estimate", y = "Contrast", caption = "Core Winter Range, Willow Height")
-
-# ggsave("./output/figures_exported/gg_emm_wc_ht_TC_Fenced.png", width = 4.5, height = 4.55, dpi=300)
-```
-
-```{r}
-pairs.fencedxtimeClass <- emmeans(stmod_ht2, ~fenced * time_class)
-pairs(pairs.fencedxtimeClass, by = "time_class") # simple effects for color
-
-plot(pairs.fencedxtimeClass) +
-  theme_minimal() +
-  labs(x = "Estimate", y = "", caption = "pairs.fencedxtimeClass") 
-# ggsave("./output/figures_exported/gg_emm_wc_TC_fencedc.png", width = 6, height = 5, dpi=300)
-
-pairs(pairs.fencedxtimeClass, by = "fenced")
-plot(pairs.fencedxtimeClass, by = "fenced") +
-  theme_minimal() +
-  labs(x = "Median estimate", y = "", caption = "pairs.fencedxtimeClass") 
-
-# ggsave("./output/figures_exported/gg_emm_wc_TC_fencedb.png", width = 6, height = 5, dpi=300)
-```
-
-
-```{r}
-# Compute Confidence/Credible/Compatibility Intervals (CI) or Support Intervals (SI) for Bayesian and frequentist models. 
-# 
-# bayestestR provides two methods to compute credible intervals, the Highest Density Interval (HDI) (hdi()) and the Equal-tailed Interval (ETI) (eti()). These methods can also be changed via the method argument of the ci() function.
-
-# Compute HDI and ETI
-ci_hdi <- ci(posteriors.wc.ht, method = "HDI")
-ci_eti <- ci(posteriors.wc.ht, method = "ETI")
-
-# Plot the distribution and add the limits of the two CIs
-# posteriors %>% 
-#   select(timeClass2:RANGE_TYPE2) %>% 
-#   estimate_density(extend=TRUE) %>% 
-#   ggplot(aes(x=x, y=y)) +
-#   geom_area(fill="orange") +
-#   theme_classic() +
-#   # HDI in blue
-#   geom_vline(xintercept=ci_hdi$CI_low, color="royalblue", size=3) +
-#   geom_vline(xintercept=ci_hdi$CI_high, color="royalblue", size=3) +
-#   # Quantile in red
-#   geom_vline(xintercept=ci_eti$CI_low, color="red", size=1) +
-#   geom_vline(xintercept=ci_eti$CI_high, color="red", size=1)
-
-```
-
-
-```{r}
-# c_color_shape_interaction <- contrast(stan_model, interaction = c("pairwise","pairwise"))
-# c_color_shape_interaction
-```
-
-
-```{r, eval=FALSE}
-
-### lognormal version
-willow.ht.wc <- willow.ht.wc %>% 
-  mutate(log_plant_ht_cm = log(plant_ht_cm))
-
-
-stmod_ht2 <- stan_glmer(plant_ht_cm ~ time_class*fenced + (1 | site_id), data = willow.ht.wc,
-                       family=Gamma(link="log"),
-                      iter = 10000,
-                      )
-# summary(stmod_ht2)
-prior_summary(stmod_ht2)
-pp_check(stmod_ht2)
-```
-
-### histograms of height
-```{r}
-gg.wc.hist.all <- willow.ht.wc %>% 
-  ggplot() +
-  geom_histogram(aes(plant_ht_cm, fill = time_class), color = "black") +
-  viridis::scale_fill_viridis(discrete=TRUE) +
-  labs(x="Plant height (cm)", y = "Count", fill = "") +
-  theme_minimal()
-
-gg.wc.hist.all
-# ggsave("./output/figures_exported/gg_wc_ht_histogram.png", dpi = 300, width = 4.75, height = 3.75)
-
-```
-
-```{r}
-gg.wc.hist.fenced <- willow.ht.wc %>% 
-  mutate(time_class = fct_rev(time_class)) %>% 
-  ggplot() +
-  # geom_density(aes(plant_ht_cm, fill = fenced), color = "black") +
-  geom_histogram(aes(plant_ht_cm, fill = fenced), color = "black") +
-  viridis::scale_fill_viridis(discrete=TRUE) +
-  labs(x="Plant height (cm)", y = "Count", fill = "", caption = "Core winter range plots. Macroplot heights") +
-  theme_minimal() +
-  facet_wrap(~time_class) +
-  coord_flip()
-
-gg.wc.hist.fenced
-ggsave("./output/figures_exported/gg_wc_ht_fenced_histogram.png", dpi = 300, width = 6.75, height = 3.75)
-
-```
-
-noncore
-```{r}
-gg.nc.hist.fenced <- willow.ht.nc %>% 
-  # mutate(time_class = fct_rev(time_class)) %>% 
-  ggplot() +
-  # geom_density(aes(plant_ht_cm, fill = fenced), color = "black") +
-  geom_histogram(aes(plant_ht_cm, fill = fenced), color = "black") +
-  viridis::scale_fill_viridis(discrete=TRUE) +
-  labs(x="Plant height (cm)", y = "Count", fill = "", caption = "Core winter range plots. Macroplot heights") +
-  theme_minimal() +
-  facet_wrap(~time_class) +
-  coord_flip()
-
-gg.nc.hist.fenced
-ggsave("./output/figures_exported/gg_nc_ht_fenced_histogram.png", dpi = 300, width = 6.75, height = 3.75)
-```
-
-kv
-```{r}
-gg.kw.hist.fenced <- willow.ht.kw %>% 
-  # mutate(time_class = fct_rev(time_class)) %>% 
-  ggplot() +
-  # geom_density(aes(plant_ht_cm, fill = fenced), color = "black") +
-  geom_histogram(aes(plant_ht_cm, fill = fenced), color = "black") +
-  viridis::scale_fill_viridis(discrete=TRUE) +
-  labs(x="Plant height (cm)", y = "Count", fill = "", caption = "Core winter range plots. Macroplot heights") +
-  theme_minimal() +
-  facet_wrap(~time_class) +
-  coord_flip()
-
-gg.kw.hist.fenced
-# ggsave("./output/figures_exported/gg_kw_ht_fenced_histogram.png", dpi = 300, width = 6.75, height = 3.75)
-```
-
->EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE). Also, in multi-factor situations, you may specify by factor(s) to perform the comparisons separately at the levels of those factors.
-
-#### PD
 ```{r}
 # Compute indices
 pd <- p_direction(stmod_ht2)
@@ -858,115 +550,134 @@ pdpd1 +
 # pdplotfun1(stmod_ht2)
 ```
 
-```{r, eval=FALSE}
+### Contrasts
 
-report::report(stmod_ht2)
+```{r, echo=FALSE, eval=FALSE}
+# main effects. Run, but interactions used below
+### Contrasts - WC time class
+wc.emm.tc <- emmeans(stmod_ht2, ~ time_class)
+pairs.wc.tc <- pairs(emmeans(stmod_ht2, ~ time_class))
+
+plot(pairs.wc.tc) +
+  theme_minimal() +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Willow Height")
+
+# ggsave("./output/figures_exported/gg_emm_wc_ht.png", width = 4.5, height = 3.55, dpi=300)
+
+## main effect: fencing
+wc.emm.fenced <- emmeans(stmod_ht2, ~ fenced)
+wc.pairs.fenced <- pairs(wc.emm.fenced)
+
+plot(wc.pairs.fenced) +
+  theme_minimal() +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Willow Height")
 
 ```
 
+```{r}
+## Effect: TC x fencing
+wc.emm.TCxF <- emmeans(stmod_ht2, ~ fenced | time_class)
+wc.pairs.TCxF <- pairs(wc.emm.TCxF, reverse = TRUE)
 
-----
+plot(wc.pairs.TCxF) +
+  theme_minimal() +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Willow Height")
+
+# ggsave("./output/figures_exported/gg_emm_wc_wht_TCxF.pdf", width = 4.5, height = 3.55) # save plot
+# ggsave("./output/figures_exported/gg_emm_wc_wht_TCxF.png", width = 4.5, height = 3.55) # save plot
+```
+
+```{r}
+# Compute Confidence/Credible/Compatibility Intervals (CI) 
+ci(posteriors.wc.ht, method = "HDI", ci =0.95)
+
+```
+
+```{r}
+willow.ht.wc %>% 
+  mutate(time_class = fct_rev(time_class)) %>% 
+  ggplot() +
+  # geom_density(aes(plant_ht_cm, fill = fenced), color = "black") +
+  geom_histogram(aes(plant_ht_cm, fill = fenced), color = "black") +
+  viridis::scale_fill_viridis(discrete=TRUE) +
+  labs(x="Plant height (cm)", y = "Count", fill = "", caption = "Core winter range plots. Macroplot heights") +
+  theme_minimal() +
+  facet_wrap(~time_class) +
+  coord_flip()
+
+# ggsave("./output/figures_exported/gg_wc_ht_fenced_histogram.png", dpi = 300, width = 6.75, height = 3.75)
+# ggsave("./output/figures_exported/gg_wc_ht_fenced_histogram.pdf", width = 6.75, height = 3.75)
+
+```
 
 ## Willow Height - Noncore Winter Range Macroplot Data
 
+```{r}
+## histogram
+willow.ht.nc %>% 
+  ggplot() +
+  # geom_density(aes(plant_ht_cm, fill = fenced), color = "black") +
+  geom_histogram(aes(plant_ht_cm, fill = fenced), color = "black") +
+  viridis::scale_fill_viridis(discrete=TRUE) +
+  labs(x="Plant height (cm)", y = "Count", fill = "", caption = "Core winter range plots. Macroplot heights") +
+  theme_minimal() +
+  facet_wrap(~time_class) +
+  coord_flip()
+
+# ggsave("./output/figures_exported/gg_nc_ht_fenced_histogram.png", dpi = 300, width = 6.75, height = 3.75)
+
+```
 
 ```{r}
+## model
 #### main factors only
 ## run with gamma
 nc.stmod_ht1 <- stan_glmer(plant_ht_cm ~ time_class +  (1 | site_id), data = willow.ht.nc,
                        family=Gamma(link="log"),
                       iter = 10000,
                       )
-prior_summary(nc.stmod_ht1)
+
+# prior_summary(nc.stmod_ht1)
 pp_check(nc.stmod_ht1)
 
 ```
 
-
-```{r, eval=FALSE}
-#### rope
-rope(x, range = "default", ci = 0.89, ci_method = "HDI", verbose = TRUE, ...)
-```
-
 ```{r, eval = FALSE}
-# note the function in the next chunk is good
+# Posterior: point estimates
+# point_estimate(nc.stmod_ht1) %>% 
+#   gt()
+
 describe_posterior(
   nc.stmod_ht1,
-  effects = "all",
+  effects = "fixed",
   component = "all",
   test = c("p_direction", "p_significance"),
   centrality = "all"
-)
-# Posterior: point estimates
-nc.centrality <- point_estimate(nc.stmod_ht1)  # Get indices of centrality
-nc.centrality
+) %>% 
+  gt() %>% 
+  tab_header(title = "Posterior description", subtitle = "Noncore Winter Range, Willow Height")
+
 ```
 
-Model checks
+```{r}
+
+```
 
 ```{r}
 posteriors.nc.ht <- insight::get_parameters(nc.stmod_ht1)
 
-posteriors.nc.ht %>% 
-  glimpse()
-
-## expo
-posteriors.nc.ht.exp <- posteriors.nc.ht %>% 
-  mutate_if(.predicate = is.numeric,.funs = exp)
-
-
 # tidy the posteriors
-posteriors.nc.ht.exp.tidy <- posteriors.nc.ht.exp %>%
+posteriors.nc.ht.tidy <- posteriors.nc.ht %>%
   # names()
   pivot_longer(cols = starts_with("time"), names_to = "variable", values_to = "values")
 
 ```
 
+### PD
 
-```{r}
-#### PP check plot
-ppc.plot(nc.stmod_ht1)
-# ggsave("./output/figures_exported/wnc_willowht_ppc1.png", dpi = 300, width = 4.75, height = 3.75)
-```
-
-
-
-```{r, eval = FALSE}
-#### Model posterior parameters to table
-## View
-fun.desc.post1.gt(nc.stmod_ht1)
-
-
-## save
-fun.desc.post1.gt(nc.stmod_ht1) %>% 
-  gt::gtsave(filename = "./output/tables/wnc_nc_stmod_ht1_posteriors.rtf")
-
-
-```
-
-
-```{r}
-library(ggridges)
-
-# posteriors.nc.ht.exp.tidy %>% 
-#   ggplot() +
-#   ggridges::geom_density_ridges(aes(x = values, y = variable))
-
-posteriors.nc.ht.exp.tidy %>% 
-  ggplot() +
-  geom_density(aes(fill = variable, x = values, color = variable), alpha = .12) +
-  theme_minimal()
-
-```
-
-```{r, eval = FALSE}
-# install.packages("shinystan")
-library("shinystan")
-## shiny eval
-launch_shinystan(nc.stmod_ht2)
-```
-
-#### PD
 ```{r}
 pdnc <- p_direction(nc.stmod_ht1)
 p.in.rope <- rope(nc.stmod_ht1, ci=1)
@@ -991,130 +702,78 @@ wnc.wilht.pd +
 # ggsave("./output/figures_exported/pd_wc_willowht.png", dpi = 300, width = 6.75, height =3.75)
 ```
 
-
-Use the emmeans package to explore and extract marginal effects and estimates from our fitted model. 
-We can also estimate (based on posterior draws) the difference between the two simple effects for timeclass between the fenced:
-
-### Contrasts - WC time class
 ```{r}
-# library(emmeans)
+# Compute HDI
+ci(posteriors.nc.ht, method = "HDI", ci = 0.95) %>% 
+  gt()
+
+```
+
+```{r}
+# Compute prob direction
+nc.pd <- p_direction(nc.stmod_ht1)
+nc.ht.rope <- rope(nc.stmod_ht1, ci=1)
+
+# Visualize the pd
+plot(nc.pd) +
+  theme_minimal() +
+  labs(caption = "Willow height, WNC", subtitle = "plant_ht_cm ~ time_class +  (1 | site_id)")
+# ggsave("./output/figures_exported/pd_WNC_willowht.png", dpi = 300, width = 6.75, height =3.75)
+# ggsave("./output/figures_exported/pd_WNC_willowht.png", width = 6.75, height =3.75)
+
+```
+
+### Contrasts
+
+```{r}
+### Contrasts - WC time class
 nc.emm <- emmeans(nc.stmod_ht1, ~ time_class,)
 
-nc.pairs.timeClass <- pairs(nc.emm)
+nc.pairs.timeClass <- pairs(nc.emm, reverse = TRUE)
 
-# nc.pairs.timeClass <- pairs(emmeans(nc.stmod_ht2, ~ time_class))
-
-
-# contrast(warp.emm, "trt.vs.ctrl", ref = "M")
-
-nc.pairs.timeClass.exp <- nc.pairs.timeClass %>% 
-  as_tibble() %>% 
-  mutate_if(.predicate = is.numeric,.funs = exp)
-  
 gg.emm.nc.ht <- plot(nc.pairs.timeClass) +
   theme_minimal() +
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Non-core Winter Range, Willow Height")
 
-gg.emm.nc.ht
 # ggsave("./output/figures_exported/gg_emm_nc_ht.png", width = 4.5, height = 3.55, dpi=300)
-
-# fun.contrast.plot(nc.pairs.timeClass.exp)
-
+# ggsave("./output/figures_exported/gg_emm_nc_ht.pdf", width = 4.5, height = 3.55)
 
 ```
-
-
-Compute Confidence/Credible/Compatibility Intervals (CI)
-
-```{r}
-# Compute HDI and ETI
-nc.ci_hdi <- ci(posteriors.nc.ht, method = "HDI")
-# nc.ci_eti <- ci(posteriors.nc.ht, method = "ETI")
-
-nc.ci_hdi %>% 
-  gt()
-
-nc.ci_hdi %>% 
-  gt()
-
-# Plot the distribution and add the limits of the two CIs
-# posteriors %>% 
-#   select(timeClass2:RANGE_TYPE2) %>% 
-#   estimate_density(extend=TRUE) %>% 
-#   ggplot(aes(x=x, y=y)) +
-#   geom_area(fill="orange") +
-#   theme_classic() +
-#   # HDI in blue
-#   geom_vline(xintercept=ci_hdi$CI_low, color="royalblue", size=3) +
-#   geom_vline(xintercept=ci_hdi$CI_high, color="royalblue", size=3) +
-#   # Quantile in red
-#   geom_vline(xintercept=ci_eti$CI_low, color="red", size=1) +
-#   geom_vline(xintercept=ci_eti$CI_high, color="red", size=1)
-
-```
-
-
-```{r}
-# c_color_shape_interaction <- contrast(stan_model, interaction = c("pairwise","pairwise"))
-# c_color_shape_interaction
-```
-
-
-#### Describe posterior
-
-```{r}
-# Compute indices
-nc.pd <- p_direction(nc.stmod_ht1)
-percentage_in_rope <- rope(stmod_ht1, ci=1)
-
-# Visualise the pd
-plot(nc.pd) +
-  theme_minimal() +
-  labs(caption = "Willow height, WNC", subtitle = "plant_ht_cm ~ time_class +  (1 | site_id)")
-# ggsave("./output/figures_exported/pd_WNC_willowht.png", dpi = 300, width = 6.75, height =3.75)
-```
-
 
 ## Willow Height - Kawuneeche Valley Macroplot Data
 
+```{r}
+willow.ht.wk %>% 
+  ggplot() +
+  geom_histogram(aes(plant_ht_cm, fill = fenced), color = "black") +
+  viridis::scale_fill_viridis(discrete=TRUE) +
+  labs(x="Plant height (cm)", y = "Count", fill = "", caption = "KV. Macroplot heights") +
+  theme_minimal() +
+  facet_wrap(~time_class) +
+  coord_flip()
+# ggsave("./output/figures_exported/gg_kw_ht_fenced_histogram.png", dpi = 300, width = 6.75, height = 3.75)
+```
+
+```{r, echo = FALSE, eval=FALSE}
 ### Model spec
-```{r, eval=FALSE}
-willow.ht.kw %>% 
-  distinct(time_class)
-
-## run with gamma
-
-kv.stmod_ht1 <- stan_glmer(plant_ht_cm ~ time_class + (1 | site_id), data = willow.ht.kw,
+kv.stmod_ht1 <- stan_glmer(plant_ht_cm ~ time_class + (1 | site_id), data = willow.ht.wk,
                        family=Gamma(link="log"),
                       iter = 10000,
                       )
 prior_summary(kv.stmod_ht1)
 
-```
-
 #### PP check plot
-```{r, eval=FALSE}
 ppc.plot(kv.stmod_ht1)
 # ggsave("./output/figures_exported/wkv_willowht_ppc1.png", dpi = 300, width = 4.75, height = 3.75)
+
 ```
 
-
+```{r, echo = FALSE, eval=FALSE}
 #### Model posterior parameters to table
-```{r, eval = FALSE}
-
-## View
-fun.desc.post1.gt(kv.stmod_ht1)
-
-## save
 fun.desc.post1.gt(kv.stmod_ht1) %>% 
   gt::gtsave(filename = "./output/tables/wnc_kv_stmod_ht1_posteriors.rtf")
 
-
-```
-
-#### PD - KV
-```{r, eval=FALSE}
 pdkv <- p_direction(kv.stmod_ht1)
 p.in.rope.kv <- rope(kv.stmod_ht1, ci=1)
 
@@ -1137,11 +796,7 @@ kv.wilht.pd +
   labs(caption = "Willow height, KV")
 # ggsave("./output/figures_exported/pd_kv_willowht.png", dpi = 300, width = 6.75, height =3.75)
 
-```
-
-#### Contrasts - KV fenced
-```{r, eval=FALSE}
-# library(emmeans)
+## contrasts
 kv.emm <- emmeans(kv.stmod_ht1, ~ fenced)
 
 kv.pairs.fenced <- pairs(kv.emm)
@@ -1160,12 +815,9 @@ gg.emm.kv.ht
 
 # fun.contrast.plot(nc.pairs.timeClass.exp)
 
-
 ```
 
-
-
-```{r, wbasin}
+```{r, wbasin_ht}
 ## Wild basin
 # Wild Basin willow data survey 2018.csv
 
@@ -1179,27 +831,18 @@ wbasin.loc <- wbasin %>%
 
 ```
 
-
-# compare Wild Basin data to other valleys
-
-## Willow Cover - Core Winter Range Macroplot Data
+## Willow Cover - Combined Core and Noncore Winter Range Macroplot Data
 
 ```{r}
-
-# canopy.all.willow.sum <- read_csv("./output/exported_data/willow_cover_20200706.csv") %>% 
-#   janitor::clean_names()
-
+# read in data
 canopy.all.willow.sum <- read_csv("./output/exported_data/willow_cover_20200725.csv") %>% 
   janitor::clean_names()
 
-
 ```
 
-# in progress
-```{r}
+```{r, echo=FALSE}
 # munge
 canopy.all.willow.sum <- canopy.all.willow.sum %>% 
-  filter(time_class == "BL" | time_class == "2013" | time_class == "2018") %>%
   mutate(burned = case_when(burned == "Y" ~ "Burned",
                             burned == "N" ~ "Unburned",
                             is.na(burned) ~ "Unburned",
@@ -1210,10 +853,18 @@ canopy.all.willow.sum <- canopy.all.willow.sum %>%
 
 ```
 
-
 ```{r}
-# pull out the core & noncore winter range plots
-cov.wc.nwc <- canopy.all.willow.sum %>% 
+### create subsets of data for modeling
+# pull out WK, note different years of data
+cov.wk <- canopy.all.willow.sum %>% 
+  filter(site_type == "WK") %>%
+  mutate(time_class = as.character(time_class)) %>% 
+  filter(time_class == "2016" | time_class == "2017" | time_class == "2018") %>% 
+  mutate(time_class = as.factor(time_class))
+
+# pull out the core plus noncore winter range plots
+cov.wc.wnc <- canopy.all.willow.sum %>% 
+  filter(time_class == "BL" | time_class == "2013" | time_class == "2018") %>%
   filter(site_type == "WNC" | site_type == "WC") %>% 
   mutate(cover_allwillow = cover_allwillow/100) %>% 
   filter(!is.na(cover_allwillow))
@@ -1221,48 +872,230 @@ cov.wc.nwc <- canopy.all.willow.sum %>%
 # pull out the core winter range plots
 cov.wc <- canopy.all.willow.sum %>% 
   filter(site_type == "WC") %>%
+  filter(time_class == "BL" | time_class == "2013" | time_class == "2018") %>%
   mutate(cover_allwillow = cover_allwillow/100) %>%
   filter(!is.na(cover_allwillow))
 
 # pull out the noncore winter range plots
-cov.nwc <- canopy.all.willow.sum %>% 
+cov.wnc <- canopy.all.willow.sum %>% 
   filter(site_type == "WNC") %>% 
+  filter(time_class == "BL" | time_class == "2013" | time_class == "2018") %>%
   mutate(cover_allwillow = cover_allwillow/100) %>% 
   filter(!is.na(cover_allwillow))
 
 ```
-## Willow Cover - Combined Core and Noncore Winter Range Macroplot Data
+
+```{r, echo=FALSE, eval=FALSE, fig.width=7, fig.height=7}
+canopy.all.willow.sum %>% 
+  ggplot(aes(cover_allwillow)) +
+  geom_histogram() +
+  facet_grid(time_class~site_type) +
+  theme_minimal()
+
+```
+
+```{r}
+#### summary tables: time class and burned
+cov.wc.wnc %>% 
+  group_by(time_class, fenced) %>% 
+  summarytools::descr(cover_allwillow,stats = "common") %>% 
+  summarytools::tb() %>%
+  mutate_if(.predicate = is.numeric,.funs = round, digits = 2) %>% 
+  gt() %>% 
+  tab_header(title = "Combined WC and WNC macroplot data: willow cover - fenced + time_class")
+
+## time class, fenced and burned
+cov.wc.wnc %>% 
+  group_by(time_class, fenced, burned) %>% 
+  summarytools::descr(cover_allwillow, stats = "common") %>% 
+  summarytools::tb() %>%
+  mutate_if(.predicate = is.numeric,.funs = round, digits = 2) %>% 
+  gt() %>% 
+  tab_header(title = "Combined WC and WNC macroplot data: willow cover ~ burned + fenced + time_class")
+
+```
+
+```{r, echo=FALSE, eval=FALSE, fig.width=7, fig.height=5}
+cov.wc.wnc %>% 
+  ggplot(aes(cover_allwillow)) +
+  geom_histogram() +
+  facet_grid(time_class~site_type) +
+  theme_minimal()
+
+```
+
+```{r}
+## prep for modeling
+
+## add to min and subtract from max to conform
+#### Model
+cov.wc.wnc <- cov.wc.wnc %>% 
+  mutate(cover_allwillow = case_when(cover_allwillow == 1 ~ 0.999999,
+                                     TRUE ~ cover_allwillow))
+
+```
+
+```{r, cache=TRUE}
+## model
+stmod_cov.wc.wnc <- stan_glmer(cover_allwillow ~ time_class * fenced + (1 | site_id), 
+                      data = cov.wc.wnc,
+                      family = mgcv::betar,
+                      prior_aux = exponential(1),
+                      iter = 10000,
+                      seed = 12345)
+
+# alt model with burned as predictor
+# stmod_cov.wc.wnc.b <- stan_glmer(cover_allwillow ~ time_class * fenced * burned + (1 | site_id), 
+#                       data = cov.wc.wnc,
+#                       family = mgcv::betar,
+#                       #prior_aux = exponential(2),
+#                       iter = 10000,
+#                       seed = 12345)
+
+# there are limits to the beta, but it still seems like the most sensible distribution. Unless want to go with NLR
+
+# pp_check(stmod_cov.wc.wnc.b)
+
+## loo - model comparison  
+# cov.wc.wnc.loo1 <- loo(stmod_cov.wc.wnc)
+# cov.wc.wnc.loo2 <- loo(stmod_cov.wc.wnc.b)
+# loo_compare(cov.wc.wnc.loo1, cov.wc.wnc.loo2)
+#                    elpd_diff se_diff
+# stmod_cov.wc.wnc    0.0       0.0   
+# stmod_cov.wc.wnc.b -2.2       2.5 
+# original model better.
+```
+
+```{r}
+#### PP check plot
+# prior_summary(stmod_cov.wc.wnc)
+
+pp_check(stmod_cov.wc.wnc) +
+  labs(x = "Value", y = "Density") +
+  theme_minimal() +
+  labs(caption = "WC & WNC: cover_allwillow ~ time_class * fenced + (1 | site_id)")
+
+# ggsave("./output/figures_exported/wc_wnc_willowcover_ppc1.png", dpi = 300, width = 4.75, height = 3.75)
+# ggsave("./output/figures_exported/wc_wnc_willowcover_ppc1.pdf", width = 4.75, height = 3.75)
+
+```
+
+```{r, eval = TRUE}
+#### Model posterior parameters to table
+fun.desc.post1.gt(stmod_cov.wc.wnc$stanfit)
+
+## save
+# fun.desc.post1.gt(stmod_cov.wc.wnc$stanfit) %>% 
+#   gt::gtsave(filename = "./output/tables/wc_wnc_stmod_cover1_posteriors.rtf")
+
+```
+
+```{r, echo=FALSE, eval=FALSE}
+# main effect - fencing
+wc.wnc.cov.emm <- emmeans(stmod_cov.wc.wnc, ~ time_class)
+
+pairs(wc.wnc.cov.emm) %>% 
+  plot() +
+  theme_minimal() +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Core and Noncore Winter Range, Willow Cover")
+
+# ggsave("./output/figures_exported/gg_emm_wc_wnc_cov_TC.png", width = 4.5, height = 3.55, dpi=300)
+# ggsave("./output/figures_exported/gg_emm_wc_wnc_cov_TC.pdf", width = 4.5, height = 3.55)
+
+```
+
+```{r}
+# contrast - time class and fencing
+wc.wnc.cov.emm.TCxF <- emmeans(stmod_cov.wc.wnc, ~ time_class | fenced)
+
+pairs(wc.wnc.cov.emm.TCxF) %>% 
+  plot() +
+  theme_minimal() +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Core and Noncore Winter Range, Willow Cover")
+
+# ggsave("./output/figures_exported/gg_emm_wc_wnc_cov_TCxF.png", width = 4.5, height = 3.55, dpi=300)
+# ggsave("./output/figures_exported/gg_emm_wc_wnc_cov_TCxF.pdf", width = 4.5, height = 3.55)
+
+```
+
+```{r, cache=TRUE, eval=TRUE}
+#### Fenced and burned
+
+stmod_cov.wc.wnc.TCxFxB <- stan_glmer(cover_allwillow ~ time_class * burned * fenced + (1 | site_id), 
+                      data = cov.wc.wnc,
+                      family = mgcv::betar,
+                      prior_aux = exponential(1),
+                      iter = 10000,
+                      seed = 12345)
+
+```
+
+```{r}
+# prior_summary(stmod_cov.wc.wnc.TCxFxB)
+
+pp_check(stmod_cov.wc.wnc.TCxFxB) +
+  labs(x = "Value", y = "Density") +
+  theme_minimal()
+# 
+# ggsave("./output/figures_exported/wc__wnc_willowcover_ppc_TCxFxB.png", dpi = 300, width = 4.75, height = 3.75)
+# ggsave("./output/figures_exported/wc__wnc_willowcover_ppc_TCxFxB.pdf", width = 4.75, height = 3.75)
+
+```
+
+```{r}
+# contrast - time class and fencing
+wc.wnc.cov.emm.TCxFxB <- emmeans(stmod_cov.wc.wnc.TCxFxB, ~ time_class | fenced | burned)
+
+pairs(wc.wnc.cov.emm.TCxFxB) %>% 
+  plot() +
+  theme_minimal() +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Core and Noncore Winter Range, Willow Cover")
+
+# ggsave("./output/figures_exported/gg_emm_wc_wnc_cov_TCxFxB.png", width = 4.5, height = 6.75, dpi=300)
+# ggsave("./output/figures_exported/gg_emm_wc_wnc_cov_TCxFxB.pdf", width = 4.5, height = 6.75)
+
+```
 
 ## Willow Cover - Core Winter Range Macroplot Data
 
 ```{r}
 #### summary tables: time class and burned
 cov.wc %>% 
-  group_by(time_class, burned) %>% 
+  group_by(time_class) %>% 
   summarytools::descr(cover_allwillow,stats = "common") %>% 
   summarytools::tb() %>%
   mutate_if(.predicate = is.numeric,.funs = round, digits = 2) %>% 
   gt() %>% 
-  tab_header(title = "WC: all willow cover - burned + time_class")
+  tab_header(title = "WC macroplot data: willow cover ~ WC: all willow cover - time_class")
 
 ## time class, fenced and burned
 cov.wc %>% 
-  group_by(time_class, fenced, burned) %>% 
+  group_by(time_class, burned) %>% 
   summarytools::descr(cover_allwillow, stats = "common") %>% 
   summarytools::tb() %>%
   mutate_if(.predicate = is.numeric,.funs = round, digits = 2) %>% 
   gt() %>% 
-  tab_header(title = "All willow cover - burned + fenced + time_class")
-
+  tab_header(title = "WC macroplot data: All willow cover - burned + time_class")
 
 ```
 
+```{r, echo=FALSE, eval=FALSE, fig.width=7, fig.height=5}
+cov.wc %>% 
+  ggplot(aes(cover_allwillow)) +
+  geom_histogram() +
+  facet_grid(time_class~site_type) +
+  theme_minimal()
+
+```
+
+```{r, cache=TRUE}
 #### Model
-```{r}
 ## add to min and subtract from max to conform
 cov.wc <- cov.wc %>% 
-  mutate(cover_allwillow = case_when(cover_allwillow == 0 ~ 0.000001,
-                                     cover_allwillow == 1 ~ 0.999999,
+  mutate(cover_allwillow = case_when(cover_allwillow == 1 ~ 0.999999,
                                      TRUE ~ cover_allwillow))
 
 
@@ -1275,31 +1108,24 @@ stmod_cov.wc <- stan_glmer(cover_allwillow ~ time_class * fenced + (1 | site_id)
 
 ```
 
-
 ```{r}
 #### PP check plot
 # summary(stmod_cov.wc)
 prior_summary(stmod_cov.wc)
-ppc_wc_willocov_mod1 <- pp_check(stmod_cov.wc)
 
-ppc_wc_willocov_mod1 +
+pp_check(stmod_cov.wc) +
   labs(x = "Value", y = "Density") +
-  theme_minimal()
-
+  theme_minimal() +
+  labs(caption = "WC: cover_allwillow ~ time_class * fenced + (1 | site_id)")
 
 # ggsave("./output/figures_exported/wc_willowcover_ppc1.png", dpi = 300, width = 4.75, height = 3.75)
+# ggsave("./output/figures_exported/wc_willowcover_ppc1.pdf", width = 4.75, height = 3.75)
+
 ```
 
-```{r}
-fun.desc.post1.gt(stmod_cov.wc$stanfit)
-```
-
-
-```{r, eval = FALSE}
+```{r, eval = TRUE}
 #### Model posterior parameters to table
-## View
 fun.desc.post1.gt(stmod_cov.wc$stanfit)
-
 
 ## save
 # fun.desc.post1.gt(stmod_cov.wc$stanfit) %>% 
@@ -1308,22 +1134,15 @@ fun.desc.post1.gt(stmod_cov.wc$stanfit)
 ```
 
 ```{r}
+# library(emmeans)
+wc.cov.emm.TCxF <- emmeans(stmod_cov.wc, ~ time_class | fenced)
 
-library(emmeans)
-wc.cov.emm <- emmeans(stmod_cov.wc, ~ time_class)
-
-wc.cov.pairs.timeClass <- pairs(wc.cov.emm)
-
-wc.cov.pairs.timeClass.exp <- wc.cov.pairs.timeClass %>% 
-  as_tibble() %>% 
-  mutate_if(.predicate = is.numeric,.funs = exp)
-  
-gg.emm.wc.cov <- plot(wc.cov.pairs.timeClass) +
+pairs(wc.cov.emm.TCxF) %>% 
+  plot() +
   theme_minimal() +
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Willow Cover")
 
-gg.emm.wc.cov
 # ggsave("./output/figures_exported/gg_emm_wc_cov.png", width = 4.5, height = 3.55, dpi=300)
 
 ```
@@ -1332,9 +1151,8 @@ gg.emm.wc.cov
 # p direction core winter range
 pd.wc.cov.fenced <- p_direction(stmod_cov.wc)
 
-# Visualise the pd
-wc.cov.pd.fenced <- plot(pd.wc.cov.fenced)
-wc.cov.pd.fenced +
+# Visualize the pd
+plot(pd.wc.cov.fenced) +
   theme_minimal() +
   labs(caption = "Willow cover, core winter range")
 
@@ -1342,79 +1160,35 @@ wc.cov.pd.fenced +
 
 ```
 
-#### Fenced and burned
+## Willow Cover - Noncore Winter Range Macroplot Data
 
-```{r}
-stmod_cov.wc.feb.burned <- stan_glmer(cover_allwillow ~ time_class * burned * fenced + (1 | site_id), 
-                      data = cov.wc,
+```{r, cache=TRUE}
+#### Model
+## add to min and subtract from max to conform
+cov.wnc <- cov.wnc %>% 
+  mutate(cover_allwillow = case_when(cover_allwillow == 1 ~ 0.999999,
+                                     TRUE ~ cover_allwillow))
+
+stmod_cov.wnc <- stan_glmer(cover_allwillow ~ time_class + (1 | site_id), 
+                      data = cov.wnc,
                       family = mgcv::betar,
                       prior_aux = exponential(1),
                       iter = 10000,
                       seed = 12345)
-
 ```
 
 ```{r}
-# summary
-# summary(stmod_cov.wc.feb.burned)
-prior_summary(stmod_cov.wc.feb.burned)
+# library(emmeans)
+wnc.cov.emm.TC <- emmeans(stmod_cov.wnc, ~ time_class)
 
-ppc_wc_willocov_mod.fb <- pp_check(stmod_cov.wc.feb.burned)
+pairs(wnc.cov.emm.TC) %>% 
+  plot() +
+  theme_minimal() +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Noncore Winter Range, Willow Cover")
 
-ppc_wc_willocov_mod.fb +
-  labs(x = "Value", y = "Density") +
-  theme_minimal()
-
-# ggsave("./output/figures_exported/wc_willowcover_ppc_fencBurn.png", dpi = 300, width = 4.75, height = 3.75)
+# ggsave("./output/figures_exported/gg_emm_wc_cov.png", width = 4.5, height = 3.55, dpi=300)
 
 ```
 
-```{r}
-
-wc.cov.burned.emmgrid <- emmeans::ref_grid(stmod_cov.wc.feb.burned)
-
-wc.cov.emm.stcnt.burned <- emmeans(stmod_cov.wc.feb.burned, ~ burned)
-
-# plot(wc.cov.emm.stcnt.burned)
-
-# type - response
-plot(wc.cov.burned.emmgrid, by = "burned",type = "response") +
-  theme_minimal() +
-  labs(caption = "type = response")
-
-# type - linear predictor
-plot(wc.cov.burned.emmgrid, by = "burned", type = "linear.predictor") + 
-  theme_minimal() +
-  labs(caption = "type = linear predictor")
-
-gg.emm.wc.cov.burned <- plot(wc.cov.burned.emmgrid, by = "time_class") +
-  theme_minimal() +
-labs(subtitle = "Point estimate displayed: median 
-HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Willow Cover - Burned")
-
-gg.emm.wc.cov.burned
-
-# ggsave("./output/figures_exported/gg_emm_wc_cov_burnednar.png", width = 4.5, height = 4.75, dpi=300)
-# ggsave("./output/figures_exported/gg_emm_wc_cov_burnednar.pdf", width = 4.5, height = 3.75)
-
-```
-
-## Willow Cover - Noncore Winter Range Macroplot Data
-
-# References  
-Brilleman SL, Crowther MJ, Moreno-Betancur M, Buros
-  Novik J & Wolfe R (2018). Joint longitudinal and
-  time-to-event models via Stan. StanCon 2018. 10-12
-  Jan 2018. Pacific Grove, CA, USA.
-  https://github.com/stan-dev/stancon_talks/
-  
-Goodrich B, Gabry J, Ali I & Brilleman S. (2020).
-  rstanarm: Bayesian applied regression modeling via
-  Stan. R package version 2.21.1
-  https://mc-stan.org/rstanarm.
-  
-
-```{r, echo=FALSE, eval=FALSE}
-citation("rstanarm")
-```
-
+# References
