@@ -22,37 +22,27 @@ set.seed(1234)
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(fs))
 suppressPackageStartupMessages(library(sf))
-# library(raster)
 suppressPackageStartupMessages(library(janitor))
 suppressPackageStartupMessages(library(readxl))
-# library(glue)
 suppressPackageStartupMessages(library(mapview))
-# library(ggmap)
-# library(ggrepel)
 suppressPackageStartupMessages(library(viridis))
-# library(ggExtra)
 suppressPackageStartupMessages(library(ggstance))
 suppressPackageStartupMessages(library(readxl))
 suppressPackageStartupMessages(library(DT))
 suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(skimr)) 
 suppressPackageStartupMessages(library(dataMaid))
-# library(ggmap)
 library(lubridate)
-library(mapview)
-library(vtree)
 library(emmeans)
 library(rstanarm)
 options(mc.cores = parallel::detectCores())
 library(bayestestR)
 library(gt)
-library(ggrepel)
 
 ```
 
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}
-## Functions
+```{r, functions, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}
 ### Table functions
 ## function to describe model output
 fun.desc.post1 <- function(model){
@@ -61,6 +51,7 @@ fun.desc.post1 <- function(model){
   effects = "fixed",
   component = "all",
   ci_method = "hdi",
+  ci=0.9,
   test = c("p_direction", "p_significance"),
   centrality = "all"
 ) %>% 
@@ -75,9 +66,11 @@ fun.desc.post1.gt <- function(model){
   effects = "fixed",
   component = "all",
   ci_method = "hdi",
+  ci=0.9,
   test = c("rope"),
   #rope_range(c(-0.1,0.1)),
   rope_range("default"),
+  rope_ci=0.9,
   centrality = "median"
 ) %>% 
     as_tibble() %>% 
@@ -90,9 +83,30 @@ fun.desc.post1.gt <- function(model){
   )
 }
 
-```
+# describe posterior
+fun.desc.post1.gt.rope <- function(model){
+  describe_posterior(
+  model,
+  effects = "fixed",
+  component = "all",
+  ci_method = "hdi",
+  ci=0.9,
+  test = c("p_direction", "p_significance","rope"),
+  #rope_range(c(-0.1,0.1)),
+  rope_range("default"),
+  rope_ci = 0.9,
+  centrality = "median"
+) %>% 
+    as_tibble() %>% 
+    gt() %>% 
+    tab_header(title = "Posterior description") %>% 
+    fmt_number(
+    columns = 2:14,
+    decimals = 2,
+    suffixing = TRUE
+  )
+}
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}
 #### Plotting functions
 fun.contrast.plot <- function(df){
   df %>% 
@@ -105,9 +119,6 @@ HPD interval probability: 0.95", x = "Estimate", y = "Estimate") +
   coord_flip()
 }
 
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}
 ## ppcheck.plot
 ppc.plot <- function(model){
   pp_check(model) +
@@ -115,10 +126,6 @@ ppc.plot <- function(model){
   theme_minimal()
 }
 
-```
-
-
-```{r, eval = FALSE}
 ## describe posterior to DT
 desc.post1 <- function(model){
   describe_posterior(
@@ -132,10 +139,58 @@ desc.post1 <- function(model){
     DT::datatable(caption = "Posterior description")
 }
 
-# desc.post1(stan_model)
 ```
 
-## Aspen Data
+# Introduction
+
+This document contains code for running statistical analyses of of Elk
+Vegetation Management Plan (EVMP) data collected through the 2018
+sampling season. Analyses are limited to data from plots
+established in aspen communities in areas of the elk winter range (core and noncore areas) and
+the Kawuneeche Valley (i.e., "aspen" plots, see Zeigenfuss et al. 2011) and is provided as a supplement to the NPS NRR Report
+"Monitoring of Vegetation Response to Elk Population and Habitat
+Management in Rocky Mountain National Park - Analysis of Elk Vegetation
+Management Plan monitoring Data: 2008--2018". For information on
+sampling and the broader analysis and interpretation of the results,
+refer to this report, past analyses [@zeigenfuss2015], and the original
+EVMP monitoring plan [@zeigenfuss2011].
+
+# Methods
+
+The code and results presented here start from and build upon derived
+data produced in a separate code document focused on ingesting,
+compiling, and cleaning raw data provided by RMNP staff. Extensive
+"munging" of raw files was required, so the decision was made to
+separate code used to pre-process raw data from code used for the
+analyses presented here. Likewise, separate code documents were
+developed for other distinct elements of the larger EVMP (e.g., willow
+and upland plots).
+
+Bayesian repeated measures analyses were fit separately for combined
+core and non-core winter range, core winter range (WC) and non-core
+winter range plots (WNC) with plots treated as random factors using the ‘stan_glmer’ function in the rstanrm package [@goodrich2020][@brilleman2018]. Bayesian estimation was performed via MCMC adding independent weakly informed priors specific to the data type being modeled for regression coefficients  Lemoine (2019) for difference response variable types (e.g., willow height, aspen suckering density). Continuous response variables (e.g., willow height) were fit with a Gamma distribution, which restricts possible responses to positive real numbers. Count data like aspen stem counts were modeled as poisson processes, while proportion data (e.g., cover) were modeled using a beta distribution (Ferrari and Cribari-Neto 2004) that constrains values from 0 to 1.
+
+# fu 
+For willow height, models were fit using
+weekly informative priors and a gamma distribution with the "stan_lmer"
+function in the "rstanarm" package [@goodrich2020][@brilleman2018].
+
+For continuous proportions such as plant cover (i.e, those not derived
+from count data), a common approach to modeling is to transform data
+then use ordinary linear models, however this creates problems for
+interpretation and inference [@douma2019]. Techniques relying on
+transformations make estimates on the transformed scale, requiring
+back‐transformation for reporting and interpretation. However, the
+relationship between the original and transformed proportions is often
+non‐linear, creating issues for interpretation [@douma2019]. Alternative
+approaches using beta regression [@cribari-neto2009][@ferrari2004] have
+been developed and are relied on here for modeling continuous
+proportions (e.g., willow cover). After fitting appropriate models using
+"rstanarm" functions, comparisons of estimated marginal means were made
+between time classes and management classes (e.g., fencing) using
+functions in the "emm" R package [@lenth2020].
+
+
 ```{r}
 ## read in data
 
@@ -150,6 +205,8 @@ ht_perc1 %>%
 ```
 
 ```{r}
+# Data munging
+
 ## filter out in-between years
 ht_perc1 <- ht_perc1 %>%
   filter(timeClass %in% c("BL","2013", "2018")) 
@@ -192,19 +249,15 @@ asp.akv <- ht_perc1 %>%
 
 ```
 
-### Traditional AOV
+
+# Results
+
 
 ```{r, eval=FALSE}
-# ht_perc1 <- as.data.frame(ht_perc1)
-
+### Traditional AOV
 aov_model_asp_htperc <- aov(stemDen.ha ~ RANGE_TYPE*timeClass + Error(SITE_ID/(RANGE_TYPE*timeClass)), data = ht_perc1)
 
 aov_model_asp_htperc <- aov(stemDen.ha ~ RANGE_TYPE*timeClass + Error(1/SITE_ID), data = ht_perc1)
-#### example
-# stress.aov <- with(myData.mean,
-#                    aov(stress ~ music * image +
-#                        Error(PID / (music * image)))
-# )
 
 ```
 
@@ -322,10 +375,10 @@ ppc.plot(stmod_stally2)
 
 ```{r}
 ### Model posterior parameters to table
-fun.desc.post1.gt(stmod_stally2) %>% 
+fun.desc.post1.gt.rope(stmod_stally2) %>% 
   tab_header(title = "stan_glmer(stem_tally ~ time_class * fenced + (1 | site_id), data = asp.ac)")
 
-# fun.desc.post1.gt(stmod_stally2) %>% 
+# fun.desc.post1.gt.rope(stmod_stally2) %>% 
 #   gt::gtsave(filename = "./output/tables/ac_stemcnt_stmod2_posteriors.rtf")
 
 
@@ -599,11 +652,11 @@ ppc.plot(stmod_anc_stally1)
 ```{r, eval = FALSE}
 
 ## View
-fun.desc.post1.gt(stmod_anc_stally1)
+fun.desc.post1.gt.rope(stmod_anc_stally1)
 
 
 ## save
-fun.desc.post1.gt(stmod_anc_stally1) %>% 
+fun.desc.post1.gt.rope(stmod_anc_stally1) %>% 
   gt::gtsave(filename = "./output/tables/stmod_anc_stally1.rtf")
 
 
@@ -708,11 +761,11 @@ ppc.plot(kv.stmod_stmcnt1)
 #### Model posterior parameters to table
 ```{r, eval = FALSE}
 ## View
-fun.desc.post1.gt(kv.stmod_stmcnt1)
+fun.desc.post1.gt.rope(kv.stmod_stmcnt1)
 
 
 ## save
-# fun.desc.post1.gt(kv.stmod_stmcnt1) %>% 
+# fun.desc.post1.gt.rope(kv.stmod_stmcnt1) %>% 
 #   gt::gtsave(filename = "./output/tables/AK_kv.stmod_stmcnt1_posteriors.rtf")
 
 
