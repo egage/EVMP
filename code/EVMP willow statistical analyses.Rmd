@@ -6,7 +6,7 @@ output:
   html_document: 
     theme: journal
     toc: yes
-    toc_depth: 3
+    toc_depth: 2
 editor_options: 
   markdown: 
     wrap: 72
@@ -341,6 +341,7 @@ pd.wc.wnc <- p_direction(wc.wnc.stmod_TCxF)
 # Visualize the pd
 plot(pd.wc.wnc) +
   theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(caption = "Willow height, Combined Core and Non-core Winter Range")
 
 # ggsave("./output/figures_exported/willow_height/pd_willowht_wcwnc.png", width = 6.75, height =3.75, dpi = 300)
@@ -405,6 +406,7 @@ emmeans(wc.wnc.stmod_TCxF, ~ time_class | fenced) %>%
   pairs(reverse=TRUE) %>% 
   plot() +
   theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Core and Noncore Winter Range, Willow Height")
 
@@ -545,6 +547,7 @@ pd.wc <- p_direction(stmod_ht2)
 # Visualize the pd
 plot(pd.wc) +
   theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(caption = "Willow height, core winter range")
 
 # ggsave("./output/figures_exported/willow_height/pd_willowht_wc.png", width = 6.75, height =3.75, dpi = 300)
@@ -603,6 +606,7 @@ emmeans(stmod_ht2, ~ time_class | fenced) %>%
   pairs(reverse = TRUE) %>% 
   plot() + 
   theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Willow Height")
 
@@ -694,6 +698,7 @@ posteriors.nc.ht.tidy <- posteriors.nc.ht %>%
 p_direction(nc.stmod_ht1) %>% 
   plot() +
   theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(caption = "Willow height, Noncore winter range")
 
 ggsave("./output/figures_exported/willow_height/pd_willowht_wnc.png", width = 6.75, height =3.75, dpi = 300)
@@ -731,6 +736,7 @@ nc.emm %>%
   pairs(reverse = TRUE) %>% 
   plot() +
   theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Non-core Winter Range, Willow Height")
 
@@ -810,6 +816,7 @@ pdkv <- p_direction(stmod_ht_wk_TC)
 # Visualise the pd
 plot(pdkv) +
   theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(caption = "Willow height, KV")
 
 ggsave("./output/figures_exported/willow_height/pd_willowht_wk.png", width = 6.75, height =3.75, dpi = 300)
@@ -844,6 +851,7 @@ emmeans(stmod_ht_wk_TC, ~ time_class) %>%
   pairs() %>% 
   plot() +
   theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "KV, Willow Height")
 
@@ -1041,6 +1049,7 @@ fun.desc.post1.gt.rope(stmod_cov.wc.wnc$stanfit) %>%
 p_direction(stmod_cov.wc.wnc) %>% 
   plot() +
   theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(caption = "Willow cover, Core and noncore winter range")
 
 ggsave("./output/figures_exported/willow_cover/pd_willowht_wcwnc.png", width = 6.75, height =3.75, dpi = 300)
@@ -1071,6 +1080,7 @@ emmeans(stmod_cov.wc.wnc, ~ time_class | fenced) %>%
   pairs(reverse=TRUE) %>% 
   plot() +
   theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Core and Noncore Winter Range, Willow Cover")
 
@@ -1201,6 +1211,7 @@ fun.desc.post1.gt.rope(stmod_cov.wc$stanfit) %>%
 p_direction(stmod_cov.wc) %>% 
   plot() +
   theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(caption = "Willow cover, Core and noncore winter range")
 
 ggsave("./output/figures_exported/willow_cover/pd_willowht_wc.png", width = 6.75, height =3.75, dpi = 300)
@@ -1232,6 +1243,7 @@ wc.cov.emm.TCxF <- emmeans(stmod_cov.wc, ~ time_class | fenced)
 pairs(wc.cov.emm.TCxF, reverse = TRUE) %>% 
   plot() +
   theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Willow Cover")
 
@@ -1281,7 +1293,6 @@ stmod_cov.wnc <- stan_glmer(cover_allwillow ~ time_class + (1 | site_id),
 shinystan::launch_shinystan(stmod_cov.wnc)
 ```
 
-
 ```{r, echo=FALSE, eval=FALSE}
 #### PP check plot
 # summary(stmod_cov.wc)
@@ -1321,6 +1332,7 @@ fun.desc.post1.gt.rope(stmod_cov.wnc$stanfit) %>%
 p_direction(stmod_cov.wnc) %>% 
   plot() +
   theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(caption = "Willow cover, Nnoncore winter range")
 
 ggsave("./output/figures_exported/willow_cover/pd_willowht_wnc.png", width = 6.75, height =3.75, dpi = 300)
@@ -1352,6 +1364,7 @@ wnc.cov.emm.TC <- emmeans(stmod_cov.wnc, ~ time_class)
 pairs(wnc.cov.emm.TC, reverse = TRUE) %>% 
   plot() +
   theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Noncore Winter Range, Willow Cover")
 

@@ -38,7 +38,7 @@ library(rstanarm)
 options(mc.cores = parallel::detectCores())
 library(bayestestR)
 library(gt)
-
+library(ggridges)
 ```
 
 
@@ -262,21 +262,19 @@ aov_model_asp_htperc <- aov(stemDen.ha ~ RANGE_TYPE*timeClass + Error(1/SITE_ID)
 ```
 
 
-## Bayesian Analyses
+## Aspen Stem Count - Core Winter Range (AC)
 
-### AC - Aspen stem count
+### Modeling and Posterior Description  
 
-#### main factors only
-
-```{r}
-## adding a tiny number to conform with gamma
+```{r, eval=FALSE}
+#### Main Factors Only
+## Not run. Used in model comparisons, but model w/ interaction selected
 asp.ac <- asp.ac %>%
-  mutate(stem_den_ha = stem_den_ha +0.0000001)
-
+  mutate(stem_den_ha = stem_den_ha + 0.0000001)
 
 ## poisson
 stmod_stally1 <- stan_glmer(stem_tally ~ time_class + fenced + (1 | site_id), data = asp.ac,
-                       family=poisson,
+                      family=poisson,
                       iter = 10000,
                       seed = 1234
                       )
@@ -285,42 +283,47 @@ prior_summary(stmod_stally1)
 pp_check(stmod_stally1)
 ```
 
-#### main factors + interactions
-
+stem_tally ~ time_class * fenced + (1 | site_id)
 ```{r}
-## run with gamma
+#### main factors + interactions
 stmod_stally2 <- stan_glmer(stem_tally ~ time_class * fenced + (1 | site_id), data = asp.ac,
                       family= poisson,
                       iter = 10000,
                       seed = 1234
                       )
 
-summary(stmod_stally2)
-prior_summary(stmod_stally2)
+# summary(stmod_stally2)
+# prior_summary(stmod_stally2)
 
-pp.stally2.wc <- pp_check(stmod_stally2)
-pp.stally2.wc +
-  labs(x = "Value", y = "Density") +
-  theme_minimal()
+
 
 ```
 
-```{r, eval = FALSE}
-# install.packages("shinystan")
-library("shinystan")
-## shiny eval
-launch_shinystan(stmod_stally2)
+```{r}
+### ppc plot
+ppc.plot(stmod_stally2) +
+  labs(caption = "AC: stem_cntt~TCxF")
+
+# save plots
+ggsave("./output/figures_exported/aspen_stem_count/ppc_stemcnt_ac.png", dpi = 300, width = 4.75, height = 3.75)
+ggsave("./output/figures_exported/aspen_stem_count/ppc_stemcnt_ac.pdf", width = 4.75, height = 3.75)
+```
+
+
+```{r}
+# extract posteriors
+posteriors.ac.stcnt <- insight::get_parameters(stmod_stally2)
+
+# tidy
+posteriors.ac.stcnt.tidy <- posteriors.ac.stcnt %>%
+  pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
 
 ```
 
-#### Model comparison
-
-Compares model with and without interactions for AC plots
 ```{r, eval = FALSE}
 ## model comparison
 loo1 <- loo(stmod_stally1,
-            k_threshold = 0.7) # Found 3 observation(s) with a pareto_k > 0.7. We recommend calling 'loo' again with argument 'k_threshold = 0.7' in order to calculate the ELPD without the assumption that these observations are negligible. This will refit the model 3 times to compute the ELPDs for the problematic observations directly.
-
+            k_threshold = 0.7) 
 loo2 <- loo(stmod_stally2,
             k_threshold = 0.7) 
 comp <- loo_compare(loo2, loo1)
@@ -332,95 +335,57 @@ modcomp_ac %>%
   gt()
 # citation(package = "loo")
 
-
-
 # show more details with simplify=FALSE
-# (will be the same for all models in this artificial example)
-print(comp, simplify = FALSE, digits = 3)
+print(modcomp_ac, simplify = FALSE, digits = 3)
+
+# model with interactions selected
 ```
-
-```{r, eval = FALSE}
-## report
-# report::report(stmod_stally2)
-```
-
-```{r, eval = FALSE}
-# note the function in the next chunk is good
-describe_posterior(
-  stmod_ht1,
-  effects = "all",
-  component = "all",
-  test = c("p_direction", "p_significance"),
-  centrality = "all"
-)
-# Posterior: point estimates
-centrality <- point_estimate(stmod_ht1)  # Get indices of centrality
-centrality
-```
-
-```{r}
-### model checks
-# Compare the model with default weak priors and the one with the null
-#pp_check(stmod_ht2)
-
-ppc.plot(stmod_stally2)
-# ggsave("./output/figures_exported/ac_stemtally_ppc1.png", dpi = 300, width = 4.75, height = 3.75)
-# pp_check(stmod_ht2)
-# pp_check(stmod_ht1_noPrior)
-
-
-```
-
-
 
 ```{r}
 ### Model posterior parameters to table
 fun.desc.post1.gt.rope(stmod_stally2) %>% 
-  tab_header(title = "stan_glmer(stem_tally ~ time_class * fenced + (1 | site_id), data = asp.ac)")
+  tab_header(title = "Aspen Count Posterior Description", subtitle = "Core Winter Range")
 
-# fun.desc.post1.gt.rope(stmod_stally2) %>% 
-#   gt::gtsave(filename = "./output/tables/ac_stemcnt_stmod2_posteriors.rtf")
-
-
-```
-
-get posteriors
-
-```{r}
-posteriors.ac.stcnt <- insight::get_parameters(stmod_stally2)
-
-posteriors.ac.stcnt %>% 
-  glimpse()
-
-# tidy the posteriors
-posteriors.ac.stcnt.tidy <- posteriors.ac.stcnt %>%
-  # names()
-  pivot_longer(cols = starts_with("time"), names_to = "variable", values_to = "values")
+## save as RTF
+fun.desc.post1.gt.rope(stmod_stally2) %>%
+ tab_header(title = "Aspen Count Posterior Description", subtitle = "Core Winter Range") %>%
+  gt::gtsave(filename = "./output/tables/aspen_stem_count/postdesc_stemcnt_TCxF_ac.rtf")
 
 ```
 
 ```{r}
-library(ggridges)
+# library(ggridges)
 
 posteriors.ac.stcnt.tidy %>% 
   ggplot() +
-  ggridges::geom_density_ridges(aes(x = values, y = variable))
-
-posteriors.ac.stcnt.tidy %>% 
-  ggplot() +
-  geom_density(aes(fill = variable, x = values, color = variable), alpha = .12) +
+  geom_density(aes(fill = parameter, x = values, color = parameter), alpha = .12) +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   theme_minimal()
 
+# save plots
+ggsave("./output/figures_exported/aspen_stem_count/postden_stemcnt_ac.png", dpi = 300, width = 4.75, height = 3.75)
+ggsave("./output/figures_exported/aspen_stem_count/postden_stemcnt_ac.pdf", width = 4.75, height = 3.75)
 ```
 
-
+### Probability of Direction
 ```{r}
+# Visualize the pd
 #### PD - AC
+p_direction(stmod_stally2) %>% 
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Aspen stem count, core winter range")
 
-pd.ac <- p_direction(stmod_stally2)
-p.in.rope.ac <- rope(stmod_stally2, ci=1)
+# save plots
+ggsave("./output/figures_exported/aspen_stem_count/pd_stemcnt_ac.png", dpi = 300, width = 4.75, height = 3.75)
+ggsave("./output/figures_exported/aspen_stem_count/pd_stemcnt_ac.pdf", width = 4.75, height = 3.75)
 
-pd.tab.ac <- p.in.rope.ac %>% 
+```
+
+### Region of Practical Equivalence (ROPE)
+```{r}
+rope.stemcnt.ac <- rope(stmod_stally2, ci=0.9) %>% 
   gt() %>%
   tab_header(title = "Percent in ROPE") %>% 
   fmt_number(
@@ -428,128 +393,100 @@ pd.tab.ac <- p.in.rope.ac %>%
     decimals = 1,
     suffixing = TRUE
   ) 
-pd.tab.ac %>% 
-# pd.tab.wcc %>% 
-  gt::gtsave(filename = "./output/tables/ac_stemcnt_percent_in_ROPE.rtf")
 
-# Visualise the pd
-ac.stmcnt.pd <- plot(pd.ac)
-ac.stmcnt.pd +
-  theme_minimal() +
-  labs(caption = "Aspen stem count, core winter range")
-# ggsave("./output/figures_exported/pd_ac_stemcnt.png", dpi = 300, width = 6.75, height =3.75)
+rope.stemcnt.ac %>% 
+  gt::gtsave(filename = "./output/tables/aspen_stem_count/rope_stemcnt_ac.rtf")
+
 ```
 
-
+### Contrasts
+Results are given on the log not the response scale.
 ```{r}
-#### Contrasts - WC time class
+#### Contrasts
 # EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE).
 
 # library(emmeans)
-ac.emm.stcnt <- emmeans(stmod_stally2, ~ time_class)
-
-ac.pairs.timeClass <- pairs(ac.emm.stcnt, reverse = TRUE)
-
-# pairs.timeClass <- pairs(emmeans(stmod_ht2, ~ time_class)) # more compact way to do above
-
-gg.emm.ac.stcnt <- plot(ac.pairs.timeClass) +
+emmeans(stmod_stally2, ~ time_class | fenced) %>% 
+  pairs(reverse = TRUE) %>% 
+  plot() +
   theme_minimal() +
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Aspen Stem Count")
 
-gg.emm.ac.stcnt
-# ggsave("./output/figures_exported/gg_emm_ac_stcnt.png", width = 4.5, height = 3.55, dpi=300)
-
-
-# pairs.timeClass.exp %>% 
-#   ggplot(aes(x = contrast)) +
-#   geom_point(aes(y = estimate)) +
-#   geom_linerange(aes(ymin = lower.HPD, ymax = upper.HPD)) +
-#   theme_minimal() +
-#   labs(title = "Point estimate displayed: median 
-# HPD interval probability: 0.95")
+ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_ac.pdf", width = 4.5, height = 3.55) # save plot
+ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_ac.png", width = 4.5, height = 3.55) # save plot
 
 ```
 
 ```{r}
-# library(emmeans)
-ac.emm.stcnt.fen <- emmeans(stmod_stally2, ~ fenced)
-
-ac.pairs.fenced <- pairs(ac.emm.stcnt.fen, reverse = TRUE)
-
-gg.emm.ac.stcnt.fenced <- plot(ac.pairs.fenced) +
-  theme_minimal() +
-  labs(subtitle = "Point estimate displayed: median 
-HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Aspen Stem Count")
-
-# gg.emm.ac.stcnt.fenced
-
+# table of contrasts
+emmeans(stmod_stally2, ~ time_class | fenced) %>% 
+  pairs(reverse = TRUE) %>% 
+  as_tibble() %>% 
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the log not the response scale")
 ```
 
-
-```{r, eval = FALSE}
-
-ac.emm.stcnt.fenxTC <- emmeans(stmod_stally2, ~time_class * fenced)
-
-pairs.timeClassxfenced.ac <- pairs(ac.emm.stcnt.fenxTC, by = "fenced", reverse = TRUE) # simple effects for color
-
-plot(pairs.timeClassxfenced.ac) +
-  theme_minimal() +
-  # labs(x = "Median estimate", y = "", caption = "pairs.timeClassxRange") +
-  labs(subtitle = "Point estimate displayed: median 
-HPD interval probability: 0.95", x = "Median estimate", y = "Contrast", caption = "Core Winter Range, Aspen stem count")
-
-# ggsave("./output/figures_exported/gg_emm_ac_ht_TC_Fenced.png", width = 4.5, height = 3.55, dpi=300)
-```
-
-#### AC - Burned
-
+### Effects of Burning
 ```{r}
-ht_perc1_summary <- ht_perc1 %>%
-  group_by(time_class, range_type, burned, fenced.long) %>% 
-  summarytools::descr(stats = "fivenum") %>% 
-  summarytools::tb()
-
 ht_perc1 %>% 
   filter(range_type == "core winter range") %>% 
   filter(time_class == "BL" | time_class == "2013" | time_class == "2018") %>%
-  group_by(time_class, range_type, burned, fenced.long) %>% 
-  # summarytools::descr(stats = "fivenum") %>% 
-  summarytools::descr() %>%
+  group_by(time_class, range_type, burned, fenced) %>% 
+  summarytools::descr(stats = "fivenum") %>%
   summarytools::tb() %>% 
-  datatable(filter = "top")
-
-```
-
-```{r}
-ht_perc1 %>% 
-  filter(range_type == "core winter range") %>% 
-  filter(time_class == "BL" | time_class == "2013" | time_class == "2018") %>% 
-  ggplot(aes(burned, log(stem_tally))) +
-  # ggplot(aes(burned, stem_tally)) +
-  geom_boxplot(aes(fill = time_class)) +
-  facet_wrap(~fenced.long) +
-  ylim(0, 5)
+  gt() %>% 
+  tab_header(title="Summary statistics")
 
 ```
 
 
-```{r}
+```{r, cache=TRUE}
 ### STAN model
-stmod_ac_burned_stally1 <- stan_glmer(stem_tally ~ fenced.long * time_class * burned + (1 | site_id), data = asp.ac,
-                       family=poisson,
+stmod_stally_TCxFxB_ac <- stan_glmer(stem_tally ~ fenced * time_class * burned + (1 | site_id), data = asp.ac,
+                      family=poisson,
                       iter = 10000,
                       seed = 1234
                       )
 
-prior_summary(stmod_ac_burned_stally1)
-pp_check(stmod_ac_burned_stally1)
+```
+
+```{r, eval=FALSE}
+prior_summary(stmod_stally_TCxFxB_ac)
+pp_check(stmod_stally_TCxFxB_ac)
+```
+
+```{r}
+# Visualize the pd
+p_direction(stmod_stally_TCxFxB_ac) %>% 
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Aspen stem count, core winter range, TCxFxB")
+
+# save plots
+ggsave("./output/figures_exported/aspen_stem_count/pd_stemcnt_TCxFxB_ac.png", dpi = 300, width = 4.75, height = 3.75)
+ggsave("./output/figures_exported/aspen_stem_count/pd_stemcnt_TCxFxB_ac.pdf", width = 4.75, height = 3.75)
 
 ```
 
 ```{r}
-pd.ac.burned <- p_direction(stmod_ac_burned_stally1)
-p.in.rope.ac.burned <- rope(stmod_ac_burned_stally1, ci=1)
+#### Contrasts
+emmeans(stmod_stally_TCxFxB_ac, ~ time_class | burned | fenced) %>% 
+  pairs(reverse = TRUE) %>% 
+  plot() +
+  theme_minimal() +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Aspen Stem Count, TCxFxB")
+
+ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxFxB_ac.pdf", width = 4.5, height = 3.55) # save plot
+ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxFxB_ac.png", width = 4.5, height = 3.55) # save plot
+```
+
+
+```{r}
+pd.ac.burned <- p_direction(stmod_stally_TCxFxB_ac)
+p.in.rope.ac.burned <- rope(stmod_stally_TCxFxB_ac, ci=0.9)
 
 pd.tab.ac.burned <- p.in.rope.ac.burned %>% 
   gt() %>%
@@ -673,7 +610,7 @@ launch_shinystan(stmod_anc_stally1)
 #### PD - ANC
 ```{r}
 pd.anc <- p_direction(stmod_anc_stally1)
-p.in.rope.anc <- rope(stmod_anc_stally1, ci=1)
+p.in.rope.anc <- rope(stmod_anc_stally1, ci=0.9)
 
 pd.tab.anc <- p.in.rope.anc %>% 
   gt() %>%
@@ -774,7 +711,7 @@ fun.desc.post1.gt.rope(kv.stmod_stmcnt1)
 #### PD - KV
 ```{r}
 pdkv <- p_direction(kv.stmod_stmcnt1)
-p.in.rope.kv <- rope(kv.stmod_stmcnt1, ci=1)
+p.in.rope.kv <- rope(kv.stmod_stmcnt1, ci=0.9)
 
 pd.tab.kv <- p.in.rope.kv %>% 
   gt() %>%
