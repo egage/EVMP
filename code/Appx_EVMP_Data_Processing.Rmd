@@ -4,7 +4,7 @@ author: ""
 date: ""
 output: 
   html_document: 
-    theme: paper
+    theme: journal
     toc: yes
     toc_float: true
     toc_depth: 3
@@ -62,14 +62,17 @@ library(ggtext)
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}
 
-# some themes
-theme_smFacet <- theme_minimal() + theme(strip.text.x = element_text(size = 7))
-theme_smFacet2 <- theme_minimal() + theme(strip.text.x = element_text(size = 6))
+
 
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE}
-# data import functions
+# Plotting themes
+theme_smFacet <- theme_minimal() + theme(strip.text.x = element_text(size = 7))
+theme_smFacet2 <- theme_minimal() + theme(strip.text.x = element_text(size = 6))
+
+# Functions
+# Data import functions
 read_sheets <- function(file){
   xlsx_file <- file
   xlsx_file %>%
@@ -90,10 +93,6 @@ read_then_csv <- function(sheet, path) {
     write_csv(paste0(pathbase, "-", sheet, ".csv"))
 }
 
-
-```
-  
-```{r func_plotting, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}
 ## plotting functions
 ggTile_yr_season_site2 <- function(df){
   df %>%
@@ -146,20 +145,21 @@ range_r1 <- function(x){
   round(range(x, na.rm = TRUE),1)
 }
 
-```
-
-```{r, eval=FALSE}
-# This document provides a basic exploration of EVMP files provided by RMNP in October of 2018.  The code and analyses aim to characterize basic data structure, identify problems, and clean and reorganize as needed for plotting and modeling. Specific objectives include identifying issues such as:
-# 
-# * Inconsistently named/typed factors    
-# * Missing values
-# * Data values outside of expected range or showing unusual patterns
-# Cleaned and archivable data sets will be produced to facilitate future data analysis and aid RMNP in their management goals.
 
 ```
+
+# Introduction
+
+This document provides a basic exploration of EVMP files provided by RMNP in October of 2018.  The code and analyses aim to characterize basic data structure, identify problems, and clean and reorganize as needed for plotting and modeling. Specific objectives include identifying issues such as:
+ 
+* Inconsistently named/typed factors    
+* Missing values
+* Data values outside of expected range or showing unusual patterns
+
+Cleaned data sets are produced and exported to facilitate future data analysis and aid RMNP in their management goals.
+
 
 ```{r, eval=FALSE, echo=FALSE}
-
 # Create a cache of workbook tabs as CSV files
 ## cache csv. This creates a csv cache of each tab in the workbook.
 
@@ -176,8 +176,8 @@ path %>%
   excel_sheets() %>%
   set_names() %>% 
   map(read_then_csv, path = path)
-```
 
+```
 
 ```{r}
 ##### READ IN CSV FILES EXPORTED FROM EXCEL TABS 
