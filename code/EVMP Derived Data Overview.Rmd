@@ -1,0 +1,45 @@
+---
+title: "EVMP Derived Data Overview"
+author: ""
+date: ""
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align = 'center', cache = FALSE)
+opts_knit$set(root.dir=normalizePath('../')) # this is required if Rmd is nested below the project directory
+opts_chunk$set(fig.path = "../output/figures/") # corrected path and added dev. Needed to specify a subdirectory for figs
+
+# see discussion here: https://stackoverflow.com/questions/24585254/working-with-knitr-using-subdirectories
+
+```
+
+# Introduction
+
+
+
+# Data sets
+
+```{r}
+## derived data table
+
+
+```
+
+
+Site information
+
+
+## EVMP data
+
+### Willow plots
+
+### Aspen plots
+
+
+### Upland plots
+
+
+### Covariates
+

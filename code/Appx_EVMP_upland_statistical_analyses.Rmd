@@ -1,0 +1,384 @@
+---
+title: "Appendix D. EVMP Upland Statistical Analyses"
+author: ""
+date: ""
+output: 
+  html_document: 
+    theme: journal
+    toc: yes
+    toc_depth: 4
+editor_options: 
+  markdown: 
+    wrap: 72
+bibliography: references.bib
+---
+
+**Upland Statistical Analyses**
+
+_Code author:_ 
+E. Gage  
+mycologica@gmail.com  
+https://github.com/egage
+
+_Update: 2021-02-09_
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align = 'center')
+opts_knit$set(root.dir=normalizePath('../')) # this is required if Rmd is nested below the project directory
+opts_chunk$set(fig.path = "../output/figures/")
+set.seed(1234)
+```
+
+```{r,echo=FALSE}
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(fs))
+suppressPackageStartupMessages(library(sf))
+suppressPackageStartupMessages(library(janitor))
+suppressPackageStartupMessages(library(readxl))
+library(glue)
+suppressPackageStartupMessages(library(mapview))
+suppressPackageStartupMessages(library(viridis))
+suppressPackageStartupMessages(library(ggstance))
+suppressPackageStartupMessages(library(readxl))
+suppressPackageStartupMessages(library(DT))
+suppressPackageStartupMessages(library(lubridate))
+suppressPackageStartupMessages(library(skimr)) 
+suppressPackageStartupMessages(library(dataMaid))
+library(lubridate)
+library(emmeans)
+library(rstanarm)
+options(mc.cores = parallel::detectCores())
+library(bayestestR)
+library(gt)
+
+```
+
+```{r, echo=FALSE, eval = TRUE}
+
+## Functions
+
+### Table functions
+
+## function to describe model out
+fun.desc.post1 <- function(model){
+  describe_posterior(
+  model,
+  effects = "fixed",
+  component = "all",
+  ci_method = "hdi",
+  ci=0.9,
+  rope_ci=0.9,
+  test = c("p_direction", "p_significance"),
+  centrality = "all"
+) %>% 
+    as_tibble() %>% 
+    DT::datatable(caption = "Posterior description")
+}
+
+
+## gt
+fun.desc.post1.gt <- function(model){
+  describe_posterior(
+  model,
+  effects = "fixed",
+  component = "all",
+  ci_method = "hdi",
+  test = c("rope"),
+  #rope_range(c(-0.1,0.1)),
+  rope_range("default"),
+  centrality = "median"
+) %>% 
+    as_tibble() %>% 
+    gt() %>% 
+    tab_header(title = "Posterior description") %>% 
+    fmt_number(
+    columns = 2:12,
+    decimals = 1,
+    suffixing = TRUE
+  )
+}
+
+## adds 
+fun.desc.post1.gt.rope <- function(model){
+  describe_posterior(
+  model,
+  effects = "fixed",
+  component = "all",
+  ci_method = "hdi",
+  test = c("p_direction", "p_significance","rope"),
+  rope_range("default"),
+  centrality = "median"
+) %>% 
+    as_tibble() %>% 
+    gt() %>% 
+    tab_header(title = "Posterior description") %>% 
+    fmt_number(
+    columns = 2:11,
+    decimals = 1,
+    suffixing = TRUE
+  )
+}
+
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}
+
+#### Plotting functions
+
+fun.contrast.plot <- function(df){
+  df %>% 
+  ggplot(aes(x = contrast)) +
+  geom_linerange(aes(ymin = lower.HPD, ymax = upper.HPD), color = "lightblue", size = 2) +
+  geom_point(aes(y = estimate), size = 2.5) +
+  theme_minimal() +
+  labs(caption = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Estimate") +
+  coord_flip()
+}
+
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}
+## ppcheck.plot
+ppc.plot <- function(model){
+  pp_check(model) +
+  labs(x = "Value", y = "Density") +
+  theme_minimal()
+}
+
+```
+
+# Introduction
+
+This document contains code for running statistical analyses of of Elk
+Vegetation Management Plan (EVMP) data collected through the 2018
+sampling season. Analyses are limited to data from plots established in
+upland communities in areas of the elk winter range (core and noncore
+area, see Zeigenfuss et al. 2011 for details) and is provided as a
+supplement to the NPS NRR Report "Monitoring of Vegetation Response to
+Elk Population and Habitat Management in Rocky Mountain National Park -
+Analysis of Elk Vegetation Management Plan monitoring Data: 2008--2018".
+For information on sampling and the broader analysis and interpretation
+of the results, refer to this report, past analyses [@zeigenfuss2015],
+and the original EVMP monitoring plan [@zeigenfuss2011].
+
+# Methods
+
+The code and results presented here start from and build upon derived
+data produced in a separate code document focused on ingesting,
+compiling, and cleaning raw data provided by RMNP staff. Raw files were combined and pre-processed in a separate code file (Appendix B for the main project report).
+Packages included in the "Tidyverse"
+ecosystem of R packages were used for data transformation and
+visualization [@wickham2019], although specialized packages particular
+to specific tasks (e.g., the "bayesplot" plot for visualization of
+Bayesian posterior distributions) were also used [@gabry2019].
+
+Bayesian repeated measures analyses were fit separately for combined
+core and non-core winter range, core winter range (WC) and non-core
+winter range plots (WNC) with plots treated as random factors using the
+'stan_glmer' function in the rstanrm package
+[@goodrich2020][@brilleman2018]. Bayesian estimation was performed via
+MCMC adding independent weakly informed priors specific to the data type
+being modeled for regression coefficients for difference response
+variable types [@lemoine2019]. Zero-bounded continuous response variables (e.g.,
+shrub height) were fit with a Gamma distribution, count data were modeled as poisson processes, while proportion data (e.g.,
+cover) were modeled using a beta distribution (Ferrari and Cribari-Neto
+2004) that constrains values from 0 to 1.
+
+```{r}
+### Data import and munging
+## read in derived data
+upl.allshrubs <- read_csv("./output/exported_data/upland_LI_allShrubsPooled_20200814.csv")
+upl.byspp <- read_csv("./output/exported_data/upland_LI_byShrubSpp_20200814.csv")
+
+### upland pooled species
+cov.allshrubs <- upl.allshrubs %>% 
+  filter(!is.na(perc_cover)) %>%  
+  mutate(time_class = case_when(yr == 2007 ~ "BL",
+                              TRUE ~ as.character(yr))) %>% 
+  mutate(timeClass = as.factor(time_class)) %>%
+  mutate(site_type = as.factor(site_type)) %>%
+  mutate(time_class = fct_relevel(timeClass, "2018", "2013", "BL")) 
+
+## reorder the time class
+cov.allshrubs <- cov.allshrubs %>% 
+  mutate(time_class = fct_rev(time_class))
+
+### upland by species
+cov.byspp <- upl.byspp %>% 
+  filter(!is.na(perc_cover)) %>%  
+  mutate(time_class = case_when(yr == 2007 ~ "BL",
+                              TRUE ~ as.character(yr))) %>% 
+  mutate(timeClass = as.factor(time_class)) %>%
+  mutate(site_type = as.factor(site_type)) %>%
+  mutate(time_class = fct_relevel(timeClass, "2018", "2013", "BL")) 
+
+## reorder the time class
+cov.byspp <- cov.byspp %>% 
+  mutate(time_class = fct_rev(time_class))
+
+```
+
+# Results
+
+## Upland Shrub Cover, Pooled Shrub Species - Combined Core and NonCore Winter Range   
+
+
+```{r}
+#### summary tables
+cov.allshrubs %>% 
+  group_by(time_class, site_type) %>% 
+  summarytools::descr(perc_cover, stats = "common") %>% 
+  summarytools::tb() %>%
+  mutate_if(.predicate = is.numeric,.funs = round, digits = 2) %>% 
+  gt() %>% 
+  tab_header(title = "Upland cover - site type + time_class")
+
+```
+
+### Modeling and Posterior Description
+```{r}
+## add cover in 0-1 range
+cov.allshrubs <- cov.allshrubs %>%
+  mutate(cover = perc_cover/100)
+  
+stmod_cov.allshr <- stan_glmer(cover ~ time_class + (1 | site_id), 
+                      data = cov.allshrubs,
+                      family = mgcv::betar,
+                      prior_aux = exponential(2),
+                      iter = 10000,
+                      seed = 12345)
+
+```
+
+```{r}
+# summary(stmod_cov.allshr)
+prior_summary(stmod_cov.allshr)
+```
+
+```{r}
+# extract posteriors
+posteriors.upl.allshrubcov <- insight::get_parameters(stmod_cov.allshr)
+
+# tidy
+posteriors.upl.allshrubcov.tidy <- posteriors.upl.allshrubcov %>%
+  pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
+
+```
+
+```{r}
+posteriors.upl.allshrubcov.tidy %>%
+  ggplot() +
+  geom_density(aes(fill = parameter, x = values),color="grey", alpha = .25) +
+  scale_fill_viridis(discrete = TRUE) +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Upland, all shrub cover - Combined Core and Non-core Winter Range")
+```
+
+
+```{r}
+#### PP check plot
+pp_check(stmod_cov.allshr) +
+  labs(x = "Value", y = "Density", caption = "upland cover ppc plot. all shrubs pooled") +
+  theme_minimal()
+
+# save plots
+ggsave("./output/figures_exported/upland_cover/ppc_stemcnt_upl_allshrubs.png", dpi = 300, width = 4.75, height = 3.75)
+ggsave("./output/figures_exported/upland_cover/ppc_stemcnt_upl_allshrubs.pdf", width = 4.75, height = 3.75)
+```
+
+```{r}
+fun.desc.post1.gt.rope(stmod_cov.allshr$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range")
+
+```
+
+```{r, eval = FALSE}
+## save
+fun.desc.post1.gt(stmod_cov.allshr$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
+  gt::gtsave(filename = "./output/tables/upland_cover/upl_cov_allshrubs_stmod_cover1_posteriors.rtf")
+
+```
+
+### Region of Practical Equivalence (ROPE)
+```{r}
+rope.uplcov.wcwnc.gt <- rope(stmod_cov.allshr$stanfit, ci=0.9) %>% 
+  gt() %>%
+  tab_header(title = "Percent in ROPE") %>% 
+  fmt_number(
+    columns = 5,
+    decimals = 2,
+    suffixing = TRUE
+  ) 
+
+rope.uplcov.wcwnc.gt
+# rope.uplcov.wcwnc.gt %>%
+#   gt::gtsave(filename = "./output/tables/upland_cover/rope_uplcov_wcwnc.rtf")
+```
+
+### Contrasts
+
+EMM summaries with type = "response", the tests and confidence intervals
+are done before back-transforming. The ratios estimated are ratios of
+geometric means. A model with a log response is in fact a model for
+relative effects of any of its linear predictors, and this
+back-transformation to ratios goes hand-in-hand with that.
+
+```{r, include=FALSE, echo=FALSE}
+# library(emmeans)
+# Note: EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE). Also, in multi-factor situations, you may specify by factor(s) to perform the comparisons separately at the levels of those factors.
+
+# Results are given on the log (not the response) scale.
+emmeans(stmod_cov.allshr, ~ time_class) %>% 
+  pairs() %>% 
+  plot(type="response") +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core and Noncore Winter Range, All Shrub Cover")
+
+ggsave("./output/figures_exported/upland_cover/emm_shrubcov_wcwnc.pdf", width = 4.5, height = 3.55) # save plot
+ggsave("./output/figures_exported/upland_cover/emm_shrubcov_wcwnc.png", width = 4.5, height = 3.55) # save plot
+
+# table of contrasts
+emmeans(stmod_cov.allshr, ~ time_class) %>% 
+  pairs() %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>%
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the log scale")
+
+# table of contrasts. Results are given on the response scale.
+emmeans(stmod_cov.allshr, ~ time_class) %>% 
+  pairs(reverse = FALSE, type="response") %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the response scale.")
+
+```
+
+# Session info
+
+R version 4.0.3 (2020-10-10)  
+Platform: x86_64-w64-mingw32/x64 (64-bit)  
+Running under: Windows 10 x64 (build 19041)
+
+```{r, echo=FALSE}
+subset(data.frame(sessioninfo::package_info()), attached==TRUE, c(package, loadedversion)) %>% 
+  gt() %>% 
+  tab_header(title = "Attached packages and versions")
+
+```
+
+```{r, echo=FALSE, eval=FALSE}
+citation(package = "emmeans")
+citation(package = "rstanarm")
+citation(package = "bayestestR")
+```
+
+
+# References
