@@ -1,0 +1,642 @@
+---
+title: "Appendix C - Willow Line Intercept Data"
+author: ''
+date: ''
+output:
+  html_document:
+    theme: journal
+    toc: yes
+    toc_float: no
+    toc_depth: 3
+    fig_caption: yes
+  word_document:
+    toc: yes
+    toc_depth: '3'
+editor_options: 
+  markdown: 
+    wrap: 72
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align = 'center', cache = FALSE)
+opts_knit$set(root.dir=normalizePath('../')) # this is required if Rmd is nested below the project directory
+opts_chunk$set(fig.path = "../output/figures/") 
+set.seed(1234)
+```
+
+**Willow plots: Line intercept data**
+
+*Code author:* E. Gage
+[mycologica\@gmail.com](mailto:mycologica@gmail.com){.email}\
+<https://github.com/egage>\
+Updated: `r format(Sys.time(), '%Y %B %d')`
+
+```{r, echo=FALSE}
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(fs))
+suppressPackageStartupMessages(library(sf))
+suppressPackageStartupMessages(library(janitor))
+suppressPackageStartupMessages(library(readxl))
+suppressPackageStartupMessages(library(mapview))
+suppressPackageStartupMessages(library(viridis))
+suppressPackageStartupMessages(library(ggstance))
+suppressPackageStartupMessages(library(readxl))
+suppressPackageStartupMessages(library(DT))
+suppressPackageStartupMessages(library(lubridate))
+suppressPackageStartupMessages(library(skimr)) 
+suppressPackageStartupMessages(library(dataMaid))
+library(lubridate)
+library(mapview)
+library(bayestestR)
+library(gt)
+library(labelled)
+library(summarytools)
+library(emmeans)
+library(rstanarm)
+options(mc.cores = parallel::detectCores())
+
+```
+
+```{r, echo=FALSE, warning=FALSE,message=FALSE, comment=FALSE, eval=TRUE}
+# function definitions
+## themes
+theme_smFacet <- theme_minimal() + theme(strip.text.x = element_text(size = 7))
+theme_smFacet2 <- theme_minimal() + theme(strip.text.x = element_text(size = 6))
+## data import
+read_sheets <- function(file){
+  xlsx_file <- file
+  xlsx_file %>%
+    excel_sheets() %>%
+    set_names() %>%
+    map_df(read_excel, path = xlsx_file, .id = 'sheet_name', trim_ws = TRUE, skip = 1, col_types = "text", range = "A2:DW700") %>% 
+    mutate(file_name = file) %>% 
+    select(file_name, sheet_name, everything())
+}
+
+## read xlsx then csv cache
+read_then_csv <- function(sheet, path) {
+  pathbase <- path %>%
+    basename() %>%
+    tools::file_path_sans_ext()
+  path %>%
+    read_excel(sheet = sheet) %>% 
+    write_csv(paste0(pathbase, "-", sheet, ".csv"))
+}
+
+## plotting
+ggTile_yr_season_site2 <- function(df){
+  df %>%
+  group_by(yr, season, site2) %>%
+  summarise(n= n()) %>%
+  ggplot(aes(yr, site2)) +
+  geom_tile(aes(fill = n), color = 'white') +
+  viridis::scale_fill_viridis(option = "B") +
+  facet_wrap(~season) +
+  theme(axis.text.x = element_text(angle = 55, hjust = 1, size = 7)) +
+  theme(axis.text.y = element_text(size = 7)) +
+  facet_wrap(~season)}
+
+ggTile_yr_season_site <- function(df){
+  df %>%
+  group_by(yr, season, site) %>%
+  summarise(n= n()) %>%
+  ggplot(aes(yr, site)) +
+  geom_tile(aes(fill = n), color = 'white') +
+  viridis::scale_fill_viridis(option = "D") +
+  theme(axis.text.x = element_text(angle = 55, hjust = 1, size = 7)) +
+  theme(axis.text.y = element_text(size = 7)) +
+  facet_wrap(~season)} 
+
+## ppcheck.plot
+ppc.plot <- function(model){
+  pp_check(model) +
+  labs(x = "Value", y = "Density") +
+  theme_minimal()
+}
+
+### Table functions
+## gt field names
+names.gt <- function(df){
+  df %>% 
+  names() %>% enframe %>% gt::gt() %>% 
+    tab_header(title = "field names")
+}
+
+names.dt <- function(df){
+  df %>% 
+  names() %>% enframe %>% 
+    DT::datatable(caption = "field names")
+}
+
+# describe posterior
+fun.desc.post1.gt.rope <- function(model){
+  describe_posterior(
+  model,
+  effects = "fixed",
+  component = "all",
+  ci_method = "hdi",
+  ci=0.9,
+  test = c("p_direction", "p_significance","rope"),
+  #rope_range(c(-0.1,0.1)),
+  rope_range("default"),
+  rope_ci = 0.9,
+  centrality = "median"
+) %>% 
+    as_tibble() %>% 
+    gt() %>% 
+    tab_header(title = "Posterior description") %>% 
+    fmt_number(
+    columns = 2:14,
+    decimals = 2,
+    suffixing = TRUE
+  )
+}
+
+## summary funcs
+mean_r1 <- function(x){
+  round(mean(x, na.rm = TRUE),1)
+}
+
+sd_r1 <- function(x){
+  round(sd(x, na.rm = TRUE),1)
+}
+
+range_r1 <- function(x){
+  round(range(x, na.rm = TRUE),1)
+}
+
+
+```
+
+# Introduction
+
+This document is an appendix to NRR report "Monitoring of Vegetation
+Response to Elk Population and Habitat Management in Rocky Mountain
+National Park. Analysis of Elk Vegetation Management Plan monitoring
+data: 2008--2018" presenting additional analyses of line intercept data
+not presented in the main report. The code and analyses aim to
+characterize basic data structure, clean and reorganize as needed for
+plotting and modeling. Analyses are limited to line intercept data from
+plots established in areas of the elk winter range and Kawuneeche Valley
+(i.e., see Zeigenfuss et al. 2011). For information on sampling and the
+broader analysis and interpretation of the results, refer to this
+report, past analyses [@zeigenfuss2015], and the original EVMP
+monitoring plan [@zeigenfuss2011].
+
+# Methods
+
+The code and results presented here build on derived data produced in a
+separate code document focused on ingesting, compiling, and cleaning raw
+data provided by RMNP staff (Appendix B). Extensive "munging" of raw
+files was required. Separate code documents were developed for other
+distinct elements of the larger EVMP (e.g., aspen and upland plots).\
+In general, packages included in the "Tidyverse" ecosystem of R packages
+were used for data transformation and visualization [@wickham2019],
+although specialized packages particular to specific tasks (e.g., the
+"bayesplot" plot for visualization of Bayesian posterior distributions)
+were also used [@gabry2019].
+
+Bayesian repeated measures analyses were fit separately for combined
+core and non-core winter range, core winter range (WC) and non-core
+winter range plots (WNC). For willow height, models were fit using
+weekly informative priors and a gamma distribution with the "stan_lmer"
+function in the "rstanarm" package [@goodrich2020][@brilleman2018].
+
+For continuous proportions such as plant cover (i.e, those not derived
+from count data), a common approach to modeling is to transform data
+then use ordinary linear models, however this creates problems for
+interpretation and inference [@douma2019]. Techniques relying on
+transformations make estimates on the transformed scale, requiring
+back‐transformation for reporting and interpretation. However, the
+relationship between the original and transformed proportions is often
+non‐linear, creating issues for interpretation [@douma2019]. Alternative
+approaches using beta regression [@cribari-neto2009][@ferrari2004] have
+been developed and are relied on here for modeling continuous
+proportions (e.g., willow cover). After fitting appropriate models using
+"rstanarm" functions, comparisons of estimated marginal means were made
+between time classes and management classes (e.g., fencing) using
+functions in the "emm" R package [@lenth2020].
+
+```{r}
+## read in data from the derived folder. See appx_
+csv.all.lc.li.df <- read_csv("./data/EVMP_derived/line_intercept_willow_cleaned.csv")
+
+```
+
+```{r, eval = FALSE, echo=FALSE}
+# > From discussions with HA in the field, the orientation of line-intercept transects may not have had a consistent orientation from sampling interval to interval.
+```
+
+```{r}
+### Counts of plots in fenced and unfenced contexts
+## address missing attributes for pType
+csv.all.lc.li.df <- csv.all.lc.li.df %>%
+  mutate(pType = case_when(is.na(pType) ~ "willow",
+                            TRUE ~ pType))
+
+## address missing attributes for RANGE_TYPE
+csv.all.lc.li.df <- csv.all.lc.li.df %>%
+  mutate(RANGE_TYPE = case_when(is.na(RANGE_TYPE)  & SITE_TYPE == "WC" ~ "core winter range",
+                            TRUE ~ RANGE_TYPE))
+
+```
+
+```{r}
+## Make NA unburned; presumes NA are "unburned"
+## standardize encoding of BURNED
+csv.all.lc.li.df <- csv.all.lc.li.df %>%
+  mutate(BURNED = case_when(is.na(BURNED) ~ "Unburned",
+                            BURNED == "Not burned" ~ "Unburned",
+                            TRUE ~ BURNED))
+
+## reverse factor levels
+csv.all.lc.li.df <- csv.all.lc.li.df %>%
+  mutate(timeClass = forcats::fct_rev(timeClass))
+
+## Reorder levels
+csv.all.lc.li.df <- csv.all.lc.li.df %>% 
+  mutate(SITE_TYPE = as_factor(SITE_TYPE)) %>% 
+  mutate(SITE_TYPE = forcats::fct_relevel(SITE_TYPE, "WK", after = 2))
+
+csv.all.lc.li.df <- csv.all.lc.li.df %>% 
+  mutate(timeClass = fct_relevel(timeClass, "BL", after=Inf)) %>% 
+  mutate(timeClass = fct_rev(timeClass)) %>% 
+  mutate(FENCED = fct_rev(FENCED))
+
+```
+
+```{r}
+## Address missing RANGE_TYPE attribution
+csv.all.lc.li.df <- csv.all.lc.li.df %>%
+  mutate(RANGE_TYPE = case_when(SITE_TYPE == "WC" ~ "core winter range",
+                                TRUE ~ RANGE_TYPE)) %>% 
+  distinct()
+```
+
+# Results
+
+## Maximum Height
+
+### Descriptive Statistics and plots
+
+#### All Shrubs Species
+
+```{r}
+## Boxplot
+csv.all.lc.li.df %>% 
+  filter(pType == "willow") %>%
+  mutate(yr = as.character(yr)) %>%
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  ggplot(aes(timeClass, MAX_HEIGHT_CM)) +
+  geom_boxplot(aes(fill = FENCED), outlier.shape = NA) +
+  geom_hline(aes(yintercept = 110), color = "red", lty = "dashed", size = 1) +
+  ylim(0,300) +
+  labs(x="", y= "Height (cm)", title = "Maximum shrub height", caption = "WC, All shrub species line intercept plots") +
+  scale_fill_manual(values = c("grey90","grey50")) +
+  theme_minimal() + 
+  # theme(axis.text.x=element_text(angle = 45, hjust = 1)) #+
+  facet_wrap(~SITE_TYPE)
+
+# ggsave("./output/figures_exported/WCWNCWK_LI_shrubHt_boxplot.png", width = 6.5, height = 4.875)
+```
+
+```{r}
+#### Table of mean max height
+csv.all.lc.li.df %>% 
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>% 
+  group_by(timeClass, SITE_TYPE) %>%
+  descr(MAX_HEIGHT_CM, stats = "common") %>% 
+  summarytools::tb() %>% 
+  mutate(across(c('mean','sd','pct.valid'), ~round(.,digits = 1))) %>% 
+  gt() %>% 
+  tab_header(title = "Max height", subtitle = "All shrub species combined, all site and mgt group types")
+
+```
+
+```{r}
+## all shrub species
+csv.all.lc.li.df %>%
+  filter(pType == "willow") %>% 
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  filter(!is.na(MAX_HEIGHT_CM)) %>%
+  filter(SITE_TYPE == "WC") %>% 
+  ggplot(aes(timeClass, MAX_HEIGHT_CM)) +
+  geom_boxplot(aes(fill=FENCED), color = 'black', outlier.shape = NA) +
+  geom_hline(aes(yintercept = 110), color = "red", lty = "dashed", size = 1) +
+  scale_fill_viridis(discrete = TRUE) +
+  theme_minimal() +
+  ylim(0,320) +
+  scale_fill_manual(values = c("grey90","grey50")) +
+  labs(x = "Year", y = "Max height (cm)", fill = "", title = "Core Winter Range Plots: All Shrub Species", caption = "Line intercept data")
+
+```
+
+```{r}
+### All shrubs, site type, fenced/unfenced
+#### Table of mean max height
+csv.all.lc.li.df %>% 
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>% 
+  group_by(timeClass, SITE_TYPE, FENCED) %>%
+  descr(MAX_HEIGHT_CM, stats = "common") %>% 
+  summarytools::tb() %>% 
+  mutate(across(c('mean','sd','pct.valid'), ~round(.,digits = 1))) %>% 
+  gt() %>% 
+  tab_header(title = "LI, Mean max height", subtitle = "All shrubs, all site types, fenced/unfenced")
+
+```
+
+```{r}
+### All shrubs, site type, fenced/unfenced, burned/unburned
+## Boxplot
+csv.all.lc.li.df %>% 
+  filter(pType == "willow") %>%
+  mutate(yr = as.character(yr)) %>%
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  ggplot(aes(timeClass, MAX_HEIGHT_CM)) +
+  geom_boxplot(aes(fill = FENCED), outlier.shape = NA) +
+  geom_hline(aes(yintercept = 110), color = "red", lty = "dashed", size = 1) +
+  ylim(0,300) +
+  labs(x="", y= "Height (cm)", title = "Maximum shrub height", caption = "WC, All shrub species line intercept plots") +
+  scale_fill_manual(values = c("grey90","grey50")) +
+  theme_minimal() + 
+  # theme(axis.text.x=element_text(angle = 45, hjust = 1)) #+
+  facet_wrap(BURNED~SITE_TYPE)
+
+# ggsave("./output/figures_exported/WCWNCWK_LI_shrubHt_FenBur_boxplot.png", width = 6.5, height = 4.875)
+```
+
+#### Willow Species
+```{r}
+csv.wil.lc.li.df <- csv.all.lc.li.df %>% 
+  filter(str_detect(SPECIES_CODE, "^SA")) %>% 
+  mutate(FENCED = fct_rev(FENCED))
+
+## Boxplot
+csv.wil.lc.li.df %>% 
+  filter(pType == "willow") %>%
+  mutate(yr = as.character(yr)) %>%
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  ggplot(aes(timeClass, MAX_HEIGHT_CM)) +
+  geom_boxplot(aes(fill = FENCED), outlier.shape = NA) +
+  geom_hline(aes(yintercept = 110), color = "red", lty = "dashed", size = 1) +
+  ylim(0,600) +
+  labs(x="", y= "Height (cm)", title = "Maximum willow height", caption = "WC, All willow species line intercept plots") +
+  scale_fill_manual(values = c("grey90","grey50")) +
+  theme_minimal() + 
+  facet_wrap(~SITE_TYPE)
+
+```
+
+```{r}
+### All willow species, site type, fenced/unfenced
+#### Table of mean max height
+csv.wil.lc.li.df %>% 
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>% 
+  group_by(timeClass, SITE_TYPE, FENCED) %>%
+  descr(MAX_HEIGHT_CM, stats = "common") %>% 
+  summarytools::tb() %>% 
+  mutate(across(c('mean','sd','pct.valid'), ~round(.,digits = 1))) %>% 
+  gt() %>% 
+  tab_header(title = "Maximum height", subtitle = "All willows combined, all site types, fenced/unfenced")
+
+```
+
+```{r}
+### All Willow Species, site type, fenced/unfenced, burned/unburned
+## Boxplot
+csv.wil.lc.li.df %>% 
+  filter(pType == "willow") %>%
+  mutate(yr = as.character(yr)) %>%
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  ggplot(aes(timeClass, MAX_HEIGHT_CM)) +
+  geom_boxplot(aes(fill = FENCED), outlier.shape = NA) +
+  geom_hline(aes(yintercept = 110), color = "red", lty = "dashed", size = 1) +
+  ylim(0,600) +
+  labs(x="", y= "Height (cm)", title = "Maximum shrub height", caption = "WC, All willow species line intercept plots") +
+  scale_fill_manual(values = c("grey90","grey50")) +
+  theme_minimal() + 
+  facet_wrap(BURNED~SITE_TYPE)
+
+```
+
+```{r}
+#### Table of mean max height
+csv.wil.lc.li.df %>% 
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>% 
+  group_by(timeClass, SITE_TYPE, FENCED, BURNED) %>%
+  descr(MAX_HEIGHT_CM, stats = "common") %>% 
+  summarytools::tb() %>% 
+  mutate(across(c('mean','sd','pct.valid'), ~round(.,digits = 1))) %>% 
+  gt() %>% 
+  tab_header(title = "Maximum height", subtitle = "All willow, all site types, fenced/unfenced, burned/unburned")
+
+```
+
+```{r}
+csv.all.lc.li.df %>%
+  filter(yr !=2009 & yr != 2015 & yr !=2017) %>% 
+  filter(SITE_TYPE != "WK") %>%
+  filter(SPECIES_CODE == "SAMO" | SPECIES_CODE == "SAGE" | SPECIES_CODE == "SAPL" ) %>% 
+  filter(!is.na(MAX_HEIGHT_CM)) %>% 
+  group_by(SPECIES_CODE, timeClass, FENCED) %>% 
+  descr(MAX_HEIGHT_CM, stats = "common") %>% 
+  tb() %>% 
+  select(-variable) %>% 
+  mutate(across(where(is.numeric), round, 1)) %>% 
+  gt() %>% 
+  tab_header(title = "Maximum height: common willow species comparisons", subtitle = "Combined WC and WNC; SAPL, SAGE, and SAMO")
+
+```
+
+```{r, eval=TRUE}
+## salix monitcola
+csv.all.lc.li.df %>%
+  filter(pType == "willow") %>% 
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  filter(!is.na(MAX_HEIGHT_CM)) %>%
+  filter(SPECIES_CODE =="SAMO") %>% 
+  filter(SITE_TYPE == "WC") %>% 
+  ggplot(aes(timeClass, MAX_HEIGHT_CM)) +
+  geom_boxplot(aes(fill=FENCED), color = 'black', outlier.shape = NA) +
+  geom_hline(aes(yintercept = 110), color = "red", lty = "dashed", size = 1) +
+  theme_minimal() +
+  ylim(0,320) +
+  scale_fill_manual(values = c("grey90","grey50")) +
+  labs(x = "Year", y = "Max height (cm)", fill = "", title = "Core Winter Range Plots: SAMO only", caption = "Line intercept data")
+
+```
+
+```{r, eval=TRUE}
+## salix geyeriana
+csv.all.lc.li.df %>%
+  filter(pType == "willow") %>% 
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  filter(!is.na(MAX_HEIGHT_CM)) %>%
+  filter(SPECIES_CODE =="SAGE") %>% 
+  filter(SITE_TYPE == "WC") %>% 
+  ggplot(aes(timeClass, MAX_HEIGHT_CM)) +
+  geom_boxplot(aes(fill=FENCED), color = 'black', outlier.shape = NA) +
+  geom_hline(aes(yintercept = 110), color = "red", lty = "dashed", size = 1) +
+  theme_minimal() +
+  ylim(0,320) +
+  scale_fill_manual(values = c("grey90","grey50")) +
+  labs(x = "Year", y = "Max height (cm)", fill = "", title = "Core Winter Range Plots: SAGE only", caption = "Line intercept data")
+
+```
+
+```{r, eval=TRUE}
+## Salix planifolia
+csv.all.lc.li.df %>%
+  filter(pType == "willow") %>% 
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  filter(!is.na(MAX_HEIGHT_CM)) %>%
+  filter(SPECIES_CODE =="SAPL") %>% 
+  filter(SITE_TYPE == "WC") %>% 
+  ggplot(aes(timeClass, MAX_HEIGHT_CM)) +
+  geom_boxplot(aes(fill=FENCED), color = 'black', outlier.shape = NA) +
+  geom_hline(aes(yintercept = 110), color = "red", lty = "dashed", size = 1) +
+  theme_minimal() +
+  ylim(0,320) +
+  scale_fill_manual(values = c("grey90","grey50")) +
+  labs(x = "Year", y = "Max height (cm)", fill = "", title = "Core Winter Range Plots: SAPL only", caption = "Line intercept data")
+
+```
+
+```{r}
+csv.all.lc.li.df %>%
+  filter(pType == "willow") %>% 
+  filter(SPECIES_CODE != "SAXX") %>% 
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  filter(!is.na(MAX_HEIGHT_CM)) %>%
+  filter(FENCED == "Unfenced" | FENCED == "Fenced") %>% 
+  group_by(yr, SPECIES_CODE, FENCED) %>% 
+  summarise(mean.ht = mean(MAX_HEIGHT_CM, na.rm = TRUE)) %>% 
+  pivot_wider(names_from = yr, values_from = c(mean.ht)) %>% 
+  gt::gt() %>% 
+  fmt_number(
+    columns = vars('2008','2013','2018'),
+    decimals = 1,
+    use_seps = FALSE
+  ) %>% 
+  tab_header("Mean height by shrub species")
+
+```
+
+```{r, echo=FALSE, eval=FALSE}
+csv.all.lc.li.df %>%
+  filter(pType == "willow") %>% 
+  filter(SPECIES_CODE != "SAXX") %>% 
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  filter(!is.na(MAX_HEIGHT_CM)) %>%
+  filter(str_detect(SPECIES_CODE, "^SA")) %>%
+  filter(FENCED == "Unfenced" | FENCED == "Fenced") %>% 
+  group_by(yr, FENCED) %>% 
+  summarise(mean.ht = mean(MAX_HEIGHT_CM, na.rm = TRUE), sd.ht = sd(MAX_HEIGHT_CM, na.rm = TRUE)) %>% 
+  pivot_wider(names_from = yr, values_from = c(mean.ht,sd.ht)) %>% 
+  select(contains("2008"),contains("2013"), contains("2018")) %>% 
+  gt::gt() %>% 
+  fmt_number(
+    columns = vars("mean.ht_2008","mean.ht_2013","mean.ht_2018","sd.ht_2008","sd.ht_2013", "sd.ht_2018"),
+    decimals = 1,
+    use_seps = FALSE
+  ) %>% 
+  tab_header("Mean height (cm) by all willow species, line intercept")
+
+```
+
+### Modeling and Posterior Description - Combined Willow Species
+
+```{r, cache=FALSE}
+# clean names
+csv.wil.lc.li.df <- csv.wil.lc.li.df %>% 
+  clean_names() %>% 
+  filter(!is.na(max_height_cm)) %>% 
+  filter(time_class == "BL" | time_class == "2013" | time_class == "2018")
+
+## run with gamma
+wc.wnc.stmod_li_TCxF <- stan_glmer(max_height_cm ~ time_class*fenced +  (1 | site_id), data = csv.wil.lc.li.df,
+                      family=Gamma(link="log"),
+                      iter = 10000,
+                      )
+```
+
+```{r, echo=FALSE}
+# Get the prior summary
+prior_summary(wc.wnc.stmod_li_TCxF)
+```
+
+```{r}
+#### PP check plot
+ppc.plot(wc.wnc.stmod_li_TCxF) +
+  labs(caption = "WC+WNC: willow_ht~TCxF")
+
+```
+
+```{r}
+#### Describe posterior distributions
+fun.desc.post1.gt.rope(wc.wnc.stmod_li_TCxF) %>% 
+  tab_header(title = "Combined WC and WNC", subtitle = "Willow Height Posterior Description - Line Intercept")
+
+```
+
+### Probability of Direction
+
+```{r}
+p_direction(wc.wnc.stmod_li_TCxF) %>% 
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Willow height, Combined Core and Non-core Winter Range")
+
+p_direction(wc.wnc.stmod_li_TCxF) %>% 
+  as_tibble() %>% 
+  gt() %>% 
+  tab_header(title = "Probability of Direction", subtitle = "WC & WNC Combined Willows")
+
+```
+
+### Contrasts
+
+```{r}
+## contrasts
+emmeans(wc.wnc.stmod_li_TCxF, ~ time_class | fenced) %>% 
+  pairs(reverse = TRUE) %>% 
+  # plot() + # on the lm predict scale
+  plot(type = "response") +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "WC & WNC Max Height, Combined Willow, Results are given on the response scale.")
+
+# table of contrasts. Results are given on the response scale.
+emmeans(wc.wnc.stmod_li_TCxF, ~ time_class | fenced) %>% 
+  pairs(reverse = TRUE, type="response") %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the response scale.")
+
+```
+
+```{r}
+## contrasts: 
+emmeans(wc.wnc.stmod_li_TCxF, ~ time_class | fenced) %>% 
+  pairs(reverse = TRUE) %>% 
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "WC & WNC Max Height, Combined Willow, Results are given on the log (not response) scale.")
+
+# table of contrasts. Results are given on the log (not the response) scale.
+emmeans(wc.wnc.stmod_li_TCxF, ~ time_class | fenced) %>% 
+  pairs(reverse = TRUE) %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the log (not the response) scale.")
+```
+
+# References
