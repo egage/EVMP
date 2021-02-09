@@ -19,8 +19,7 @@ _Code author:_
 E. Gage  
 mycologica@gmail.com  
 https://github.com/egage  
-
-_Update: 2021-02-09_
+Updated: `r format(Sys.time(), '%Y %B %d')`  
 
 ```{r setup, include=FALSE}
 # Rmd setup
@@ -178,9 +177,9 @@ monitoring plan [@zeigenfuss2011].
 
 # Methods
 
-The code and results presented here start from and build upon derived
+The code and results presented here build on derived
 data produced in a separate code document focused on ingesting,
-compiling, and cleaning raw data provided by RMNP staff. Extensive
+compiling, and cleaning raw data provided by RMNP staff (Appendix B). Extensive
 "munging" of raw files was required, so the decision was made to
 separate code used to pre-process raw data from code used for the
 analyses presented here. Likewise, separate code documents were
@@ -308,6 +307,7 @@ willow.ht.wc.wnc %>%
 
 ```
 
+### Modeling and Posterior Description
 ```{r, cache=TRUE}
 ## run with gamma
 wc.wnc.stmod_TCxF <- stan_glmer(plant_ht_cm ~ time_class*fenced +  (1 | site_id), data = willow.ht.wc.wnc,
@@ -328,8 +328,6 @@ ppc.plot(wc.wnc.stmod_TCxF) +
 # ggsave("./output/figures_exported/willow_height/ppc_willowht_wcwnc.png", dpi = 300, width = 4.75, height = 3.75)
 # ggsave("./output/figures_exported/willow_height/ppc_willowht_wcwnc.pdf", width = 4.75, height = 3.75)
 ```
-
-### Modeling and Posterior Description
 
 ```{r, echo=TRUE}
 #### Describe posterior distributions

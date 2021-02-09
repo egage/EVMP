@@ -1,0 +1,316 @@
+---
+title: "Appendix D. Provisional EVMP and East Troublesome Fire analysis"
+author: ''
+date: ''
+output:
+  html_document:
+    toc: yes
+    fig_caption: yes
+    theme: paper
+  word_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.align = 'center', cache = FALSE)
+opts_knit$set(root.dir=normalizePath('../')) # this is required if Rmd is nested below the project directory
+opts_chunk$set(fig.path = "../output/figures/") # specify a subdirectory for figs
+
+```
+
+**Updated:** 11/9/2020
+```{r, echo=FALSE}
+library(ggspatial)
+library(tidyverse)
+library(sf)
+library(mapview)
+library(gganimate)
+library(DT)
+library(janitor)
+library(gt)
+library(patchwork)
+library(gtsummary)
+```
+
+## Data and methods
+This appendix provides a provisional assessment of EVMP plots in relation to East Troublesome fire perimeter data. Fire perimeter data approved from the 2020 National Incident Feature Service (NIFS) were downloaded from:
+https://data-nifc.opendata.arcgis.com/datasets/archived-wildfire-perimeters-2
+
+EVMP plots were encoded as “burned” for 2020 if they fell within the 10/27/2020 fire perimeter. Attribution _does not represent field-verified fire effects on the plots_. Data were processed using functions in the "sf" package for R.
+
+```{r, message=FALSE}
+## read in EVMP sites and set same crs
+evmp <- st_read("data/EVMP_derived/site_info_clean.shp", quiet = TRUE)
+
+evmp.4326 <- st_transform(evmp,4326)
+
+
+# et.1027 <- st_transform(et.1027,2957)
+
+```
+
+```{r}
+# EPSG:2957
+# NAD83(CSRS) / UTM zone 13N (Google it)
+# 
+# WGS84 Bounds: -108.0000, 49.0000, -102.0000, 81.0000
+# Projected Bounds: 280586.2987, 5431792.8644, 719413.7013, 8994558.8477
+# Scope: Large and medium scale topographic mapping and engineering survey.
+# Last Revised: May 29, 2007
+# Area: Canada - 108°W to 102°W
+```
+
+
+```{r, message=FALSE}
+# C:\Users\Ed\Git_repos\EVMP\data\fire_2020
+peri.arch <- st_read("data/fire_2020/Public_NIFS_Archive_Perimeters.shp", quiet = TRUE)
+
+```
+
+## Tables and figures
+
+### East Troublesome Fire perimeter
+
+```{r}
+#
+et <- peri.arch %>%
+  filter(IncidentNa == "East Troublesome")
+
+et <- et %>% 
+  filter(GDB_FROM_D != "2020-11-02" & GDB_FROM_D != "2020-10-25")
+
+
+
+```
+
+```{r, eval=FALSE}
+st_crs(et)
+## calc area
+et$area <- st_transform(et, 26913) %>% 
+  st_area(et)
+
+et <- et %>%
+  mutate(area = as.numeric(area)) %>% 
+  mutate(area_km2 = area/10000) %>% 
+  mutate(area_acre = area*0.000247105)
+
+# scrap
+# et %>% 
+#   mutate(date = anytime::anydate(GDB_FROM_D)) %>%
+#   filter(date < "2020-10-25") %>% 
+#   group_by(GDB_FROM_D) %>%
+#   summarise(area_acre = sum(GISAcres)) %>%
+#   mutate(area_acre = round(area_acre,2)) %>% 
+#   ggplot(aes(GDB_FROM_D,area_acre)) +
+#   geom_label(aes(label = area_acre)) +
+#   geom_col() +
+#   theme_minimal()
+```
+
+
+
+```{r}
+pl.growth <- et %>%
+  ggplot() +
+  # annotation_map_tile(type = "http://c.tiles.wmflabs.org/hillshading/${z}/${x}/${y}.png",
+  #                     zoom = 14) +
+  geom_sf() +
+  annotation_scale(location = "br") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  facet_wrap(~GDB_FROM_D, ncol = 3) +
+  theme_void() +
+  # theme_minimal() +
+  labs(title = "East Troublesome perimeters",caption = "National Interagency Fire Center data")
+
+pl.growth
+
+```
+
+```{r}
+et.1027 <- et %>%
+  filter(GDB_FROM_D == "2020-10-27")
+# mapview(et.1027)
+```
+
+```{r, eval=FALSE}
+et.ani <- et %>%
+  filter(!is.na(GDB_FROM_D)) %>% 
+  ggplot() +
+  geom_sf() +
+  transition_states(GDB_FROM_D,
+                    transition_length = 2,
+                    state_length = 1)
+
+et.ani
+```
+
+### EVMP plots and 10/27/2020 fire perimeter
+
+```{r}
+# mapview(et.1027)
+# mapview(evmp.4326)
+
+map01 <- et.1027 %>%
+  ggplot() +
+  annotation_map_tile(type = "http://c.tiles.wmflabs.org/hillshading/${z}/${x}/${y}.png",
+                      zoom = 11) +
+  annotation_spatial(et.1027, color= "red", alpha = .31) +
+  layer_spatial(evmp, aes(col = pType)) +
+  viridis::scale_color_viridis(discrete = TRUE) +
+  theme_minimal() +
+  labs(title = "10/27 fire perimeter and EVMP Plots", color = "")
+map01
+
+# ggsave("output/figures_exported/fire2020_points_map.png", width = 7, height = 6, dpi=300)
+
+```
+
+```{r}
+## write to disk
+# et.1027 %>% 
+  # st_write("output/exported_data/spatial/east_trbl_1027.shp")
+```
+
+
+```{r, eval=FALSE}
+ggplot() +
+  annotation_spatial(et.1027, fill = "grey") +
+  layer_spatial(evmp, aes(col = pType)) +
+  annotation_scale(location = "tl") +
+  annotation_north_arrow(location = "br", which_north = "true") +
+  theme_minimal() +
+  labs(color = "")
+# ggsave("output/figures_exported/east_troublesome1.png", width = 7, height = 7, dpi = 230)
+```
+
+
+```{r}
+# join 
+plots_in_burn <- st_join(evmp.4326, et.1027, join = st_within)
+
+## clean
+plots_in_burn <- plots_in_burn %>% 
+  mutate(burned2020 = case_when(is.na(IncidentNa) ~ "Unburned",
+                                TRUE ~ "Burned"))%>%
+  select(1:13,burned2020)
+
+plots_in_burn <- plots_in_burn %>% 
+  mutate(BURNED = case_when(BURNED == "Unburned" ~ "Unburned",
+                            BURNED == "N Y" ~ "Unburned",
+                            BURNED == "Completely" ~ "Burned",
+                            BURNED == "Moderately" ~ "Burned",
+                            BURNED == "Moderately to Completely" ~ "Burned",
+                            BURNED == "Y" ~ "Burned",
+                            BURNED == "N" ~ "Unburned",
+                            BURNED == "Not burned" ~ "Unburned",
+                            is.na(BURNED) ~ "Unburned",
+                            TRUE ~ BURNED)
+         ) %>% 
+  mutate(FENCED = case_when(FENCED == "Y_but_fence_down_since_2013" ~ "Unfenced",
+                             FENCED == "Y" ~ "Fenced",
+                             FENCED == "N" ~ "Unfenced"))
+
+```
+
+```{r, eval=FALSE}
+## write shapefile to disk
+plots_in_burn %>%
+  st_write("output/exported_data/data_deliverables/evmp_sites.shp", append = FALSE)
+```
+
+```{r, eval=FALSE}
+plots_in_burn %>% 
+  mapview(zcol = "burned2020")
+
+```
+
+
+```{r}
+# clean
+plots_in_burn <- plots_in_burn %>%
+  as_tibble() %>%
+  rename(burned2012 = BURNED) %>% 
+  mutate(burned2012 = case_when(burned2012 == "N" ~ "Unburned",
+                                burned2012 == "Y" ~ "Burned",
+                                TRUE ~ burned2012)) %>% 
+  select(-c(GDB_ARCHIV, REMOVED, OBJECTID, WILDERN, IncidentNa, EastWst, VALLEY)) %>%  
+  relocate(burned2020, .after = burned2012) %>% 
+  relocate(pType, .after = SITE_ID) 
+
+# write for csv table
+
+# plots_in_burn %>%
+#   gt() %>%
+#   tab_header(title = "EVMP plots: 2012 and 2020 burn status") %>%
+#   gt::gtsave("output/exported_data/evmp_burned_2012_2020.rtf")
+# %>%
+# write_csv("output/exported_data/evmp_burned_2012_2020.csv")
+
+```
+
+### Count of plots in 10/27/2020 burn perimeter by valley
+
+Note: Plots were encoded as "burned" for 2020 if they fell within the 10/27/2020 fire perimeter; fire effects have not been assessed in the field.
+
+```{r}
+
+plots_in_burn %>%
+  as_tibble() %>% 
+  tabyl(burned2020) %>% 
+  arrange(burned2020) %>%
+  rename(Burned = burned2020) %>%
+  mutate(percent = round(100*percent,1)) %>% 
+  gt() %>% 
+  tab_header(title = "In 2020 burn perimeter") 
+
+
+```
+
+### Count of plots in 10/27/2020 burn perimeter by plot type
+
+Note: Plots were encoded as "burned" for 2020 if they fell within the 10/27/2020 fire perimeter; fire effects have not been assessed in the field.
+
+```{r}
+plots_in_burn %>% 
+  as_tibble() %>% 
+  tabyl(pType, burned2020) %>% 
+  arrange(-(Burned)) %>% 
+  gt() %>% 
+  tab_header(title = "In 2020 burn perimeter")
+
+```
+
+### Count of plots in 10/27/2020 burn perimeter by valley
+
+Note: Plots were encoded as "burned" for 2020 if they fell within the 10/27/2020 fire perimeter; fire effects have not been assessed in the field.
+
+```{r}
+
+
+plots_in_burn %>% 
+  as_tibble() %>% 
+  tabyl(vlly_fl,burned2020) %>% 
+  rename(Valley = vlly_fl) %>% 
+  arrange(-(Burned)) %>% 
+  gt()%>% 
+  tab_header(title = "In 2020 burn perimeter")
+
+```
+
+### Count of fenced plots in 10/27/2020 burn perimeter
+
+Note: Plots were encoded as "burned" for 2020 if they fell within the 10/27/2020 fire perimeter; fire effects have not been assessed in the field.
+
+```{r}
+plots_in_burn %>%
+  as_tibble() %>% 
+  tabyl(FENCED, burned2020) %>% 
+  rename(Fenced = FENCED) %>% 
+  gt()
+
+```
+
+

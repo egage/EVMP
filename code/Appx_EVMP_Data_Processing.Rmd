@@ -7265,7 +7265,6 @@ wb.evmp18 <- bind_rows(wbasin.sel, willow.mcro.evmp18) %>%
 
 ```
 
-
 ```{r}
 ### Willow height comparison among Wild Basin and EVMP plots
 ## compare WILLOW height
