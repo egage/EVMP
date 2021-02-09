@@ -1,0 +1,364 @@
+---
+title: "EVMP covariate analysis"
+author: ""
+date: ""
+output: 
+  html_document: 
+    theme: yeti
+    toc: yes
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(knitr)
+opts_knit$set(root.dir=normalizePath('../')) # this is required if Rmd is nested below the project directory
+opts_chunk$set(fig.path = "../output/figures/") # corrected path and added dev. Needed to specify a subdirectory for figs
+```
+
+```{r, echo=FALSE}
+# package install
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(fs))
+suppressPackageStartupMessages(library(sf))
+suppressPackageStartupMessages(library(janitor))
+suppressPackageStartupMessages(library(readxl))
+suppressPackageStartupMessages(library(mapview))
+suppressPackageStartupMessages(library(viridis))
+suppressPackageStartupMessages(library(ggstance))
+suppressPackageStartupMessages(library(readxl))
+suppressPackageStartupMessages(library(DT))
+suppressPackageStartupMessages(library(lubridate))
+suppressPackageStartupMessages(library(skimr)) 
+suppressPackageStartupMessages(library(dataMaid))
+library(lubridate)
+library(mapview)
+library(visdat)
+library(gt)
+```
+
+
+## Climate
+
+### Estes Park
+
+Dataset	Daily Summaries
+Order Start Date	1998-08-01 00:00
+Order End Date	2020-08-22 23:59
+Output Format	Custom GHCN-Daily CSV
+Data Types	MDPR, DAPR, PRCP, SNWD, SNOW, TMAX, TMIN, TOBS
+Custom Flag(s)	Station Name
+Units	Metric
+Stations/Locations	ESTES PARK 3 SSE, CO US (Station ID: GHCND:USC00052761)
+
+```{r}
+
+## import
+ep.raw <- read_csv("./data/covariates/climate/NCDC_EstesPark/2257130.csv") ## METRIC UNITS
+
+# The five core values are:
+# PRCP = Precipitation (mm or inches as per user preference, inches to hundredths on Daily Form pdf file)
+# SNOW = Snowfall (mm or inches as per user preference, inches to tenths on Daily Form pdf file)
+# SNWD = Snow depth (mm or inches as per user preference, inches on Daily Form pdf file)
+# TMAX = Maximum temperature (Fahrenheit or Celsius as per user preference, Fahrenheit to tenths on
+# Daily Form pdf file
+# TMIN = Minimum temperature (Fahrenheit or Celsius as per user preference, Fahrenheit to tenths on
+# Daily Form pdf file
+
+# Processing Completed	2020-08-24
+# Stations	
+# GHCND:USC00052761
+# Begin Date	1998-08-01 00:00
+# End Date	2020-08-22 23:59
+# Data Types	
+# MDPRDAPRPRCPSNWDSNOWTMAXTMINTOBS
+# Units	
+# Metric
+# Custom Flag(s)	
+# Station Name
+# Eligible for Certification	No
+
+```
+
+```{r}
+ep.cln <- ep.raw %>% 
+  clean_names() %>% 
+  mutate(month = month(date, label = TRUE, abbr = TRUE)) %>% 
+  mutate(doy = lubridate::yday(date)) %>%
+  mutate(year = lubridate::year(date))
+
+```
+
+```{r}
+
+ep.annual.sum.prcp <- ep.cln %>% 
+  group_by(year) %>% 
+  summarise(ppt_mm_ann = sum(prcp)) %>% 
+  ungroup()
+
+ep.plt1 <- ep.annual.sum.prcp %>%
+  filter(year > 2007 & year < 2019) %>% 
+  mutate(year = as.integer(year)) %>% 
+  ggplot(aes(year,ppt_mm_ann)) +
+  # geom_line() +
+  # geom_point() +
+  geom_col(fill = 'grey40') +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(from = 2008, to = 2018, by = 1)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Year", y = "Annual precipitation (mm)", caption = "Estes Park Station GHCND:USC00052761")
+
+ep.plt1
+# ggsave("./output/figures_exported/EstesPark_AnnualPrcp.png", width = 3.85, height = 3.85)
+
+```
+
+
+### Bear Lake Snotel
+```{r}
+# data\covariates\climate\BearToothSnotel
+snotel <- read_csv("./data/covariates/climate/BearLakeSnotel/snotel_2read.csv") %>% 
+  janitor::clean_names()
+```
+
+```{r}
+snotel <- snotel %>% 
+  rename(swe = snow_water_equivalent_in_start_of_day_values) %>% 
+  rename(ppt_accum_in = precipitation_accumulation_in_start_of_day_values) %>% 
+  rename(temp_max_f = air_temperature_maximum_deg_f) %>%
+  rename(temp_min_f = air_temperature_minimum_deg_f) %>%
+  rename(temp_avg_f = air_temperature_average_deg_f) %>%
+  rename(ppt_incr_in = precipitation_increment_in) 
+
+snotel <- snotel %>%
+  mutate(date = mdy(date)) %>% 
+  mutate(month = month(date,label = TRUE),
+         doy = yday(date),
+         year = year(date))
+
+```
+
+```{r}
+
+snotel <- snotel %>% 
+  mutate(ppt_accum_mm = 25.4*ppt_accum_in) %>% 
+  mutate(ppt_incr_mm = 25.4*ppt_incr_in)
+
+snotel %>%
+  visdat::vis_dat()
+```
+
+What day had the latest peak swe?
+
+
+```{r}
+top_ppt_accum <- snotel %>% 
+  group_by(year) %>% 
+  summarise(ppt_accum_mm_max = max(ppt_accum_mm)) %>% 
+  ungroup()
+
+ppt.pl <- top_ppt_accum %>% 
+  filter(year >1980 & year < 2019) %>% 
+  # mutate(year = as.character(year)) %>%
+  ggplot(aes(year,ppt_accum_mm_max)) +
+  geom_col(fill = "ivory4") +
+  labs(x="", y = "Accumulated precipitation (mm)", caption = "Bear Lake Snotel Data") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_x_continuous(breaks = seq(from = 1980, to = 2018, by = 5))
+  
+# ppt.pl
+
+```
+
+```{r}
+top_swe <- snotel %>% 
+  mutate(year = as.character(year)) %>%
+  group_by(year) %>% 
+  summarise(sum_swe = sum(swe)) %>% 
+  ungroup()
+
+
+swe.pl <- top_swe %>%
+  filter(year>1980 & year <2019) %>% 
+  # mutate(year = as.character(year)) %>%
+  mutate(year = as.integer(year)) %>%
+  ggplot(aes(year,sum_swe)) +
+  geom_col(fill = "grey60") +
+  # geom_jitter() +
+  labs(x="", y = "SWE") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_x_continuous(breaks = seq(from = 1980, to = 2018, by = 5))
+
+swe.pl
+
+# ggsave("./output/figures_exported/bearLk_SWE.png", width = 3.85, height = 3.85)
+
+```
+
+```{r}
+cowplot::plot_grid(swe.pl,ppt.pl, labels = "AUTO")
+# ggsave("./output/figures_exported/bear_lk_swe_ppt.png", width = 6.5, height = 3.8)
+```
+
+
+```{r}
+top_swe %>% 
+  select(year, sum_swe) %>% 
+  datatable(rownames = FALSE, filter = "top")
+```
+
+## Physiographic
+```{r}
+# distince from stream
+
+
+
+```
+
+## Elk
+```{r}
+
+elk.raw <- read_csv("./data/covariates/elk/RMNP_Population_summary.csv") %>% 
+  janitor::clean_names()
+
+```
+
+```{r}
+elk.raw <- elk.raw %>% 
+  mutate(year = as.integer(year))
+
+## write to disk
+# write_csv(elk.raw, "./data/covariates/elk/RMNP_elk_pop_summary_cln.csv")
+
+elk.raw %>% 
+  ggplot(aes(x = year, y = median)) +
+  geom_point(color = "blue") +
+  geom_line(color = "blue") +
+  geom_line(aes(y = p025), color = "red", lty = "dashed") +
+  geom_line(aes(y = p975), color = "red", lty = "dashed") +
+  theme_minimal() +
+  labs(x = "Year", y = "Median elk populatiop estimate", caption = "Modeled elk pop: RMNP_Population_summary.csv ")
+
+# ggsave("./output/figures_exported/elk_population.png", width = 5, height = 4, dpi = 300)
+```
+
+```{r}
+elk.raw %>% 
+  gt::gt() %>% 
+  gt::gtsave("./output/tables/elkpop.rtf")
+
+elk.raw %>% 
+  summarytools::descr(median) 
+
+elk.raw %>% 
+  arrange(desc(median))
+
+elk.raw %>% 
+  arrange((median))
+```
+
+
+## elk vs climate
+```{r}
+## Hobbs modeled elk vs Estes Park prcp
+
+elk.raw %>% arrange(desc(year))
+elk.ep_prcp <- left_join(ep.annual.sum.prcp,elk.raw, by = "year")
+
+elk.ep_prcp %>% 
+  ggplot(aes(x = year)) +
+  geom_col(aes(y = ppt_mm_ann)) +
+  geom_col(aes(y = median), color = "red")
+
+pl.cov1 <- elk.ep_prcp %>% 
+  ggplot() +
+  geom_point(aes(x = ppt_mm_ann, y = median)) +
+  # geom_smooth(aes(x = ppt_mm_ann, y = median)) +
+  geom_smooth(aes(x = ppt_mm_ann, y = median), method = "glm") +
+  theme_minimal() +
+  labs(x= "Annual precipitation (mm)", y = "Number of elk", caption = "Hobbs modeled elk vs Estes Park prcp") 
+
+pl.cov1
+# ggsave("./output/figures_exported/covariates/elk_v_prcp.png", width = 3.75, height = 4)  
+
+top_swe <- top_swe %>% 
+  mutate(year = as.integer(year))
+
+elk.ep_EPprcp_BLkppt <- left_join(elk.ep_prcp, top_ppt_accum, by = "year")
+```
+
+```{r}
+pl.cov2 <- elk.ep_EPprcp_BLkppt %>% 
+  ggplot() +
+  geom_point(aes(x = ppt_accum_mm_max , y = median)) +
+  # geom_smooth(aes(x = ppt_mm_ann, y = median)) +
+  geom_smooth(aes(x = ppt_accum_mm_max , y = median), method = "glm") +
+  theme_minimal() +
+  labs(x= "Annual precipitation (mm)", y = "Number of elk", caption = "Hobbs modeled elk vs Bear Lake SWE")
+pl.cov2
+
+lm(median ~ ppt_mm_ann, data = elk.ep_EPprcp_BLkppt)
+
+```
+
+
+```{r}
+library(moderndive)
+mod.elkXepPrcp <- lm(median ~ ppt_mm_ann, data = elk.ep_EPprcp_BLkppt) 
+
+mod.elkXepPrcp %>% 
+  moderndive::get_regression_table() %>% 
+  gt() %>% 
+  tab_header(title = "lm: elk media ~ Estes Park annual prcp")
+
+
+mod.elkXblkPrcp <- lm(median ~ ppt_accum_mm_max, data = elk.ep_EPprcp_BLkppt) 
+
+## broom::
+broom::tidy(mod.elkXblkPrcp)
+
+## report::
+# devtools::install_github("neuropsychology/report")
+
+library(report)
+mod.elkXblkPrcp
+# report::report(mod.elkXepPrcp)
+# report::report(mod.elkXblkPrcp)
+
+broom::tidy(mod.elkXblkPrcp) %>% 
+  gt() %>% 
+  tab_header(title = "lm: elk media ~ Bear Lk annual prcp")
+
+```
+
+```{r}
+# bayesian lm
+library(rstanarm)
+
+stanlm.elkXep <- stan_glm(median ~ ppt_accum_mm_max, data = elk.ep_EPprcp_BLkppt,
+                         chains = 5, iter = 1000,
+                         seed = 12345,
+                         refresh = 0)
+
+plot(stanlm.elkXep, "hist", pars = c("ppt_accum_mm_max", "sigma"), 
+     transformations = list(sigma = "log"))
+report::report(stanlm.elkXep )
+
+```
+
+```{r}
+## plot grid
+cowplot::plot_grid(pl.cov1, pl.cov2, labels = "AUTO")
+# ggsave("./output/figures_exported/covariates/prcp_x_elk_2panel.png", width = 6.5, height = 3.75, dpi = 300)
+```
+
+
+## elk vs offtake upland
+
+
+## climate vs elk
+
+## Moose
+
