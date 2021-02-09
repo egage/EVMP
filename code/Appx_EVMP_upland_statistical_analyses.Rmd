@@ -18,9 +18,8 @@ bibliography: references.bib
 _Code author:_ 
 E. Gage  
 mycologica@gmail.com  
-https://github.com/egage
-
-_Update: 2021-02-09_
+https://github.com/egage  
+Updated: `r format(Sys.time(), '%Y %B %d')`  
 
 ```{r setup, include=FALSE}
 library(knitr)
@@ -57,7 +56,6 @@ library(gt)
 ```{r, echo=FALSE, eval = TRUE}
 
 ## Functions
-
 ### Table functions
 
 ## function to describe model out

@@ -6,7 +6,7 @@ output:
   html_document: 
     theme: journal
     toc: yes
-    toc_depth: 4
+    toc_depth: 3
 editor_options: 
   markdown: 
     wrap: 72
@@ -16,11 +16,10 @@ bibliography: references.bib
 **Aspen Statistical Analyses**
 
 _Code author:_ 
-E. Gage
+E. Gage  
 mycologica@gmail.com  
-https://github.com/egage
-
-_Update: 2021-02-09_
+https://github.com/egage  
+Updated: `r format(Sys.time(), '%Y %B %d')`  
 
 ```{r setup, include=FALSE}
 library(knitr)
