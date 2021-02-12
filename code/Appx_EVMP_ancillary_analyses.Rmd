@@ -4,7 +4,7 @@ author: ""
 date: ""
 output: 
   html_document: 
-    theme: yeti
+    theme: journal
     toc: yes
     toc_depth: 2
 ---
@@ -15,6 +15,12 @@ library(knitr)
 opts_knit$set(root.dir=normalizePath('../')) # this is required if Rmd is nested below the project directory
 opts_chunk$set(fig.path = "../output/figures/") # corrected path and added dev. Needed to specify a subdirectory for figs
 ```
+
+_Code author:_ 
+E. Gage  
+mycologica@gmail.com  
+https://github.com/egage  
+Updated: `r format(Sys.time(), '%Y %B %d')`  
 
 ```{r, echo=FALSE}
 # package install
