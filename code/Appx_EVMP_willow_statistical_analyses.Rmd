@@ -18,7 +18,7 @@ bibliography: references.bib
 _Code author:_ 
 E. Gage  
 mycologica@gmail.com  
-https://github.com/egage  
+https://github.com/egage/EVMP  
 Updated: `r format(Sys.time(), '%Y %B %d')`  
 
 ```{r setup, include=FALSE}
@@ -66,6 +66,14 @@ fun.desc.post1 <- function(model){
 }
 
 ## Functions for summarizing posterior distributions, creating tables with the gt
+fun.sexit.gt <- function(model){
+  bayestestR::sexit(model) %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric), round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Effect Existence and Significance Testing") }
+
+
 fun.desc.post1.gt <- function(model){
   describe_posterior(
   model,
@@ -73,9 +81,8 @@ fun.desc.post1.gt <- function(model){
   component = "all",
   ci_method = "hdi",
   test = c("rope"),
-  ci=0.9,
+  ci=0.95,
   rope_ci = 0.9,
-  #rope_range(c(-0.1,0.1)),
   rope_range("default"),
   centrality = "median"
 ) %>% 
@@ -330,29 +337,7 @@ ppc.plot(wc.wnc.stmod_TCxF) +
 # ggsave("./output/figures_exported/willow_height/ppc_willowht_wcwnc.pdf", width = 4.75, height = 3.75)
 ```
 
-```{r, echo=TRUE}
-#### Describe posterior distributions
-fun.desc.post1.gt.rope(wc.wnc.stmod_TCxF) %>% 
-  tab_header(title = "Combined WC and WNC", subtitle = "Willow Height Posterior Description")
-
-## save as RTF
-# fun.desc.post1.gt.rope(wc.wnc.stmod_TCxF) %>%
-#  tab_header(title = "Combined WC and WNC", subtitle = "Willow Height Posterior Description") %>%
-#   gt::gtsave(filename = "./output/tables/willow_height/postdesc_willowht_TCxF_wcwnc.rtf")
-```
-
-```{r, echo=FALSE, eval = FALSE}
-# Posterior: just the point estimates
-point_estimate(wc.wnc.stmod_TCxF) %>% 
-  gt()
-# note: not run as redundant with above table
-```
-
 ```{r}
-## density plots
-# library(ggridges)
-# untransformed
-
 # Extract posteriors
 posteriors.wc.wnc.ht <- insight::get_parameters(wc.wnc.stmod_TCxF)
 
@@ -367,8 +352,24 @@ posteriors.wc.wnc.ht.tidy %>%
   theme_minimal()
 ```
 
-### Probability of Direction
+### Effect Existence and Significance Testing
+```{r}
+# use function defined above
+fun.sexit.gt(wc.wnc.stmod_TCxF)
+```
 
+```{r, echo=TRUE}
+#### Describe posterior distributions
+fun.desc.post1.gt.rope(wc.wnc.stmod_TCxF) %>% 
+  tab_header(title = "Combined WC and WNC", subtitle = "Willow Height Posterior Description")
+
+## save as RTF
+# fun.desc.post1.gt.rope(wc.wnc.stmod_TCxF) %>%
+#  tab_header(title = "Combined WC and WNC", subtitle = "Willow Height Posterior Description") %>%
+#   gt::gtsave(filename = "./output/tables/willow_height/postdesc_willowht_TCxF_wcwnc.rtf")
+```
+
+#### Probability of Direction
 ```{r}
 pd.wc.wnc <- p_direction(wc.wnc.stmod_TCxF)
 # Visualize the pd
@@ -382,7 +383,7 @@ plot(pd.wc.wnc) +
 
 ```
 
-### Region of Practical Equivalence (ROPE)
+#### Region of Practical Equivalence (ROPE)
 
 ```{r}
 rope.wcwnc <- rope(wc.wnc.stmod_TCxF, ci=0.9)
@@ -593,6 +594,12 @@ ppc.plot(stmod_ht2) +
 # ggsave("./output/figures_exported/willow_height/ppc_willowht_wc.pdf", width = 4.75, height = 3.75)
 ```
 
+### Effect Existence and Significance Testing
+```{r}
+# use function defined above
+fun.sexit.gt(stmod_ht2)
+```
+
 ```{r, echo=FALSE, eval=FALSE}
 ### Model posterior parameters to table
 fun.desc.post1.gt.rope(stmod_ht2) %>% 
@@ -600,8 +607,7 @@ fun.desc.post1.gt.rope(stmod_ht2) %>%
   gt::gtsave(filename = "./output/tables/willow_height/postdesc_willowht_TCxF_wc.rtf")
 ```
 
-### Probability of Direction
-
+#### Probability of Direction
 ```{r}
 pd.wc <- p_direction(stmod_ht2)
 
@@ -616,8 +622,7 @@ plot(pd.wc) +
 
 ```
 
-### Region of Practical Equivalence (ROPE)
-
+#### Region of Practical Equivalence (ROPE)
 ```{r}
 # Region Of Practical Equivalence (ROPE)
 rope.wc <- rope(stmod_ht2, ci=0.9)
@@ -758,6 +763,12 @@ ppc.plot(nc.stmod_ht1) +
 
 ```
 
+### Effect Existence and Significance Testing  
+```{r}
+# use function defined above
+fun.sexit.gt(nc.stmod_ht1)
+```
+
 ```{r, eval = TRUE}
 # describe posterior
 fun.desc.post1.gt.rope(nc.stmod_ht1)%>% 
@@ -779,7 +790,8 @@ posteriors.nc.ht.tidy <- posteriors.nc.ht %>%
 
 ```
 
-### Probability of Direction
+
+#### Probability of Direction
 
 ```{r}
 # Visualize the pd
@@ -794,7 +806,7 @@ ggsave("./output/figures_exported/willow_height/pd_willowht_wnc.pdf", width = 6.
 
 ```
 
-### Region of Practical Equivalence (ROPE)
+#### Region of Practical Equivalence (ROPE)
 
 ```{r}
 rope.wnc <- rope(nc.stmod_ht1, ci=0.9)
@@ -942,6 +954,12 @@ ggsave("./output/figures_exported/willow_height/ppc_willowht_wk.png", dpi = 300,
 ggsave("./output/figures_exported/willow_height/ppc_willowht_wk.pdf", width = 4.75, height = 3.75)
 ```
 
+### Effect Existence and Significance Testing
+```{r}
+# use function defined above
+fun.sexit.gt(stmod_ht_wk_TC)
+```
+
 ```{r}
 # full posterior description
 fun.desc.post1.gt.rope(stmod_ht_wk_TC) %>% 
@@ -956,8 +974,7 @@ fun.desc.post1.gt.rope(stmod_ht_wk_TC) %>%
   gt::gtsave(filename = "./output/tables/willow_height/postdesc_willowht_TC_wk.rtf")
 ```
 
-### Probability of Direction
-
+#### Probability of Direction
 ```{r}
 pdkv <- p_direction(stmod_ht_wk_TC)
 # Visualise the pd
@@ -971,7 +988,7 @@ ggsave("./output/figures_exported/willow_height/pd_willowht_wk.pdf", width = 6.7
 
 ```
 
-### Region of Practical Equivalence (ROPE)
+#### Region of Practical Equivalence (ROPE)
 
 ```{r}
 p.in.rope.kv <- rope(stmod_ht_wk_TC, ci=0.9)
@@ -1206,7 +1223,14 @@ fun.desc.post1.gt.rope(stmod_cov.wc.wnc$stanfit) %>%
   gt::gtsave(filename = "./output/tables/willow_cover/posterior_willowht_wcwnc.rtf")
 ```
 
-### Probability of Direction  
+### Effect Existence and Significance Testing
+```{r}
+
+fun.sexit.gt(stmod_cov.wc.wnc$stanfit)
+```
+
+
+#### Probability of Direction  
 ```{r}
 # Visualize the pd
 p_direction(stmod_cov.wc.wnc) %>% 
@@ -1220,7 +1244,7 @@ ggsave("./output/figures_exported/willow_cover/pd_willowht_wcwnc.pdf", width = 6
 
 ```
 
-### Region of Practical Equivalence (ROPE)  
+#### Region of Practical Equivalence (ROPE)  
 ```{r}
 rope.cov.wcwnc.gt <- rope(stmod_cov.wc.wnc$stanfit, ci=0.9) %>% 
   gt() %>%
@@ -1314,6 +1338,13 @@ ggsave("./output/figures_exported/wc_wnc_willowcover_ppc_TCxFxB.pdf", width = 4.
 
 ```
 
+### Effect Existence and Significance Testing
+```{r}
+
+fun.sexit.gt(stmod_cov.wc.wnc.TCxFxB$stanfit)
+```
+
+
 ## Willow Cover - Core Winter Range Macroplot Data
 
 ### Summary Tables
@@ -1387,9 +1418,13 @@ fun.desc.post1.gt.rope(stmod_cov.wc$stanfit) %>%
   gt::gtsave(filename = "./output/tables/willow_cover/posterior_willowht_wc.rtf")
 
 ```
+### Effect Existence and Significance Testing
+```{r}
 
-### Probability of Direction
+fun.sexit.gt(stmod_cov.wc$stanfit)
+```
 
+#### Probability of Direction
 ```{r}
 # Visualize the pd
 p_direction(stmod_cov.wc) %>% 
@@ -1403,8 +1438,7 @@ ggsave("./output/figures_exported/willow_cover/pd_willowht_wc.pdf", width = 6.75
 
 ```
 
-### Region of Practical Equivalence (ROPE)
-
+#### Region of Practical Equivalence (ROPE)
 ```{r}
 rope.cov.wc.gt <- rope(stmod_cov.wc$stanfit, ci=0.9) %>% 
   gt() %>%
@@ -1472,8 +1506,6 @@ cov.wnc %>%
 
 ### Modeling and Posterior Description
 
-cover_allwillow \~ time_class \* fenced + (1 \| site_id)
-
 ```{r, cache=TRUE}
 #### Model
 ## add to min and subtract from max to conform
@@ -1519,6 +1551,11 @@ ggsave("./output/figures_exported/willow_cover/ppc_willowcov_wc.pdf", width = 4.
 #   geom_density()
 ```
 
+### Effect Existence and Significance Testing
+```{r}
+fun.sexit.gt(stmod_cov.wnc$stanfit)
+```
+
 ```{r, eval = TRUE}
 #### Model posterior parameters to table
 fun.desc.post1.gt.rope(stmod_cov.wnc$stanfit)
@@ -1532,7 +1569,7 @@ fun.desc.post1.gt.rope(stmod_cov.wnc$stanfit) %>%
 
 ```
 
-### Probability of Direction
+#### Probability of Direction
 
 ```{r}
 # Visualize the pd
@@ -1547,7 +1584,7 @@ ggsave("./output/figures_exported/willow_cover/pd_willowht_wnc.pdf", width = 6.7
 
 ```
 
-### Region of Practical Equivalence (ROPE)
+#### Region of Practical Equivalence (ROPE)
 
 ```{r}
 rope.cov.wnc.gt <- rope(stmod_cov.wnc$stanfit, ci=0.9) %>% 
@@ -1564,7 +1601,6 @@ rope.cov.wnc.gt %>%
 ```
 
 ### Contrasts
-
 ```{r}
 # library(emmeans)
 wnc.cov.emm.TC <- emmeans(stmod_cov.wnc, ~ time_class)

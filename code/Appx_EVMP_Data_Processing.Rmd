@@ -22,8 +22,7 @@ set.seed(1234)
 _Code author:_ 
 E. Gage  
 mycologica@gmail.com  
-https://github.com/egage
-
+https://github.com/egage/EVMP  
 __Updated:__ `r format(Sys.time(), '%Y %B %d')`
 
 ```{r, echo=FALSE}
@@ -53,6 +52,7 @@ library(labelled)
 library(summarytools)
 library(ggrepel)
 library(ggtext)
+library(patchwork)
 
 ```
 
@@ -578,33 +578,35 @@ site.info.clean.sf %>%
 
 ```
 
-A total of 17 plots occur in the Kawuneeche Valley: 
-```{r}
 
+```{r}
+# A total of 17 plots occur in the Kawuneeche Valley: 
 site.info.clean.sf %>% 
   as_tibble() %>% 
   filter(VALLEY == "KV") %>%
-  select(-c(geometry, REMOVED, WILDERNESS, RANGE_TYPE)) %>%
+  select(-c(geometry, REMOVED, EastWest, WILDERNESS, RANGE_TYPE)) %>%
   rename('Valley code' = VALLEY) %>%
   rename('Valley name' = valley_full) %>% 
-  gt::gt()
+  gt::gt() %>% 
+  tab_header(title = "Kawuneeche Valley Plots")
 
 ```
 
-
-
 ```{r}
 site.info.clean.sf %>%
-  group_by(valley_full) %>% 
+  group_by(valley_full, pType) %>% 
   tally() %>% 
   ggplot(aes(reorder(valley_full, n),n)) +
-  geom_point(color="white", size = 6) +
   geom_pointrange(ymin=0, aes(ymax=n)) +
-  geom_point(color="ivory3", size = 10) +
-  geom_text(aes(label=n), size=6) +
+  geom_point(color="ivory3", size = 6) +
+  geom_point(color="white", size = 4) +
+  geom_text(aes(label=n), size=3) +
   theme_minimal() +
   coord_flip() +
+  facet_wrap(~pType) +
   labs(x="Valley", y = "Count", title = "Count of EVMP sampling sites by location")
+
+# ggsave("./output/figures_exported/rev_plotcnt_pTypeXvalley.png", width = 7, height = 3.75)
 
 ```
 
@@ -612,8 +614,10 @@ site.info.clean.sf %>%
 ### Counts of plots in fenced and unfenced contexts
 ## plot the count of plots by valley and fenced status
 pl.hm1 <- site.info.clean.sf %>%
+  as_tibble() %>% 
+  distinct() %>% 
   filter(!is.na(FENCED)) %>%
-  group_by(FENCED,valley_full) %>%
+  group_by(FENCED,valley_full, pType) %>%
   tally() %>%
   ungroup() %>% 
   ggplot(aes(FENCED, valley_full)) +
@@ -621,26 +625,27 @@ pl.hm1 <- site.info.clean.sf %>%
   geom_text(aes(label=n), size=6, color = 'white') +
   theme_minimal() +
   scale_fill_viridis() +
-  labs(x="Fenced", y = "", title = "Count of EVMP sampling sites",subtitle = "By valley and and fenced status")
+  facet_wrap(~pType) +
+  labs(x="Fenced", y = "", title = "Count of EVMP sampling sites")
 
 # ggsave(plot = pl.hm1, filename = "./output/figures_exported/descriptive_background/cnt_plot_valley_x_fenced.png", width = 5, height = 4, dpi = 300)
 
-pl.hm2 <- site.info.clean.sf %>%
-  filter(!is.na(FENCED)) %>% 
-  group_by(FENCED,pType) %>% 
-  tally() %>% 
-  ungroup() %>%
-  ggplot(aes(FENCED, pType)) +
-  geom_tile(aes(fill = n), color= 'white') +
-  geom_text(aes(label=n), size=6, color = 'white') +
-  theme_minimal() +
-  scale_fill_viridis() +
-  labs(x="Fenced", y = "", title = "Count of EVMP sampling sites", subtitle = "By plot type and fenced status")
+# pl.hm2 <- site.info.clean.sf %>%
+#   filter(!is.na(FENCED)) %>% 
+#   group_by(FENCED,pType) %>% 
+#   tally() %>% 
+#   ungroup() %>%
+#   ggplot(aes(FENCED, pType)) +
+#   geom_tile(aes(fill = n), color= 'white') +
+#   geom_text(aes(label=n), size=6, color = 'white') +
+#   theme_minimal() +
+#   scale_fill_viridis() +
+#   labs(x="Fenced", y = "", title = "Count of EVMP sampling sites", subtitle = "By plot type and fenced status")
 
 # ggsave(plot = pl.hm2, filename = "./output/figures_exported/descriptive_background/cnt_ptype_x_fenced.png", width = 5, height = 4, dpi = 300)
 
 pl.hm1
-pl.hm2
+# pl.hm2
 
 # paneled version of above
 # cowplot::plot_grid(pl.hm1, pl.hm2, labels = "AUTO", ncol=1,rel_heights = c(2,1))
@@ -1073,7 +1078,14 @@ csv.all.lc.li.df <- csv.all.lc.li.df %>%
 csv.all.lc.li.df <- csv.all.lc.li.df %>%
   mutate(RANGE_TYPE = case_when(SITE_TYPE == "WC" ~ "core winter range",
                                 TRUE ~ RANGE_TYPE)) %>% 
-  distinct()
+  distinct() %>% 
+  mutate(zCond = case_when(BURNED == "Burned" & FENCED == "Unfenced" ~ "BG",
+                           BURNED == "Burned" & FENCED == "Fenced" ~ "BF",
+                           BURNED == "Unburned" & FENCED == "Unfenced" ~ "UG",
+                           BURNED == "Unburned" & FENCED == "Fenced" ~ "UF"
+                           )) %>%
+  mutate(zCond2 = paste0(SITE_TYPE,"-",zCond)) ## these are the classes used in teh weighting scheme in Zeigenfuss 2015
+
 ```
 
 ```{r write_li_to_disk, eval = FALSE}
@@ -1081,8 +1093,7 @@ write_csv(csv.all.lc.li.df, "./data/EVMP_derived/line_intercept_willow_cleaned.c
 ```
 
 ### Height: all shrubs  
-
-#### All shrubs, site type
+#### All shrubs, site type  
 ```{r}
 ## Boxplot
 csv.all.lc.li.df %>% 
@@ -1116,8 +1127,7 @@ csv.all.lc.li.df %>%
 
 ```
 
-#### All shrubs, site type, fenced/unfenced
-
+#### All shrubs, site type, fenced/unfenced  
 ```{r}
 #### Table of mean max height
 csv.all.lc.li.df %>% 
@@ -1131,8 +1141,7 @@ csv.all.lc.li.df %>%
 
 ```
 
-#### All shrubs, site type, fenced/unfenced, burned/unburned
-
+#### All shrubs, site type, fenced/unfenced, burned/unburned  
 ```{r}
 ## Boxplot
 csv.all.lc.li.df %>% 
@@ -1153,17 +1162,76 @@ csv.all.lc.li.df %>%
 
 ```
 
+```{r}
+##
+# revised
+# WC, WNC - All shrub species line intercept plots
+
+plx1 <- csv.all.lc.li.df %>% 
+  filter(pType == "willow") %>%
+  filter(SITE_TYPE == "WC") %>% 
+  mutate(yr = as.character(yr)) %>%
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  ggplot(aes(timeClass, MAX_HEIGHT_CM)) +
+  geom_boxplot(aes(fill = FENCED), outlier.shape = NA) +
+  geom_hline(aes(yintercept = 110), color = "red", lty = "dashed", size = 1) +
+  ylim(0,300) +
+  labs(x="", y= "Height (cm)", title = "Core Winter Range", fill="") +
+  scale_fill_manual(values = c("grey90","grey50")) +
+  theme_minimal() + 
+  theme(legend.position = "right") +
+  # theme(axis.text.x=element_text(angle = 45, hjust = 1)) #+
+  facet_wrap(~BURNED)
+
+plx2 <- csv.all.lc.li.df %>% 
+  filter(pType == "willow") %>%
+  filter(SITE_TYPE == "WNC") %>% 
+  mutate(yr = as.character(yr)) %>%
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  ggplot(aes(timeClass, MAX_HEIGHT_CM)) +
+  geom_boxplot(fill = "grey50", outlier.shape = NA) +
+  geom_hline(aes(yintercept = 110), color = "red", lty = "dashed", size = 1) +
+  ylim(0,300) +
+  labs(x="", y= "Height (cm)",  title = "Noncore Winter Range", caption = "", fill="") +
+  # scale_fill_manual(values = c("grey90","grey50")) +
+  theme_minimal() + 
+  # theme(legend.position = "top") +
+  # theme(axis.text.x=element_text(angle = 45, hjust = 1)) #+
+  facet_wrap(~BURNED)
+
+plx3 <- csv.all.lc.li.df %>% 
+  filter(pType == "willow") %>%
+  filter(SITE_TYPE == "WK") %>% 
+  mutate(yr = as.character(yr)) %>%
+  # filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  ggplot(aes(timeClass, MAX_HEIGHT_CM)) +
+  geom_boxplot(fill = "grey50", outlier.shape = NA) +
+  geom_hline(aes(yintercept = 110), color = "red", lty = "dashed", size = 1) +
+  ylim(0,300) +
+  labs(x="", y= "Height (cm)", title = "Kawuneeche Valley", caption = "Maximum shrub height, all species", fill="") +
+  # scale_fill_manual(values = c("grey90","grey50")) +
+  theme_minimal() + 
+  # theme(legend.position = "top") +
+  # theme(axis.text.x=element_text(angle = 45, hjust = 1)) #+
+  facet_wrap(~BURNED)
 
 
-### Height: willow species only
+# combine
+plx1 + plx2 + plx3 +
+  plot_layout(widths = c(3, 1, 1)) +
+  plot_annotation(tag_levels = 'A')
 
-#### All willow species, site type
+# ggsave("./output/figures_exported/Revised_WCWNCWK_LI_shrubHt_FenBur_boxplot.png", width = 8, height = 4.875)
+
+```
+
+### Height: willow species only  
+#### All willow species, site type  
 **Max shrub height in-line intercept**
 ```{r}
 csv.wil.lc.li.df <- csv.all.lc.li.df %>% 
   filter(str_detect(SPECIES_CODE, "^SA"))
   
-
 ## Boxplot
 csv.wil.lc.li.df %>% 
   filter(pType == "willow") %>%
@@ -1198,8 +1266,7 @@ csv.wil.lc.li.df %>%
 
 ```
 
-#### All willow species, site type, fenced/unfenced
-
+#### All willow species, site type, fenced/unfenced  
 ```{r}
 #### Table of mean max height
 csv.wil.lc.li.df %>% 
@@ -1213,8 +1280,7 @@ csv.wil.lc.li.df %>%
 
 ```
 
-#### All willow species, site type, fenced/unfenced, burned/unburned
-
+#### All willow species, site type, fenced/unfenced, burned/unburned  
 ```{r}
 ## Boxplot
 csv.wil.lc.li.df %>% 
@@ -1234,7 +1300,6 @@ csv.wil.lc.li.df %>%
 # ggsave("./output/figures_exported/WCWNCWK_LI_willHt_FenBur_boxplot.png", width = 6.5, height = 4.875)
 
 ```
-
 
 ```{r}
 #### Table of mean max height
@@ -1273,7 +1338,7 @@ csv.wil.lc.li.df %>%
 
 ```
 
-#### Individual willow species
+#### Individual willow species  
 _Salix moniticola_ 
 ```{r}
 
@@ -1316,7 +1381,7 @@ csv.all.lc.li.df %>%
 
 ```
 
-_Line intercept summary table_
+_Line intercept summary table_  
 ```{r}
 csv.all.lc.li.df %>%
   filter(yr !=2009 & yr != 2015 & yr !=2017) %>% 
@@ -1333,8 +1398,7 @@ csv.all.lc.li.df %>%
 ```
 
 
-_Salix planifolia_
-
+_Salix planifolia_  
 ```{r}
 ## another species: SAPL
 csv.all.lc.li.df %>%
@@ -1397,8 +1461,6 @@ csv.all.lc.li.df %>%
 
 ```
 
-
-
 ```{r}
 
 csv.all.lc.li.df %>% 
@@ -1419,7 +1481,6 @@ csv.all.lc.li.df %>%
   facet_grid(SPECIES_CODE~yr, scales = "free_x")
 
 ```
-
 
 ```{r}
 #### Core winter range: fenced vs unfenced
@@ -1519,8 +1580,6 @@ csv.all.lc.li.df %>%
 
 ```
 
-
-
 ```{r}
 
 csv.all.lc.li.df %>%
@@ -1543,7 +1602,6 @@ csv.all.lc.li.df %>%
   tab_header("Mean height (cm) by all willow species, line intercept")
 
 ```
-
 
 ```{r, eval=FALSE}
 # Maximum Core winter range sites, maximum shrub height by species, fencing treatment, and year in line interecept dataset.**
@@ -1688,7 +1746,6 @@ csv.all.lc.li.df %>%
 
 ```
 
-
 ## Willow macroplot data
 ```{r}
 ## Data munging 
@@ -1731,21 +1788,15 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
 
 ```
 
-----
-
-
 ```{r}
-
 csv.all.lc.mcro %>% 
   unnest(field_names) %>% 
   distinct(file_name_abr,field_names) %>% 
-  # write_csv("output/temp_4_review/macroplot_fld_names.csv")
   datatable(rownames = FALSE, caption = "Macroplot inventory variable names.")
 
 ```
 
-### Canopy cover
-
+### Canopy cover  
 ```{r, eval=TRUE}
 ## 
 # Canopy diameter measurements from macroplots. Calculated as the mean of CANOPY_DIA_1_CM + CANOPY_DIA_2_CM. 
@@ -1764,9 +1815,11 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
 # csv.all.lc.mcro.df %>% tabyl(FENCED)
 # csv.all.lc.mcro.df %>% tabyl(BURNED)
 
+# lots of burned categories. Some don;t make sense (e.g., "N Y"). Collapsing to Burned/Unburned
+
 csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>% 
   mutate(BURNED = case_when(BURNED == "Unburned" ~ "Unburned",
-                            BURNED == "N Y" ~ "Unburned",
+                            BURNED == "N Y" ~ "Unburned", # ??
                             BURNED == "Completely" ~ "Burned",
                             BURNED == "Moderately" ~ "Burned",
                             BURNED == "Moderately to Completely" ~ "Burned",
@@ -1787,13 +1840,6 @@ canopy.all.spp <- csv.all.lc.mcro.df %>%
          TRUE ~ PERCENT_PLANT_IN_PLOT)) %>% # correct error in raw data
   # mutate(cano.area.m2 = PERCENT_PLANT_IN_PLOT   * (CANOPY_DIA_CM_avg/2)^2 * 3.141593 * 0.0001) %>% 
   mutate(cano.area.m2 = ((((CANOPY_DIA_1_CM/100)*(CANOPY_DIA_2_CM/100)*3.141593)/4) * PERCENT_PLANT_IN_PLOT)) # this is how LZ calculated cover in the SAS 2013 code update. Slightly different estimates than method used in previous. For consistency, using LZ formula 
-
-canopy.all.spp %>% 
-  tabyl(FENCED)
-
-
-
-
 
 canopy.all.spp <- canopy.all.spp %>% 
   mutate(cover.plant = cano.area.m2/16 * 100) %>% 
@@ -1818,7 +1864,25 @@ canopy.all.willow.sum <- canopy.all.spp %>%
   mutate(cover.allwillow = cano.sum.m2/16*100) %>% 
   mutate(cover.allwillow = case_when(cover.allwillow > 100 ~ 100,
                                TRUE ~ cover.allwillow)) %>% 
-  ungroup()
+  ungroup() %>% 
+  mutate(zCond = case_when(BURNED == "Burned" & FENCED == "Unfenced" ~ "BG",
+                           BURNED == "Burned" & FENCED == "Fenced" ~ "BF",
+                           BURNED == "Unburned" & FENCED == "Unfenced" ~ "UG",
+                           BURNED == "Unburned" & FENCED == "Fenced" ~ "UF"
+                           )) %>%
+  mutate(zCond2 = paste0(SITE_TYPE,"-",zCond)) ## add the 'condition' classes used by Zeignfuss etal in their 2015 report
+
+```
+
+```{r, echo=FALSE, eval=FALSE}
+## quick checks before exporting
+canopy.all.willow.sum %>% 
+  tabyl(zCond)
+
+canopy.all.willow.sum %>% 
+  filter(SITE_TYPE != "WK") %>%
+  filter(timeClass == "2013") %>% 
+  tabyl(zCond2)
 
 ```
 
@@ -1826,7 +1890,8 @@ canopy.all.willow.sum <- canopy.all.spp %>%
 ## write to csv
 # canopy.all.willow.sum %>%
 #   write_csv("./output/exported_data/willow_cover_20200725.csv")
-
+# canopy.all.willow.sum %>%
+#   write_csv("./output/exported_data/willow_macroplot_cover_BLto2018.csv") # re-exported 2/15/21
 ```
 
 ```{r, echo = FALSE, eval=FALSE}
@@ -1843,10 +1908,7 @@ wide2join.cov.willow <- left_join(canopy.all.willow.sum, site.id.coords) %>%
 
 ```
 
-
-
-**Combined WC and WNC** 
-
+**Combined WC and WNC**   
 ```{r}
 ####  All willow species
 #### Winter range weighted average
@@ -1911,7 +1973,6 @@ cowplot::plot_grid(wc.cov.pl1, wc.cov.pl2, labels = "AUTO",rel_widths = c(1, 2))
 # ggsave("./output/figures_exported/All_winter_range_willow_cov_boxplot_2panel_revised.png", width = 6.5, height = 3.75)
 ```
 
-
 ```{r}
 ##### summary tables for cover
 # pooled across range types, fenced, burned
@@ -1934,7 +1995,6 @@ summary.TC <- canopy.all.willow.sum %>%
 summary.TC 
 
 ```
-
 
 ```{r}
 ## Time class FENCED SITE_TYPE
@@ -2026,7 +2086,6 @@ canopy.all.willow.sum %>%
 
 ```
 
-
 ```{r}
 ## burned and fenced: separated by range type 
 ##### summary tables for cover
@@ -2067,7 +2126,6 @@ canopy.all.willow.sum %>%
 
 
 ```
-
 
 ```{r, eval=FALSE}
 ## gtsummary
@@ -2125,8 +2183,6 @@ canopy.all.willow.sum %>%
   datatable()
 
 ```
-
-
 
 **WC**
 ```{r}
@@ -2212,22 +2268,16 @@ cov.willow.sf <- left_join(clean_names(site.info.clean.sf), canopy.all.willow.su
 # cov.willow.sf %>%
 #   st_write("./output/exported_data/spatial/willow_cover_20200907.shp")
 
-cov.willow.sf %>%
-  filter(!is.na(cover2018)) %>% 
-  mapview(zcol= "cover2018")
-
 ```
 
-**2018 cover map**
-
-```{r}
+```{r, echo=FALSE, eval=FALSE}
+# **2018 cover map**
 cov.willow.sf %>%
   filter(!is.na(cover2018)) %>% 
   mapview(zcol= "cover2018")
 ```
 
-#### Cover thresholds
-
+#### Cover thresholds  
 **Cover thresholds: winter range, TC**
 ```{r}
 ####  All willow species
@@ -2236,7 +2286,6 @@ canopy.all.willow.sum %>%
   filter(!is.na(cover_allwillow)) %>% 
   filter(time_class == "BL" | time_class == "2013" |time_class == "2018") %>% 
   mutate(time_class = fct_drop(time_class)) %>% 
-  # tabyl(species_code)
   filter(site_type != "WK") %>%
   mutate(thresh = case_when(cover_allwillow >=31 ~ "above",
                                cover_allwillow <31 ~ "below")) %>%  
@@ -2337,6 +2386,88 @@ canopy.all.willow.sum %>%
 ggsave("./output/figures_exported/WCWNC_willow_percentPlotCovThresh_dfc.png", width = 5.5, height = 2.25)
 ```
 
+### Weighted estimates
+
+
+```{r}
+## add condition classes per Zeigenfuss SAS code
+
+## code excerpt
+	# group=_name_;
+	# if group='nonwillo' then delete;
+	# if burn='Y' and fence='N'  then cond='BG';
+	# if burn='Y' and fence='Y'  then cond='BF';
+	# if burn='N' and fence='N' then cond='UG';
+	# if burn='N' and fence='Y'  then cond='UF';
+
+## range wide estimates
+# weights from 2013
+	# if year=2013 and cond='BF' then areawt=0.085;
+	# if year=2013 and cond='BG' then areawt=0.45;
+	# if year=2013 and cond='UG' then areawt=0.219;
+	# if year=2013 and cond='UF' then areawt=0.117;
+	# if site_type='WNC' then areawt=0.129;
+
+## I can not find in the SAS code where the areawt values are calculated
+
+lz.wt.willow
+```
+
+
+```{r}
+## pull out the WC and WNC plot
+wc.wnc.wt <- canopy.all.willow.sum %>%
+  filter(SITE_TYPE != "WK")
+
+## calculate the weights by time class, SITE_TYPE and zCond
+wts <- wc.wnc.wt %>% 
+  group_by(timeClass, SITE_TYPE, zCond) %>% 
+  summarise(n_TCxSTxZcond = n()) %>% 
+  ungroup() %>%
+  group_by(timeClass) %>%
+  mutate(n_TC = sum(n_TCxSTxZcond)) %>%
+  ungroup() %>% 
+  mutate(wt = round(n_TCxSTxZcond/n_TC,3))
+
+wts %>%
+  gt()
+
+## calculate the weights by time class and zCond
+wts.2 <- wc.wnc.wt %>% 
+  group_by(timeClass, zCond) %>% 
+  summarise(n_TCxSTxZcond = n()) %>% 
+  ungroup() %>%
+  group_by(timeClass) %>%
+  mutate(n_TC = sum(n_TCxSTxZcond)) %>%
+  ungroup() %>% 
+  mutate(wt = round(n_TCxSTxZcond/n_TC,3))
+
+wts.2 %>%
+  mutate(wt = wt*100) %>% 
+  filter(timeClass %in% c("BL","2013","2018")) %>% 
+  gt() %>% 
+  tab_header(title="Calculated weights")
+
+wts.2 %>%
+  filter(timeClass %in% c("BL","2013","2018")) %>% 
+  ggplot(aes(timeClass, wt)) +
+  geom_col(aes(fill = zCond)) +
+  geom_text(aes(label = wt, group = zCond),
+                  position = position_stack(vjust = .5),
+            color='white',
+            fontface="bold") +
+  scale_fill_grey() +
+  theme_minimal() +
+  scale_y_continuous(labels=scales::percent) +
+  labs(x="", y="weight", title="Calculated Weights - Willow Plots", fill="")
+  
+
+```
+
+```{r}
+
+```
+
 ### Height
 ```{r}
 # All shrub species
@@ -2350,7 +2481,6 @@ ht.WCWNC.allShrub.plotsummary <- csv.all.lc.mcro.df %>%
   group_by(timeClass,SITE_ID) %>% 
   summarise(PLANT_HT_CM_mean = mean(PLANT_HT_CM, na.rm=TRUE), PLANT_HT_CM_max = max(PLANT_HT_CM),PLANT_HT_CM_median = median(PLANT_HT_CM)) %>%
   ungroup()
-  
 
 ht.WCWNC.allShrub.plotsummary %>% 
   group_by(timeClass) %>% 
@@ -2529,7 +2659,6 @@ csv.all.lc.mcro.df %>%
 
 ```{r}
 #### Count of Observations by Species 
-
 csv.all.lc.mcro.df %>% 
   group_by(SPECIES_CODE) %>%
   tally() %>% 
@@ -2538,13 +2667,16 @@ csv.all.lc.mcro.df %>%
 
 ```
 
+
 ```{r, eval=FALSE}
+## write_csv
 csv.all.lc.mcro.df %>%
   write_csv("./output/exported_data/willow_mcro.csv")
 
 ```
 
 ```{r}
+## parse out groups of species
 allshrub.mcro.all <- csv.all.lc.mcro.df %>%
   mutate(yr = as.character(yr)) %>%
   filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
@@ -2640,13 +2772,13 @@ will.ht.mean.sf %>%
   filter(range_type != "Kawuneeche Valley") %>%
   ggplot(aes(fenced, difBL18)) +
   geom_boxplot(outlier.shape = NA, fill = "grey70") +
-  geom_hline(yintercept=0, color = "red", lty = "dashed", size=1) +
+  geom_hline(yintercept=0, color = "black", size=1, alpha = 0.25) +
   ylim(-75,175) +
   theme_minimal() +
   facet_wrap(~range_type) +
   labs(x = "", y = "Height difference (cm)", caption = "mean willow height, all willow spp, 2018-BL")
 
-# ggsave("./output/figures_exported/WC_WNC_HtMeanDiff18BL_TCxfenced_dfc.png", width = 5.5, height = 3.75, dpi = 300)
+# ggsave("./output/figures_exported/revised_WC_WNC_HtMeanDiff18BL_TCxfenced_dfc.png", width = 5.5, height = 3.75, dpi = 300)
 
 ```
 
@@ -2711,13 +2843,13 @@ will.ht.mean.sf %>%
   filter(range_type != "Kawuneeche Valley") %>%
   ggplot(aes(burned, difBL18)) +
   geom_boxplot(outlier.shape = NA, fill = "grey70") +
-  geom_hline(yintercept=0, color = "red", lty = "dashed", size = 1) +
+  geom_hline(yintercept=0, color = "black", size=1, alpha = 0.25) +
   ylim(-75,175) +
   theme_minimal() +
   facet_wrap(~range_type) +
   labs(x = "", y = "Height difference (cm)", caption = "mean willow height, all willow spp, 2018-BL")
 
-# ggsave("./output/figures_exported/WC_WNC_HtMeanDiff18BL_TCxburned_dfc.png", width = 5.5, height = 3.75, dpi = 300)
+ggsave("./output/figures_exported/revised_WC_WNC_HtMeanDiff18BL_TCxburned_dfc.png", width = 5.5, height = 3.75, dpi = 300)
 
 will.ht.mean.sf %>%
   as_tibble() %>% 
@@ -3607,16 +3739,9 @@ offt.raw.spr.tidy <- offt.raw.spr.tidy %>%
 
 ```
 
-There is little consistency in the format of data entry between years...
-
-```{r}
-offt.raw.spr.tidy %>% 
-  visdat::vis_dat() 
-```
-
 # !
-
 ```{r, eval = FALSE}
+# There is little consistency in the format of data entry between years...
 ## qc
 offt.raw.spr.tidy %>% 
   visdat::vis_dat()
@@ -3633,13 +3758,11 @@ offt.raw.spr.tidy %>%
   tabyl(yr, browsed_or_unbrowsed) %>% 
   gt()
 
-
 offt.raw.spr.tidy %>% 
   tabyl(yr, stid) %>% 
   gt()
 
 ```
-
 
 ```{r, eval=FALSE}
 #### Tally u and b
@@ -4382,7 +4505,6 @@ sinfo.df %>%
                          "Absence_" = "Absence",
                          "Food_cache_cuttings"="Cuttings")) %>% 
   vtree::vtree(z = .,vars = "LOCATION BEAVER_PRESENCE")
-  
 
 ```
 
@@ -4796,9 +4918,10 @@ asp.tally.ht.tidy <- asp.tally.ht.tidy %>%
   select(-contains("DBH"))
 ```
 
-# Factor levels
+
 ```{r asp_dbhmod}
-## mod the dbh
+## mod the dbh factor levels
+
 asp.tally.dbh.tidy <- asp.tally.dbh.tidy %>% 
   mutate(DBHclassFact = as_factor(DBHclass)) %>% 
   mutate(FENCED = case_when(FENCED == "N" ~ "Unfenced",
@@ -5228,9 +5351,6 @@ dbh.perc <- asp.tally.dbh.tidy %>%
 dbh.perc.clean <- dbh.perc %>% 
   clean_names %>% 
   rename(dbh_class = db_hcl_gp01)
-
-# site.info.aspen %>% 
-#   datatable()
 
 ## manual sort based on the 2015 fig requested
 dbh.sort.lu <- read_csv("./data/EVMP_derived/AC_dbh_sort.csv")
@@ -6973,37 +7093,12 @@ asp.tally.dbh.tidy %>%
 ```
 
 
-```{r, echo=FALSE}
-### Aspen repeated measures
-# not run. See "EVMP aspen statistical analyses.Rmd"
-## Repeated measures: Assumptions
-# The repeated measures ANOVA makes the following assumptions about the data:
-# 
-# No significant outliers in any cell of the design. This can be checked by visualizing the data using box plot methods and by using the function identify_outliers() [rstatix package].
-# Normality: the outcome (or dependent) variable should be approximately normally distributed in each cell of the design. This can be checked using the Shapiro-Wilk normality test (shapiro_test() [rstatix]) or by visual inspection using QQ plot (ggqqplot() [ggpubr package]).
-# Assumption of sphericity: the variance of the differences between groups should be equal. This can be checked using the Mauchly’s test of sphericity, which is automatically reported when using the R function anova_test() [rstatix package]. Read more in Chapter @ref(mauchly-s-test-of-sphericity-in-r).
-
-# Note that, if the above assumptions are not met there are a non-parametric alternative (Friedman test) to the one-way repeated measures ANOVA.
-# 
-# Unfortunately, there are no non-parametric alternatives to the two-way and the three-way repeated measures ANOVA. Thus, in the situation where the assumptions are not met, you could consider running the two-way/three-way repeated measures ANOVA on the transformed and non-transformed data to see if there are any meaningful differences.
-# 
-# If both tests lead you to the same conclusions, you might not choose to transform the outcome variable and carry on with the two-way/three-way repeated measures ANOVA on the original data.
-# 
-# It’s also possible to perform robust ANOVA test using the WRS2 R package.
-
-# Compute and interpret the different repeated measures ANOVA in R.
-
-# Check repeated measures ANOVA test assumptions
-
-# Perform post-hoc tests, multiple pairwise comparisons between groups to identify which groups are different
-
-```
 
 ```{r}
 ###### WRITE to disk for statistical analysis
 # ht.perc01 %>% write_csv("./output/exported_data/asp_ht_perc1_20200309.csv")
 
-# tthe one to use...
+# the one to use...
 # asp.tally.dbh.tidy %>% 
 #   write_csv("./output/exported_data/asp_ht_perc1_20200309.csv")
   
@@ -7119,6 +7214,16 @@ asp_inDFC_summary2 %>%
 ```
 
 # in/out DFC 
+
+# Range-wide weighted summaries
+```{r}
+# calculating the weighting factors
+
+
+
+```
+
+
 
 # Aspen animal signs
 ```{r, echo=TRUE}
@@ -7644,8 +7749,19 @@ gg.emm.wb.ht
 # post1
 ```
 
-# Appendix 1. Data notes from E. Ertl
+# Session info  
+R version 4.0.3 (2020-10-10)\
+Platform: x86_64-w64-mingw32/x64 (64-bit)\
+Running under: Windows 10 x64 (build 19041)
 
+```{r, echo=FALSE}
+subset(data.frame(sessioninfo::package_info()), attached==TRUE, c(package, loadedversion)) %>% 
+  gt() %>% 
+  tab_header(title = "Attached packages and versions")
+
+```
+
+# Appendix 1. Data notes from E. Ertl  
 The following are notes from E. Ertl recorded in an describing EVMP vegetation data collection, as recorded in 2018.  
 
 ## Aspen

@@ -19,7 +19,7 @@ opts_chunk$set(fig.path = "../output/figures/") # corrected path and added dev. 
 _Code author:_ 
 E. Gage  
 mycologica@gmail.com  
-https://github.com/egage  
+https://github.com/egage/EVMP    
 Updated: `r format(Sys.time(), '%Y %B %d')`  
 
 ```{r, echo=FALSE}
@@ -42,6 +42,35 @@ library(mapview)
 library(visdat)
 library(gt)
 ```
+
+# Introduction  
+This document contains code for running statistical analyses of of Elk
+Vegetation Management Plan (EVMP) data collected through the 2018
+sampling season. Analyses are limited to macroplot data from plots
+established in riparian areas in areas of the elk winter range and
+Kawuneeche Valley (i.e., "willow" plots, see Zeigenfuss et al. 2011) and
+is provided as a supplement to the NPS NRR Report "Monitoring of
+Vegetation Response to Elk Population and Habitat Management in Rocky
+Mountain National Park - Analysis of Elk Vegetation Management Plan
+monitoring Data: 2008--2018". For information on sampling and the
+broader analysis and interpretation of the results, refer to this
+report, past analyses [@zeigenfuss2015], and the original EVMP
+monitoring plan [@zeigenfuss2011].
+
+# Methods
+
+## Covariates  
+Weather and ungulate population data were used as covariates in analyses of willow offtake. Weather data were obtained from were obtained from the National Climate Data Center for Estes Park (Estes Park 3 SSE, CO US, #52761). Snow depth data were acquired from the Bear Lake Snotel Site (Site #322) located southwest of the core elk winter range. Climate data were used to examine the relationship of weather and elk population to patterns in annual offtake data. Elk population estimates produced by RMNP and outside collaborators, produced using a combination of aerial and ground surveys, were used to create annual estimates of the winter population size of elk developed using a Bayesian population model of trends in elk population size after correcting for sightability factors in aerial survey data (T. Hobbs and H. Abouelezz, unpublished data). 
+
+The Probability of Direction (PD) was used to represent certainty associated with the most probable direction (positive or negative) of the effect (e.g., time class, fencing). The PD is correlated with the frequentist p-value, with a two-sided p-value of respectively .1, .05, and .01 approximated by a PD of 95%, 97.5%, and 99.5% [@makowski2019]. the “region of practical equivalence” (ROPE) to evaluate the probability of a parameter being outside a range that can be considered as “practically no effect”, i.e., a region enclosing values that are equivalent to the null value for practical purposes [@kruschke2018], with the proportion of the 95% HDI credible interval falling within the ROPE was used as an index for an analog to frequentist "null-hypothesis" testing.
+
+# Results  
+
+## Covariates
+Modeled elk population estimates (T. Hobbs unpublished data) are negatively correlated with annual precipitation at both the Estes Park and Bear Lake climate stations (Figure 48). The model had moderate explanatory power (R2' median = 0.24, 89% CI [1.07e-05, 0.45], adj. R2 = 0.07). The model's intercept, corresponding to elk = 0 and precipitation = 0, is at 1291.28 (89% CI [788.17, 1818.43], 0.04% in ROPE). The effect of precipitation in the mode had a probability of 97.56% of being negative and can be considered as medium (median = -0.79, 100% in ROPE, std. median = -0.51). The algorithm successfully converged (R^ = 1.001) and estimates were stable (ESS = 1846). A similar trend but weaker correlation occurred with Bear Lake precipitation data (Figure 49). Additional results are presented in appendices.
+
+ 
+Figure 51. Modeled RMNP elk population versus Estes Park annual precipitation and Bear Lake weather stations. Blue line represents a linear fit line.
 
 
 ## Climate
@@ -217,7 +246,7 @@ top_swe %>%
 
 ## Physiographic
 ```{r}
-# distince from stream
+# distance from stream
 
 
 
@@ -367,4 +396,6 @@ cowplot::plot_grid(pl.cov1, pl.cov2, labels = "AUTO")
 ## climate vs elk
 
 ## Moose
+
+# Results
 
