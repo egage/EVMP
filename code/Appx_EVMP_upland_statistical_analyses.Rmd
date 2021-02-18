@@ -13,8 +13,6 @@ editor_options:
 bibliography: references.bib
 ---
 
-**Upland Statistical Analyses**
-
 _Code author:_ 
 E. Gage  
 mycologica@gmail.com  
@@ -221,8 +219,6 @@ cov.byspp <- cov.byspp %>%
 # Results
 
 ## Upland Shrub Cover, Pooled Shrub Species - Combined Core and NonCore Winter Range   
-
-
 ```{r}
 #### summary tables
 cov.allshrubs %>% 
@@ -250,6 +246,7 @@ stmod_cov.allshr <- stan_glmer(cover ~ time_class + (1 | site_id),
 
 ```
 
+**Prior summary**: cover ~ time_class + (1 | site_id)    
 ```{r}
 # summary(stmod_cov.allshr)
 prior_summary(stmod_cov.allshr)

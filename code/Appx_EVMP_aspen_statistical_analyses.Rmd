@@ -13,12 +13,10 @@ editor_options:
 bibliography: references.bib
 ---
 
-**Aspen Statistical Analyses**
-
 _Code author:_ 
 E. Gage  
 mycologica@gmail.com  
-https://github.com/egage  
+https://github.com/egage/EVMP    
 Updated: `r format(Sys.time(), '%Y %B %d')`  
 
 ```{r setup, include=FALSE}
@@ -43,6 +41,7 @@ library(bayestestR)
 library(gt)
 library(ggridges)
 library(shinystan)
+library(patchwork)
 ```
 
 ```{r, functions, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}
@@ -208,15 +207,7 @@ testing.
 ## read in data
 # Aspen ht
 ht_perc1 <- read_csv("./output/exported_data/asp_ht_perc1_20200309.csv")
-ht_perc1 %>% 
-  glimpse()
 
-ht_perc1 %>% 
-  visdat::vis_dat()
-
-```
-
-```{r}
 # Data munging
 
 ## filter out in-between years
@@ -246,8 +237,8 @@ ht_perc1 <- ht_perc1 %>%
   mutate(fenced.long = as_factor(fenced.long)) %>%
   mutate(burned = as_factor(burned))
 
-ht_perc1 %>% 
-  distinct(site_type)
+# ht_perc1 %>% 
+#   distinct(site_type)
   
 asp.ac <- ht_perc1 %>% 
   filter(site_type == "AC") 
@@ -287,7 +278,6 @@ stmod_stally1 <- stan_glmer(stem_tally ~ time_class + fenced + (1 | site_id), da
                       iter = 10000,
                       seed = 1234
                       )
-
 prior_summary(stmod_stally1)
 pp_check(stmod_stally1)
 ```
@@ -300,9 +290,11 @@ stmod_stally2 <- stan_glmer(stem_tally ~ time_class * fenced + (1 | site_id), da
                       seed = 1234
                       )
 
-# summary(stmod_stally2)
-# prior_summary(stmod_stally2)
+```
 
+**Prior summary**: stem_tally ~ time_class * fenced + (1 | site_id)  
+```{r}
+prior_summary(stmod_stally2)
 ```
 
 ```{r}
@@ -326,7 +318,9 @@ ggsave("./output/figures_exported/aspen_stem_count/ppc_stemcnt_ac.pdf", width = 
 ```
 
 ```{r, eval = FALSE}
-## model comparison
+## model comparison. Run previously for model comparison;
+# not currently set to run to minimize computational overhead
+
 loo1 <- loo(stmod_stally1,
             k_threshold = 0.7) 
 loo2 <- loo(stmod_stally2,
@@ -360,7 +354,6 @@ fun.desc.post1.gt.rope(stmod_stally2) %>%
 
 ```{r}
 # library(ggridges)
-
 posteriors.ac.stcnt.tidy %>% 
   ggplot() +
   geom_density(aes(fill = parameter, x = values, color = parameter), alpha = .12) +
@@ -373,7 +366,6 @@ ggsave("./output/figures_exported/aspen_stem_count/postden_stemcnt_ac.pdf", widt
 ```
 
 ### Probability of Direction
-
 ```{r}
 # Visualize the pd
 #### PD - AC
@@ -390,7 +382,6 @@ ggsave("./output/figures_exported/aspen_stem_count/pd_stemcnt_ac.pdf", width = 4
 ```
 
 ### Region of Practical Equivalence (ROPE)
-
 ```{r}
 rope.stemcnt.ac <- rope(stmod_stally2, ci=0.9) %>% 
   gt() %>%
@@ -407,7 +398,6 @@ rope.stemcnt.ac %>%
 ```
 
 ### Contrasts
-
 ```{r}
 #### Contrasts
 # EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE).
@@ -415,14 +405,17 @@ rope.stemcnt.ac %>%
 # library(emmeans)
 emmeans(stmod_stally2, ~ time_class | fenced) %>% 
   pairs(reverse = TRUE) %>% 
-  plot(type = "response") +
+  # plot(type = "response") +
+  plot() +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
-  labs(subtitle = "Point estimate displayed: median 
-HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Aspen Stem Count")
+  # labs(title= "Core winter range", caption = "Point estimate displayed: median 
+# HPD interval probability: 0.95, Results on log scale", x = "Estimate", y = "Contrast")
+  labs(subtitle = "Point estimate displayed: median HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Aspen Stem Count, Results are given on the log scale")
 
-ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_ac.pdf", width = 4.5, height = 3.55) # save plot
-ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_ac.png", width = 4.5, height = 3.55) # save plot
+
+# ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_ac.pdf", width = 4.5, height = 3.55) # save plot
+# ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_ac.png", width = 4.5, height = 3.55) # save plot
 
 # table of contrasts. Results are given on the log (not the response) scale.
 emmeans(stmod_stally2, ~ time_class | fenced) %>% 
@@ -445,7 +438,6 @@ emmeans(stmod_stally2, ~ time_class | fenced) %>%
 ```
 
 ### Effects of Burning
-
 ```{r}
 ht_perc1 %>% 
   filter(range_type == "core winter range") %>% 
@@ -534,6 +526,11 @@ stmod_anc_stally1 <- stan_glmer(stem_tally ~ time_class + (1 | site_id), data = 
 
 ```
 
+**Prior summary**: stem_tally ~ time_class + (1 | site_id)  
+```{r}
+prior_summary(stmod_anc_stally1)
+```
+
 ```{r}
 # get posteriors
 posteriors.anc.stmcnt <- insight::get_parameters(stmod_anc_stally1)
@@ -619,7 +616,7 @@ rope.stemcnt.ac %>%
 
 ```
 
-### Conrasts
+### Contrasts
 
 ```{r}
 #### Contrasts
@@ -656,6 +653,34 @@ emmeans(stmod_anc_stally1, ~ time_class) %>%
 
 ```
 
+
+```{r, echo=TRUE, eval=TRUE}
+# comment 2.2 "provide analyses on single graphic...
+## Plot combinations
+contr.plot.ac <- emmeans(stmod_stally2, ~ time_class | fenced) %>% 
+  pairs(reverse = TRUE) %>% 
+  # plot(type = "response") +
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(title= "Core winter range", caption = "", x = "Estimate", y = "Contrast")
+
+contr.plot.anc <- emmeans(stmod_anc_stally1, ~ time_class) %>% 
+  pairs(reverse = TRUE) %>% 
+  plot(type = "response") +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(title= "Noncore winter range", caption = "Point estimate displayed: median 
+HPD interval probability: 0.95, Results on log scale", x = "Estimate", y = "")
+
+# patchwork
+contr.plot.ac + contr.plot.anc 
+
+ggsave("./output/figures_exported/revised_figs_aspen/emm_stemcnt_AC_ANC.png", width = 8, height = 3.75, dpi=300)
+ggsave("./output/figures_exported/revised_figs_aspen/emm_stemcnt_AC_ANC.pdf", width = 8, height = 3.75)
+
+```
+
 ## Aspen Stem Count - Kawuneeche Valley (AK)
 
 ### Modeling and Posterior Description
@@ -667,6 +692,12 @@ stmod_ak_stally1 <- stan_glmer(stem_tally ~ time_class + (1 | site_id), data = a
                       seed = 1234
                       )
 ```
+
+**Prior summary**: stem_tally ~ time_class + (1 | site_id)  
+```{r}
+prior_summary(stmod_ak_stally1)
+```
+
 
 ```{r}
 # extract posteriors
@@ -749,7 +780,7 @@ rope.stemcnt.ak %>%
 
 ```
 
-### Conrasts
+### Contrasts
 
 ```{r}
 #### Contrasts
@@ -786,6 +817,19 @@ emmeans(stmod_ak_stally1, ~ time_class) %>%
 
 ```
 
+```{r}
+## version for plot combination
+# ANC 
+emmeans(stmod_ak_stally1, ~ time_class) %>% 
+  pairs(reverse = TRUE) %>% 
+  plot(type = "response") +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Noncore Winter Range, Aspen Stem Count")
+```
+
+
 # Session info
 
 R version 4.0.3 (2020-10-10)\
@@ -798,3 +842,5 @@ subset(data.frame(sessioninfo::package_info()), attached==TRUE, c(package, loade
   tab_header(title = "Attached packages and versions")
 
 ```
+
+# References

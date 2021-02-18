@@ -316,9 +316,10 @@ wc.wnc.stmod_TCxF <- stan_glmer(plant_ht_cm ~ time_class*fenced +  (1 | site_id)
                       )
 ```
 
-```{r, echo=FALSE}
+**Prior summary**: plant_ht_cm ~ time_class*fenced +  (1 | site_id)
+```{r, echo=TRUE}
 # Get the prior summary
-# prior_summary(wc.wnc.stmod_TCxF)
+prior_summary(wc.wnc.stmod_TCxF)
 ```
 
 ```{r}
@@ -505,9 +506,11 @@ willow.ht.wc %>%
 
 ```
 
+### Modeling and Posterior Description
+
 ```{r, eval = FALSE, cache=TRUE}
 #### null model
-# Not run 
+# Not currently run; run in past as model comparison  
 # Previously run for comparisons but not otherwise reported
 stmod_ht.0 <- stan_glmer(plant_ht_cm ~ 1 + (1 | site_id), data = willow.ht.wc,
                       family=Gamma(link="log"),
@@ -544,7 +547,8 @@ stmod_ht2 <- stan_glmer(plant_ht_cm ~ time_class*fenced + (1 | site_id), data = 
 posteriors.wc.ht <- insight::get_parameters(stmod_ht2)
 ```
 
-```{r, echo=FALSE, eval=FALSE}
+**Prior summary**: plant_ht_cm ~ time_class*fenced + (1 | site_id)  
+```{r}
 # summary(stmod_ht2)
 prior_summary(stmod_ht2)
 ```
@@ -569,8 +573,6 @@ ppc.plot(stmod_ht2) +
 # ggsave("./output/figures_exported/willow_height/ppc_willowht_wc.pdf", width = 4.75, height = 3.75)
 
 ```
-
-### Modeling and Posterior Description
 
 ```{r}
 # full posterior description
@@ -728,6 +730,7 @@ willow.ht.nc %>%
 
 ```
 
+### Modeling and Posterior Description  
 ```{r, cache=TRUE}
 ## model
 #### main factors only
@@ -736,8 +739,14 @@ nc.stmod_ht1 <- stan_glmer(plant_ht_cm ~ time_class +  (1 | site_id), data = wil
                        family=Gamma(link="log"),
                       iter = 10000,
                       )
-# prior_summary(nc.stmod_ht1)
 posteriors.nc.ht <- insight::get_parameters(nc.stmod_ht1)
+```
+
+
+
+**Prior summary**: plant_ht_cm ~ time_class +  (1 | site_id)    
+```{r}
+prior_summary(nc.stmod_ht1)
 ```
 
 ```{r}
@@ -748,8 +757,6 @@ ppc.plot(nc.stmod_ht1) +
 # ggsave("./output/figures_exported/willow_height/ppc_willowht_wnc.pdf", width = 4.75, height = 3.75)
 
 ```
-
-### Modeling and Posterior Description
 
 ```{r, eval = TRUE}
 # describe posterior
@@ -859,6 +866,35 @@ ggsave("./output/figures_exported/willow_height/mcmcarea_willowht_TC_wnc.pdf", w
 
 ```
 
+
+```{r}
+# Revised plot 2/15/21
+# willow height combined plot per revisions
+## main effect: fencing
+wc.emm.fenced <- emmeans(stmod_ht2, ~ fenced)
+wc.pairs.fenced <- pairs(wc.emm.fenced)
+
+plot(wc.pairs.fenced) +
+  theme_minimal() +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Willow Height")
+
+
+nc.emm %>% 
+  pairs(reverse = TRUE) %>% 
+  plot(type="response") +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Non-core Winter Range, Willow Height")
+
+ggsave("./output/figures_exported/willow_height/emm_willowht_TC_wnc.pdf", width = 4.5, height = 3.55) # save plot
+ggsave("./output/figures_exported/willow_height/emm_willowht_TC_wnc.png", width = 4.5, height = 3.55) # save plot
+
+
+```
+
+
 ## Willow Height - Kawuneeche Valley Macroplot Data
 
 ### Histograms of Willow Height
@@ -886,10 +922,15 @@ stmod_ht_wk_TC <- stan_glmer(plant_ht_cm ~ time_class + (1 | site_id), data = wi
                       iter = 10000,
                       seed = 1234
                       )
-## prior summary
-# prior_summary(stmod_ht_wk_TC)
+
 ## extract posterior
 posteriors.wk.ht <- insight::get_parameters(stmod_ht_wk_TC)
+```
+
+**Prior summary**: plant_ht_cm ~ time_class + (1 | site_id)  
+```{r}
+## prior summary
+prior_summary(stmod_ht_wk_TC)
 ```
 
 ```{r, echo = TRUE, eval=TRUE}
@@ -985,25 +1026,13 @@ emmeans(stmod_ht_wk_TC, ~ time_class) %>%
 # EMM summaries with type = "response", the tests and confidence intervals are done before back-transforming. The ratios estimated here are actually ratios of geometric means. In general, a model with a log response is in fact a model for relative effects of any of its linear predictors, and this back-transformation to ratios goes hand-in-hand with that.
 ```
 
-```{r, wbasin_ht, echo=FALSE, eval=FALSE}
-## Wild basin
-# Wild Basin willow data survey 2018.csv
-
-wbasin <- read_csv("./data/wild_basin/Wild Basin willow data survey 2018.csv")
-
-wbasin <- wbasin %>%
-  janitor::clean_names()
-  
-wbasin.loc <- wbasin %>% 
-  filter(!is.na(utm_e_nad83_end_point))
-
-```
-
 ## Willow Cover - Combined Core and Noncore Winter Range Macroplot Data
-
 ```{r}
 # read in data
-canopy.all.willow.sum <- read_csv("./output/exported_data/willow_cover_20200725.csv") %>% 
+# canopy.all.willow.sum <- read_csv("./output/exported_data/willow_cover_20200725.csv") %>% 
+#   janitor::clean_names()
+
+canopy.all.willow.sum <- read_csv("./output/exported_data/willow_macroplot_cover_BLto2018.csv") %>% 
   janitor::clean_names()
 
 ```
@@ -1103,7 +1132,6 @@ ggsave("./output/figures_exported/willow_cover/hist_willowht_TC_wcwnc.png", dpi 
 ### Modeling and Posterior Description
 
 
-
 ```{r, cache=TRUE}
 # cover_allwillow \~ time_class \* fenced + (1 \| site_id)
 ## prep for modeling
@@ -1122,6 +1150,12 @@ stmod_cov.wc.wnc <- stan_glmer(cover_allwillow ~ time_class * fenced + (1 | site
                       seed = 12345)
 
 ```
+
+**Prior summary**: cover_allwillow ~ time_class * fenced + (1 | site_id)  
+```{r}
+prior_summary(stmod_cov.wc.wnc)
+```
+
 
 ```{r, echo=FALSE, eval=FALSE}
 # alt model with burned as predictor
@@ -1172,8 +1206,7 @@ fun.desc.post1.gt.rope(stmod_cov.wc.wnc$stanfit) %>%
   gt::gtsave(filename = "./output/tables/willow_cover/posterior_willowht_wcwnc.rtf")
 ```
 
-### Probability of Direction
-
+### Probability of Direction  
 ```{r}
 # Visualize the pd
 p_direction(stmod_cov.wc.wnc) %>% 
@@ -1187,8 +1220,7 @@ ggsave("./output/figures_exported/willow_cover/pd_willowht_wcwnc.pdf", width = 6
 
 ```
 
-### Region of Practical Equivalence (ROPE)
-
+### Region of Practical Equivalence (ROPE)  
 ```{r}
 rope.cov.wcwnc.gt <- rope(stmod_cov.wc.wnc$stanfit, ci=0.9) %>% 
   gt() %>%
@@ -1203,8 +1235,7 @@ rope.cov.wcwnc.gt %>%
   gt::gtsave(filename = "./output/tables/willow_cover/rope_willowcov_wcwnc.rtf")
 ```
 
-### Contrasts
-
+### Contrasts  
 ```{r}
 # contrast - time class and fencing
 emmeans(stmod_cov.wc.wnc, ~ time_class | fenced) %>% 
@@ -1237,8 +1268,7 @@ emmeans(stmod_cov.wc.wnc, ~ time_class | fenced) %>%
 
 ```
 
-### Central Posterior Interval Estimates
-
+### Central Posterior Interval Estimates  
 ```{r}
 ## extract posterior
 posteriors.cov.wcwnc <- insight::get_parameters(stmod_cov.wc.wnc)
@@ -1269,9 +1299,12 @@ stmod_cov.wc.wnc.TCxFxB <- stan_glmer(cover_allwillow ~ time_class * burned * fe
 
 ```
 
+**Prior summary**: plant_ht_cm ~ time_class + (1 | site_id)  
 ```{r}
-# prior_summary(stmod_cov.wc.wnc.TCxFxB)
+prior_summary(stmod_cov.wc.wnc.TCxFxB)
+```
 
+```{r}
 pp_check(stmod_cov.wc.wnc.TCxFxB) +
   labs(x = "Value", y = "Density") +
   theme_minimal()
@@ -1308,8 +1341,6 @@ cov.wc %>%
 
 ### Modeling and Posterior Description
 
-cover_allwillow \~ time_class \* fenced + (1 \| site_id)
-
 ```{r, cache=TRUE}
 #### Model
 ## add to min and subtract from max to conform
@@ -1327,11 +1358,13 @@ stmod_cov.wc <- stan_glmer(cover_allwillow ~ time_class * fenced + (1 | site_id)
 
 ```
 
+**Prior summary**: cover_allwillow ~ time_class * fenced + (1 | site_id)    
+```{r}
+prior_summary(stmod_cov.wc)
+```
+
 ```{r}
 #### PP check plot
-# summary(stmod_cov.wc)
-prior_summary(stmod_cov.wc)
-
 pp_check(stmod_cov.wc) +
   labs(x = "Value", y = "Density") +
   theme_minimal() +
@@ -1345,7 +1378,6 @@ ggsave("./output/figures_exported/willow_cover/ppc_willowcov_wc.pdf", width = 4.
 ```{r, eval = TRUE}
 #### Model posterior parameters to table
 fun.desc.post1.gt.rope(stmod_cov.wc$stanfit)
-
 ```
 
 ```{r, eval=TRUE}
@@ -1464,6 +1496,11 @@ stmod_cov.wnc <- stan_glmer(cover_allwillow ~ time_class + (1 | site_id),
 shinystan::launch_shinystan(stmod_cov.wnc)
 ```
 
+**Prior summary**: cover_allwillow ~ time_class + (1 | site_id)      
+```{r}
+prior_summary(stmod_cov.wnc)
+```
+
 ```{r, echo=FALSE, eval=FALSE}
 #### PP check plot
 # summary(stmod_cov.wc)
@@ -1559,10 +1596,24 @@ emmeans(stmod_cov.wnc, ~ time_class) %>%
 
 ```
 
+```{r, wbasin_ht, echo=FALSE, eval=FALSE}
+## Wild basin
+# Wild Basin willow data survey 2018.csv
+
+wbasin <- read_csv("./data/wild_basin/Wild Basin willow data survey 2018.csv")
+
+wbasin <- wbasin %>%
+  janitor::clean_names()
+  
+wbasin.loc <- wbasin %>% 
+  filter(!is.na(utm_e_nad83_end_point))
+
+```
+
 # Session info
 
-R version 4.0.3 (2020-10-10)\
-Platform: x86_64-w64-mingw32/x64 (64-bit)\
+R version 4.0.3 (2020-10-10)  
+Platform: x86_64-w64-mingw32/x64 (64-bit)  
 Running under: Windows 10 x64 (build 19041)
 
 ```{r, echo=FALSE}
