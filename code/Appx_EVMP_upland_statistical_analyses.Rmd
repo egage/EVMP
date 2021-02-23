@@ -16,8 +16,8 @@ bibliography: references.bib
 _Code author:_ 
 E. Gage  
 mycologica@gmail.com  
-https://github.com/egage  
-Updated: `r format(Sys.time(), '%Y %B %d')`  
+https://github.com/egage/EVMP  
+ 
 
 ```{r setup, include=FALSE}
 library(knitr)
@@ -55,6 +55,25 @@ library(gt)
 
 ## Functions
 ### Table functions
+
+# SEXIT summary
+fun.sexit.gt <- function(model){
+  bayestestR::sexit(model, ci=0.9) %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric), round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Effect Existence and Significance Testing") 
+  }
+
+## model summary to DT
+fun.model.summary <- function(model){
+  summary(model,
+          probs = c(0.1, 0.5, 0.9),
+        digits = 1) %>%
+  as_tibble(rownames = "Parameter") %>%
+  mutate(across(where(is.numeric),round,2)) %>%
+  datatable(caption = "Model summary")
+}
 
 ## function to describe model out
 fun.desc.post1 <- function(model){
@@ -241,15 +260,9 @@ stmod_cov.allshr <- stan_glmer(cover ~ time_class + (1 | site_id),
                       data = cov.allshrubs,
                       family = mgcv::betar,
                       prior_aux = exponential(2),
-                      iter = 10000,
-                      seed = 12345)
+                      iter = 8000,
+                      seed = 1234)
 
-```
-
-**Prior summary**: cover ~ time_class + (1 | site_id)    
-```{r}
-# summary(stmod_cov.allshr)
-prior_summary(stmod_cov.allshr)
 ```
 
 ```{r}
@@ -262,6 +275,15 @@ posteriors.upl.allshrubcov.tidy <- posteriors.upl.allshrubcov %>%
 
 ```
 
+**Prior summary**: cover ~ time_class + (1 | site_id)    
+```{r}
+prior_summary(stmod_cov.allshr)
+```
+
+```{r}
+fun.model.summary(stmod_cov.allshr)
+```
+
 ```{r}
 posteriors.upl.allshrubcov.tidy %>%
   ggplot() +
@@ -271,7 +293,6 @@ posteriors.upl.allshrubcov.tidy %>%
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(caption = "Upland, all shrub cover - Combined Core and Non-core Winter Range")
 ```
-
 
 ```{r}
 #### PP check plot
@@ -285,6 +306,15 @@ ggsave("./output/figures_exported/upland_cover/ppc_stemcnt_upl_allshrubs.pdf", w
 ```
 
 ```{r}
+fun.sexit.gt(stmod_cov.allshr$stanfit)
+
+fun.sexit.gt(stmod_cov.allshr$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
+  gt::gtsave(filename = "./output/tables/upland_cover/xupl_cov_allshrubs_stmod_cover1_posteriors.rtf")
+```
+
+
+```{r, echo=FALSE, eval=FALSE}
 fun.desc.post1.gt.rope(stmod_cov.allshr$stanfit) %>%
   tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range")
 
@@ -360,7 +390,8 @@ emmeans(stmod_cov.allshr, ~ time_class) %>%
 
 R version 4.0.3 (2020-10-10)  
 Platform: x86_64-w64-mingw32/x64 (64-bit)  
-Running under: Windows 10 x64 (build 19041)
+Running under: Windows 10 x64 (build 19041)  
+Last updated: `r format(Sys.time(), '%Y %B %d')` 
 
 ```{r, echo=FALSE}
 subset(data.frame(sessioninfo::package_info()), attached==TRUE, c(package, loadedversion)) %>% 

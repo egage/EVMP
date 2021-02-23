@@ -15,9 +15,7 @@ bibliography: references.bib
 
 _Code author:_ 
 E. Gage  
-mycologica@gmail.com  
 https://github.com/egage/EVMP    
-Updated: `r format(Sys.time(), '%Y %B %d')`  
 
 ```{r setup, include=FALSE}
 library(knitr)
@@ -46,6 +44,25 @@ library(patchwork)
 
 ```{r, functions, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}
 ### Table functions
+
+fun.sexit.gt <- function(model){
+  bayestestR::sexit(model, ci=0.9) %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric), round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Effect Existence and Significance Testing") 
+  }
+
+## model summary to DT
+fun.model.summary <- function(model){
+  summary(model,
+          probs = c(0.1, 0.5, 0.9),
+          digits = 1) %>%
+  as_tibble(rownames = "Parameter") %>%
+  mutate(across(where(is.numeric),round,2)) %>%
+  datatable(caption = "Model summary")
+}
+
 ## function to describe model output
 fun.desc.post1 <- function(model){
   describe_posterior(
@@ -62,29 +79,6 @@ fun.desc.post1 <- function(model){
 }
 
 ## gt
-fun.desc.post1.gt <- function(model){
-  describe_posterior(
-  model,
-  effects = "fixed",
-  component = "all",
-  ci_method = "hdi",
-  ci=0.9,
-  test = c("rope"),
-  #rope_range(c(-0.1,0.1)),
-  rope_range("default"),
-  rope_ci=0.9,
-  centrality = "median"
-) %>% 
-    as_tibble() %>% 
-    gt() %>% 
-    tab_header(title = "Posterior description") %>% 
-    fmt_number(
-    columns = 2:12,
-    decimals = 1,
-    suffixing = TRUE
-  )
-}
-
 # describe posterior
 fun.desc.post1.gt.rope <- function(model){
   describe_posterior(
@@ -96,7 +90,7 @@ fun.desc.post1.gt.rope <- function(model){
   test = c("p_direction", "p_significance","rope"),
   #rope_range(c(-0.1,0.1)),
   rope_range("default"),
-  rope_ci = 0.9,
+  rope_ci = 0.95,
   centrality = "median"
 ) %>% 
     as_tibble() %>% 
@@ -275,7 +269,7 @@ asp.ac <- asp.ac %>%
 ## poisson
 stmod_stally1 <- stan_glmer(stem_tally ~ time_class + fenced + (1 | site_id), data = asp.ac,
                       family=poisson,
-                      iter = 10000,
+                      iter = 8000,
                       seed = 1234
                       )
 prior_summary(stmod_stally1)
@@ -286,7 +280,7 @@ pp_check(stmod_stally1)
 #### main factors + interactions:
 stmod_stally2 <- stan_glmer(stem_tally ~ time_class * fenced + (1 | site_id), data = asp.ac,
                       family= poisson,
-                      iter = 10000,
+                      iter = 8000,
                       seed = 1234
                       )
 
@@ -295,6 +289,11 @@ stmod_stally2 <- stan_glmer(stem_tally ~ time_class * fenced + (1 | site_id), da
 **Prior summary**: stem_tally ~ time_class * fenced + (1 | site_id)  
 ```{r}
 prior_summary(stmod_stally2)
+```
+
+```{r}
+## model summary
+fun.model.summary(stmod_stally2)
 ```
 
 ```{r}
@@ -340,7 +339,18 @@ print(modcomp_ac, simplify = FALSE, digits = 3)
 # model with interactions selected
 ```
 
+### Effect Existence and Significance Testing
 ```{r}
+fun.sexit.gt(stmod_stally2)
+
+fun.sexit.gt(stmod_stally2) %>%
+ tab_header(title = "Aspen Count Posterior Description", subtitle = "Core Winter Range") %>%
+  gt::gtsave(filename = "./output/tables/aspen_stem_count/xpostdesc_stemcnt_TCxF_ac.rtf")
+
+```
+
+
+```{r, echo=FALSE, eval=FALSE}
 ### Model posterior parameters to table
 fun.desc.post1.gt.rope(stmod_stally2) %>% 
   tab_header(title = "Aspen Count Posterior Description", subtitle = "Core Winter Range")
@@ -365,7 +375,7 @@ ggsave("./output/figures_exported/aspen_stem_count/postden_stemcnt_ac.png", dpi 
 ggsave("./output/figures_exported/aspen_stem_count/postden_stemcnt_ac.pdf", width = 4.75, height = 3.75)
 ```
 
-### Probability of Direction
+#### Probability of Direction
 ```{r}
 # Visualize the pd
 #### PD - AC
@@ -381,7 +391,7 @@ ggsave("./output/figures_exported/aspen_stem_count/pd_stemcnt_ac.pdf", width = 4
 
 ```
 
-### Region of Practical Equivalence (ROPE)
+#### Region of Practical Equivalence (ROPE)
 ```{r}
 rope.stemcnt.ac <- rope(stmod_stally2, ci=0.9) %>% 
   gt() %>%
@@ -454,11 +464,21 @@ ht_perc1 %>%
 ### STAN model
 stmod_stally_TCxFxB_ac <- stan_glmer(stem_tally ~ fenced * time_class * burned + (1 | site_id), data = asp.ac,
                       family=poisson,
-                      iter = 10000,
+                      iter = 8000,
                       seed = 1234
                       )
 
 ```
+
+```{r}
+fun.sexit.gt(stmod_stally_TCxFxB_ac)
+
+fun.sexit.gt(stmod_stally_TCxFxB_ac) %>%
+ tab_header(title = "Aspen Count Posterior Description", subtitle = "Core Winter Range") %>%
+  gt::gtsave(filename = "./output/tables/aspen_stem_count/xpostdesc_stemcnt_TCxFxB_ac.rtf")
+
+```
+
 
 ```{r, eval=FALSE}
 prior_summary(stmod_stally_TCxFxB_ac)
@@ -520,15 +540,10 @@ emmeans(stmod_stally_TCxFxB_ac, ~ time_class | burned | fenced) %>%
 ```{r}
 stmod_anc_stally1 <- stan_glmer(stem_tally ~ time_class + (1 | site_id), data = asp.anc,
                       family=poisson,
-                      iter = 10000,
+                      iter = 8000,
                       seed = 1234
                       )
 
-```
-
-**Prior summary**: stem_tally ~ time_class + (1 | site_id)  
-```{r}
-prior_summary(stmod_anc_stally1)
 ```
 
 ```{r}
@@ -539,8 +554,14 @@ posteriors.anc.stcnt.tidy <- posteriors.anc.stmcnt %>%
   pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
 ```
 
+**Prior summary**: stem_tally ~ time_class + (1 | site_id)  
 ```{r}
 prior_summary(stmod_anc_stally1)
+```
+
+```{r}
+## model summary
+fun.model.summary(stmod_anc_stally1)
 ```
 
 ```{r, echo=FALSE, eval = FALSE}
@@ -557,18 +578,6 @@ ggsave("./output/figures_exported/aspen_stem_count/ppc_willowht_anc.pdf", width 
 ```
 
 ```{r}
-### Model posterior parameters to table
-fun.desc.post1.gt.rope(stmod_anc_stally1) %>% 
-  tab_header(title = "Aspen Count Posterior Description", subtitle = "Noncore Winter Range")
-
-## save as RTF
-fun.desc.post1.gt.rope(stmod_anc_stally1) %>%
- tab_header(title = "Aspen Count Posterior Description", subtitle = "Noncore Winter Range") %>%
-  gt::gtsave(filename = "./output/tables/aspen_stem_count/postdesc_stemcnt_TCxF_anc.rtf")
-
-```
-
-```{r}
 # library(ggridges)
 
 posteriors.anc.stcnt.tidy %>% 
@@ -582,7 +591,30 @@ ggsave("./output/figures_exported/aspen_stem_count/postden_stemcnt_anc.png", dpi
 ggsave("./output/figures_exported/aspen_stem_count/postden_stemcnt_anc.pdf", width = 4.75, height = 3.75)
 ```
 
-### Probability of Direction
+### Effect Existence and Significance Testing
+```{r}
+fun.sexit.gt(stmod_anc_stally1)
+
+fun.sexit.gt(stmod_anc_stally1) %>%
+ tab_header(title = "Aspen Count Posterior Description", subtitle = "Noncore Winter Range") %>%
+  gt::gtsave(filename = "./output/tables/aspen_stem_count/xpostdesc_stemcnt_TCxF_anc.rtf")
+
+```
+
+
+```{r, echo=FALSE, eval=FALSE}
+### Model posterior parameters to table
+fun.desc.post1.gt.rope(stmod_anc_stally1) %>% 
+  tab_header(title = "Aspen Count Posterior Description", subtitle = "Noncore Winter Range")
+
+## save as RTF
+fun.desc.post1.gt.rope(stmod_anc_stally1) %>%
+ tab_header(title = "Aspen Count Posterior Description", subtitle = "Noncore Winter Range") %>%
+  gt::gtsave(filename = "./output/tables/aspen_stem_count/postdesc_stemcnt_TCxF_anc.rtf")
+
+```
+
+#### Probability of Direction
 
 ```{r}
 # Visualize the pd
@@ -599,7 +631,7 @@ ggsave("./output/figures_exported/aspen_stem_count/pd_stemcnt_anc.pdf", width = 
 
 ```
 
-### Region of Practical Equivalence (ROPE)
+#### Region of Practical Equivalence (ROPE)
 
 ```{r}
 rope.stemcnt.ac <- rope(stmod_anc_stally1, ci=0.9) %>% 
@@ -688,7 +720,7 @@ ggsave("./output/figures_exported/revised_figs_aspen/emm_stemcnt_AC_ANC.pdf", wi
 ```{r}
 stmod_ak_stally1 <- stan_glmer(stem_tally ~ time_class + (1 | site_id), data = asp.ak,
                        family=poisson,
-                      iter = 10000,
+                      iter = 8000,
                       seed = 1234
                       )
 ```
@@ -696,6 +728,11 @@ stmod_ak_stally1 <- stan_glmer(stem_tally ~ time_class + (1 | site_id), data = a
 **Prior summary**: stem_tally ~ time_class + (1 | site_id)  
 ```{r}
 prior_summary(stmod_ak_stally1)
+```
+
+```{r}
+## model summary
+fun.model.summary(stmod_ak_stally1)
 ```
 
 
@@ -721,18 +758,6 @@ ggsave("./output/figures_exported/aspen_stem_count/ppc_willowht_ak.pdf", width =
 ```
 
 ```{r}
-### Model posterior parameters to table
-fun.desc.post1.gt.rope(stmod_ak_stally1) %>% 
-  tab_header(title = "Aspen Count Posterior Description", subtitle = "Kawuneeche Valley")
-
-## save as RTF
-fun.desc.post1.gt.rope(stmod_anc_stally1) %>% 
-  tab_header(title = "Aspen Count Posterior Description", subtitle = "Kawuneeche Valley") %>%
-  gt::gtsave(filename = "./output/tables/aspen_stem_count/postdesc_stemcnt_TCxF_anc.rtf")
-
-```
-
-```{r}
 # library(ggridges)
 
 posteriors.ak.stcnt.tidy %>% 
@@ -746,8 +771,29 @@ ggsave("./output/figures_exported/aspen_stem_count/postden_stemcnt_ak.png", dpi 
 ggsave("./output/figures_exported/aspen_stem_count/postden_stemcnt_ak.pdf", width = 4.75, height = 3.75)
 ```
 
-### Probability of Direction
+### Effect Existence and Significance Testing  
+```{r}
+fun.sexit.gt(stmod_ak_stally1)
 
+fun.sexit.gt(stmod_ak_stally1) %>%
+  tab_header(title = "Aspen Count Posterior Description", subtitle = "Kawuneeche Valley") %>%
+  gt::gtsave(filename = "./output/tables/aspen_stem_count/xpostdesc_stemcnt_TCxF_anc.rtf")
+
+```
+
+```{r, ech=FALSE, eval=FALSE}
+### Model posterior parameters to table
+fun.desc.post1.gt.rope(stmod_ak_stally1) %>% 
+  tab_header(title = "Aspen Count Posterior Description", subtitle = "Kawuneeche Valley")
+
+## save as RTF
+fun.desc.post1.gt.rope(stmod_anc_stally1) %>% 
+  tab_header(title = "Aspen Count Posterior Description", subtitle = "Kawuneeche Valley") %>%
+  gt::gtsave(filename = "./output/tables/aspen_stem_count/postdesc_stemcnt_TCxF_anc.rtf")
+
+```
+
+#### Probability of Direction  
 ```{r}
 # Visualize the pd
 #### PD - ANC
@@ -763,7 +809,7 @@ ggsave("./output/figures_exported/aspen_stem_count/pd_stemcnt_ak.pdf", width = 4
 
 ```
 
-### Region of Practical Equivalence (ROPE)
+#### Region of Practical Equivalence (ROPE)
 
 ```{r}
 rope.stemcnt.ak <- rope(stmod_ak_stally1, ci=0.9) %>% 
@@ -834,7 +880,8 @@ HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Nonc
 
 R version 4.0.3 (2020-10-10)\
 Platform: x86_64-w64-mingw32/x64 (64-bit)\
-Running under: Windows 10 x64 (build 19041)
+Running under: Windows 10 x64 (build 19041)  
+Run date: `r format(Sys.time(), '%Y %B %d')`  
 
 ```{r, echo=FALSE}
 subset(data.frame(sessioninfo::package_info()), attached==TRUE, c(package, loadedversion)) %>% 

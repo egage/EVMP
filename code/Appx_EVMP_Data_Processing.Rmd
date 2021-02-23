@@ -108,39 +108,11 @@ ggTile_yr_season_site <- function(df){
   theme(axis.text.y = element_text(size = 7)) +
   facet_wrap(~season)} 
 
-### Table functions
-## gt field names
-names.gt <- function(df){
-  df %>% 
-  names() %>% enframe %>% gt::gt() %>% 
-    tab_header(title = "field names")
-}
-
-names.dt <- function(df){
-  df %>% 
-  names() %>% enframe %>% 
-    DT::datatable(caption = "field names")
-}
-
-## summary funcs
-mean_r1 <- function(x){
-  round(mean(x, na.rm = TRUE),1)
-}
-
-sd_r1 <- function(x){
-  round(sd(x, na.rm = TRUE),1)
-}
-
-range_r1 <- function(x){
-  round(range(x, na.rm = TRUE),1)
-}
-
-
 ```
 
 # Introduction
 
-This document provides code used to combine and pre-process a raw EVMP data files provided by RMNP. Raw data are combined and cleaned to faciliate exploratory data analyses, quality assurance, and statistical modeling. Specific issues addressed encountered and addressed include:   
+This document provides code used to combine and pre-process a raw EVMP data files provided by RMNP. Raw data are combined and cleaned to facilitate exploratory data analyses, quality assurance, and statistical modeling. Specific issues addressed encountered and addressed include:   
 * Inconsistently named/typed factors    
 * Missing values
 * Data values outside of expected range or showing unusual patterns
@@ -1815,7 +1787,7 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
 # csv.all.lc.mcro.df %>% tabyl(FENCED)
 # csv.all.lc.mcro.df %>% tabyl(BURNED)
 
-# lots of burned categories. Some don;t make sense (e.g., "N Y"). Collapsing to Burned/Unburned
+# lots of burned categories. Some don't make sense (e.g., "N Y"). Collapsing to Burned/Unburned
 
 csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>% 
   mutate(BURNED = case_when(BURNED == "Unburned" ~ "Unburned",
@@ -1827,44 +1799,67 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
                             BURNED == "N" ~ "Unburned",
                             BURNED == "Not burned" ~ "Unburned",
                             is.na(BURNED) ~ "Unburned",
-                            TRUE ~ BURNED))
+                            TRUE ~ BURNED)) %>% 
+  mutate(DATE = ymd(DATE))
+
+
+## add a species group attribute -- willow/non-willow
+csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
+  mutate(spp_group = case_when(str_detect(SPECIES_CODE, "^SA") ~ "willow",
+                               TRUE ~ "non-willow"))
+
+```
+
+```{r, echo=TRUE, eval=FALSE}
+## Key question. What to do with burned plots at baseline? They weren't burned at baseline, so should be "unburned" at that timeclass BUT if the goal is to track that cohort of plots that became burned...
+## ensure that no plots are attributed as burned at baseline (fire happened in 2012)
+csv.all.lc.mcro.df %>%
+  filter(timeClass %in% c("BL","2013","2018")) %>%
+  mutate(timeClass = fct_drop(timeClass)) %>% 
+  tabyl(timeClass, BURNED) %>% 
+  gt()
+
+# moving forward treating them as the second scenario for now...
 ```
 
 ```{r}
 #### Calculate cover
+# prep the percent cover. As character in the raw data. Assume NA 0
+csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>% 
+  mutate(PERCENT_PLANT_IN_PLOT = as.numeric(PERCENT_PLANT_IN_PLOT)) %>% 
+  mutate(PERCENT_PLANT_IN_PLOT = replace_na(data = PERCENT_PLANT_IN_PLOT, replace = 0))
+
+  # mutate(PERCENT_PLANT_IN_PLOT = case_when(is.na(PERCENT_PLANT_IN_PLOT) ~ 1,
+  #        TRUE ~ PERCENT_PLANT_IN_PLOT)) %>% # note: opposite assumption with what to do with NA
+
 canopy.all.spp <- csv.all.lc.mcro.df %>%
   mutate(PERCENT_PLANT_IN_PLOT = as.numeric(PERCENT_PLANT_IN_PLOT)/100) %>% 
-  mutate(PERCENT_PLANT_IN_PLOT = case_when(is.na(PERCENT_PLANT_IN_PLOT) ~ 1,
-         TRUE ~ PERCENT_PLANT_IN_PLOT)) %>%
   mutate(PERCENT_PLANT_IN_PLOT = case_when(PERCENT_PLANT_IN_PLOT == 1.45 ~ .145,
          TRUE ~ PERCENT_PLANT_IN_PLOT)) %>% # correct error in raw data
   # mutate(cano.area.m2 = PERCENT_PLANT_IN_PLOT   * (CANOPY_DIA_CM_avg/2)^2 * 3.141593 * 0.0001) %>% 
   mutate(cano.area.m2 = ((((CANOPY_DIA_1_CM/100)*(CANOPY_DIA_2_CM/100)*3.141593)/4) * PERCENT_PLANT_IN_PLOT)) # this is how LZ calculated cover in the SAS 2013 code update. Slightly different estimates than method used in previous. For consistency, using LZ formula 
 
+## calculate sum canopy area by species
 canopy.all.spp <- canopy.all.spp %>% 
   mutate(cover.plant = cano.area.m2/16 * 100) %>% 
   mutate(cover.plant = case_when(cover.plant > 100 ~ 100,
-                           TRUE ~ cover.plant))
-
-## sum by species and calculate cover
-canopy.all.spp.sum <- canopy.all.spp %>%
-  group_by(timeClass, SITE_ID, SPECIES_CODE, SITE_TYPE, LOCATION, FENCED, BURNED) %>% 
-  dplyr::summarise(cano.sppsum.m2 = sum(cano.area.m2)) %>% 
-  mutate(cover.spp = cano.sppsum.m2/16*100) %>% 
-  mutate(cover.spp = case_when(cover.spp > 100 ~ 100,
-                               TRUE ~ cover.spp)) %>% 
-  ungroup()
-
-### calculate the sum and % cover for all willows combined
-canopy.all.willow.sum <- canopy.all.spp %>%
-  filter(str_detect(SPECIES_CODE, "^SA")) %>% 
-  group_by(timeClass, SITE_ID, SITE_TYPE, LOCATION, FENCED, BURNED) %>% 
-  dplyr::summarise(cano.sum.m2 = sum(cano.area.m2), cano.mean.m2 = mean(cano.area.m2)) %>% 
-  mutate(cover.allwillow.mn = cano.mean.m2/16*100) %>% 
-  mutate(cover.allwillow = cano.sum.m2/16*100) %>% 
-  mutate(cover.allwillow = case_when(cover.allwillow > 100 ~ 100,
-                               TRUE ~ cover.allwillow)) %>% 
+                           TRUE ~ cover.plant)) %>% 
+  group_by(timeClass, SPECIES_CODE, SITE_ID, SITE_TYPE, BURNED, FENCED) %>% 
+  mutate(cano.area.m2.spp.sum = sum(cano.area.m2)) %>% 
   ungroup() %>% 
+  mutate(cover.spp = cano.area.m2.spp.sum/16 * 100) %>% 
+  mutate(cover.spp = case_when(cover.spp > 100 ~ 100,
+                           TRUE ~ cover.spp))
+  
+### willow cover. Summed across all willows in plot, div plot area
+canopy.willow.allspp <- canopy.all.spp %>%
+  filter(spp_group == "willow") %>% 
+  group_by(timeClass, SITE_ID, SITE_TYPE, BURNED, FENCED) %>% 
+  dplyr::summarize(cano.area.m2.will.sum = sum(cano.area.m2)) %>% 
+  ungroup() %>% 
+  mutate(cover.will = cano.area.m2.will.sum/16 * 100) %>% 
+  mutate(cover.will = case_when(cover.will > 100 ~ 100,
+                           TRUE ~ cover.will)) %>% 
   mutate(zCond = case_when(BURNED == "Burned" & FENCED == "Unfenced" ~ "BG",
                            BURNED == "Burned" & FENCED == "Fenced" ~ "BF",
                            BURNED == "Unburned" & FENCED == "Unfenced" ~ "UG",
@@ -1874,13 +1869,63 @@ canopy.all.willow.sum <- canopy.all.spp %>%
 
 ```
 
+```{r}
+
+## sum by species and calculate cover
+# canopy.all.spp.sum <- canopy.all.spp %>%
+#   group_by(timeClass, SITE_ID, SPECIES_CODE, SITE_TYPE, LOCATION, FENCED, BURNED) %>% 
+#   dplyr::summarise(cano.sppsum.m2 = sum(cano.sppsum.m2)) %>% 
+#   mutate(cover.spp = cano.sppsum.m2/16*100) %>% 
+#   mutate(cover.spp = case_when(cover.spp > 100 ~ 100,
+#                                TRUE ~ cover.spp)) %>% 
+#   ungroup()
+
+### calculate the sum and % cover for all willows combined
+
+# canopy.all.spp %>%
+#   filter(spp_group == "willow") %>% 
+#   group_by(timeClass, SITE_ID, SITE_TYPE, LOCATION, FENCED, BURNED) %>% 
+#   dplyr::summarise(prop.cov.sum = sum(cover.spp), prop.cov.mean = mean(cover.spp))
+#   dplyr::summarise(cano.sum.m2 = sum(cano.area.m2), cano.mean.m2 = mean(cano.area.m2)) %>% 
+#   mutate(cover.allwillow.mn = cano.mean.m2/16*100) %>% 
+#   mutate(cover.allwillow = cano.sum.m2/16*100) %>% 
+#   mutate(cover.allwillow = case_when(cover.allwillow > 100 ~ 100,
+#                                TRUE ~ cover.allwillow)) %>% 
+#   ungroup() %>% 
+#   mutate(zCond = case_when(BURNED == "Burned" & FENCED == "Unfenced" ~ "BG",
+#                            BURNED == "Burned" & FENCED == "Fenced" ~ "BF",
+#                            BURNED == "Unburned" & FENCED == "Unfenced" ~ "UG",
+#                            BURNED == "Unburned" & FENCED == "Fenced" ~ "UF"
+#                            )) %>%
+#   mutate(zCond2 = paste0(SITE_TYPE,"-",zCond)) ## add the 'condition' classes used by Zeignfuss etal in their 2015 report
+  
+
+## Changing bl burned to unburned
+canopy.all.willow.sum <- canopy.all.spp %>%
+  filter(str_detect(SPECIES_CODE, "^SA")) %>%
+  mutate(BURNED = case_when(timeClass == "BL" ~ "Unburned",
+                            TRUE ~ BURNED)) %>% 
+  group_by(timeClass, SITE_ID, SITE_TYPE, LOCATION, FENCED, BURNED) %>%
+  dplyr::summarise(cano.sum.m2 = sum(cano.area.m2), cano.mean.m2 = mean(cano.area.m2)) %>%
+  mutate(cover.allwillow = cano.sum.m2/16*100) %>%
+  mutate(cover.allwillow = case_when(cover.allwillow > 100 ~ 100,
+                               TRUE ~ cover.allwillow)) %>%
+  ungroup() %>%
+  mutate(zCond = case_when(BURNED == "Burned" & FENCED == "Unfenced" ~ "BG",
+                           BURNED == "Burned" & FENCED == "Fenced" ~ "BF",
+                           BURNED == "Unburned" & FENCED == "Unfenced" ~ "UG",
+                           BURNED == "Unburned" & FENCED == "Fenced" ~ "UF"
+                           )) %>%
+  mutate(zCond2 = paste0(SITE_TYPE,"-",zCond)) ## add the 'condition' classes used by Zeignfuss etal in their 2015 report
+```
+
+
 ```{r, echo=FALSE, eval=FALSE}
 ## quick checks before exporting
 canopy.all.willow.sum %>% 
-  tabyl(zCond)
+  tabyl(SITE_TYPE,zCond)
 
-canopy.all.willow.sum %>% 
-  filter(SITE_TYPE != "WK") %>%
+canopy.willow.allspp %>% 
   filter(timeClass == "2013") %>% 
   tabyl(zCond2)
 
@@ -1892,6 +1937,10 @@ canopy.all.willow.sum %>%
 #   write_csv("./output/exported_data/willow_cover_20200725.csv")
 # canopy.all.willow.sum %>%
 #   write_csv("./output/exported_data/willow_macroplot_cover_BLto2018.csv") # re-exported 2/15/21
+
+# canopy.all.willow.sum %>% 
+#   write_csv("./output/exported_data/willow_macroplot_cover_BLto2018.csv") # re-exported 2/22/21
+
 ```
 
 ```{r, echo = FALSE, eval=FALSE}
@@ -1912,25 +1961,34 @@ wide2join.cov.willow <- left_join(canopy.all.willow.sum, site.id.coords) %>%
 ```{r}
 ####  All willow species
 #### Winter range weighted average
-## exluding WK, WC and WNC
+## excluding WK, WC and WNC; non 5 yr sampling
+
+canopy.all.willow.sum <- canopy.all.willow.sum %>%
+  filter(timeClass %in% c("BL","2013","2018")) %>% 
+  mutate(timeClass = fct_drop(timeClass))
+
+canopy.all.willow.sum %>% 
+  tabyl(timeClass)
+
+## 
 canopy.all.willow.sum %>% 
   mutate(cover.allwillow = case_when(is.na(cover.allwillow) ~ 0,
                                      TRUE ~ cover.allwillow)) %>% 
-  filter(SITE_TYPE == "WC" | SITE_TYPE == "WNC") %>%   group_by(SITE_TYPE, LOCATION, timeClass) %>% 
-  summarise(n.loc.tc = n(), mean.cov = mean(cover.allwillow, na.rm = TRUE, mean.cov.mn = mean(cover.allwillow.mn, na.rm = TRUE))) %>% 
+  filter(SITE_TYPE == "WC" | SITE_TYPE == "WNC") %>%   
+  group_by(SITE_TYPE, LOCATION, timeClass) %>% 
+  summarise(n.loc.tc = n(), mean.cov = mean(cover.allwillow, na.rm = TRUE), sd.cov = sd(cover.allwillow, na.rm = TRUE)) %>%
+  # summarise(n.loc.tc = n(), mean.cov = mean(cover.allwillow, na.rm = TRUE, mean.cov.mn = mean(cover.allwillow.mn, na.rm = TRUE))) %>% 
   ungroup() %>% 
   group_by(SITE_TYPE, timeClass) %>% 
   mutate(n.tc = sum(n.loc.tc)) %>% 
   ungroup()
 
 canopy.all.willow.sum %>% 
-  # filter(BURNED == "N") %>% 
   filter(SITE_TYPE == "WC" | SITE_TYPE == "WNC") %>%
-  group_by(timeClass) %>% 
+  group_by(SITE_TYPE, timeClass) %>% 
   summarise(mean.will.cov = mean(cover.allwillow, na.rm = TRUE), 
             sd.will.cov  = sd(cover.allwillow, na.rm = TRUE), 
-            med.will.cov = median(cover.allwillow, na.rm = TRUE), 
-            mean.cov.mn = mean(cover.allwillow.mn, na.rm = TRUE)) %>% 
+            med.will.cov = median(cover.allwillow, na.rm = TRUE)) %>% 
   gt()
 
 canopy.all.willow.sum %>% 
@@ -2386,9 +2444,40 @@ canopy.all.willow.sum %>%
 ggsave("./output/figures_exported/WCWNC_willow_percentPlotCovThresh_dfc.png", width = 5.5, height = 2.25)
 ```
 
+```{r}
+canopy.all.willow.sum %>%
+  clean_names() %>% 
+  filter(!is.na(cover_allwillow)) %>% 
+  filter(time_class == "BL" | time_class == "2013" |time_class == "2018") %>% 
+  mutate(time_class = fct_drop(time_class)) %>% 
+  mutate(time_class = fct_rev(time_class)) %>%
+  filter(site_type != "WK") %>%
+  mutate(thresh = case_when(cover_allwillow >=31 ~ "above",
+                               cover_allwillow <31 ~ "below")) %>%
+  group_by(time_class, site_type, thresh, fenced, burned) %>% 
+  summarise(n = n()) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = thresh, values_from = n) %>% 
+  # replace_na(list(above = 0, below = 0)) %>% 
+  mutate(perc.above.thresh = round((above/(above + below)*100),1)) %>% 
+  ggplot(aes(x = fenced, y = burned)) +
+  geom_tile(aes(fill = perc.above.thresh), color = 'white') +
+  scale_fill_viridis_b() +
+  geom_text(aes(label = round(perc.above.thresh,1)), color = "white") +
+  theme_minimal() +
+  labs(x = "", y = "", fill = "% above \n threshold") +
+  facet_grid(site_type~time_class)
+
+ggsave("./output/figures_exported/WCxWNC_willow_percentPlotCovThresh_dfc.png", width = 5.5, height = 2.25)
+
+```
+
+```{r}
+
+```
+
+
 ### Weighted estimates
-
-
 ```{r}
 ## add condition classes per Zeigenfuss SAS code
 
@@ -2410,17 +2499,32 @@ ggsave("./output/figures_exported/WCWNC_willow_percentPlotCovThresh_dfc.png", wi
 
 ## I can not find in the SAS code where the areawt values are calculated
 
-lz.wt.willow
+
+# create a tibble from the area wts in teh SAS code above
+lz.wt.willow <- tribble(
+  ~timeClass, ~zCond, ~areawt_lz, ~SITE_TYPE,
+  "2013", "BF", 0.085, "WC", 
+  "2013", "BG", 0.45, "WC",
+  "2013", "UG", 0.219, "WC",
+  "2013", "UF", 0.117, "WC",
+  "2013", "UG", 0.129, "WNC",
+  "BL", "UG", 0.871, "WNC"
+)
+
+lz.wt.willow <- lz.wt.willow %>% 
+  mutate(zCond2 = paste0(SITE_TYPE,"-",zCond)) %>% 
+  select(-timeClass)
+
+lz.wt.willow %>% 
+  gt()
 ```
 
-
-```{r}
-## pull out the WC and WNC plot
-wc.wnc.wt <- canopy.all.willow.sum %>%
-  filter(SITE_TYPE != "WK")
-
+```{r, echo=FALSE, eval=FALSE}
+# not clear how area wts are calculated i noriginal SAS code
+# the following is based on proportional plot count
 ## calculate the weights by time class, SITE_TYPE and zCond
-wts <- wc.wnc.wt %>% 
+wts <- canopy.all.willow.sum %>% 
+  filter(SITE_TYPE != "WK") %>% 
   group_by(timeClass, SITE_TYPE, zCond) %>% 
   summarise(n_TCxSTxZcond = n()) %>% 
   ungroup() %>%
@@ -2430,10 +2534,17 @@ wts <- wc.wnc.wt %>%
   mutate(wt = round(n_TCxSTxZcond/n_TC,3))
 
 wts %>%
-  gt()
+  group_by(timeClass,SITE_TYPE, zCond) %>%
+  summarise(sum.wt = sum(wt)) %>% 
+  ungroup() %>% 
+  group_by(timeClass,SITE_TYPE) %>% 
+  mutate(sum = sum(sum.wt)) %>% 
+  # tabyl(timeClass, SITE_TYPE)
+  gt(groupname_col = "timeClass")
 
 ## calculate the weights by time class and zCond
-wts.2 <- wc.wnc.wt %>% 
+wts.2 <- canopy.all.willow.sum %>% 
+  filter(SITE_TYPE != "WK") %>%
   group_by(timeClass, zCond) %>% 
   summarise(n_TCxSTxZcond = n()) %>% 
   ungroup() %>%
@@ -2460,13 +2571,96 @@ wts.2 %>%
   theme_minimal() +
   scale_y_continuous(labels=scales::percent) +
   labs(x="", y="weight", title="Calculated Weights - Willow Plots", fill="")
+
+# these aren't the weights in the 2015 report. Will just use the values from the 2015 report  
+
+```
+
+
+```{r}
+# unweighted
+wt.cov <- canopy.all.willow.sum %>% 
+  filter(SITE_TYPE != "WK") %>% 
+  group_by(timeClass, SITE_TYPE, BURNED, FENCED, zCond2) %>%
+  summarise(n = n(), mean = mean(cover.allwillow, na.rm=TRUE), sd = sd(cover.allwillow, na.rm=TRUE)) %>%
+  ungroup() %>% 
+  arrange(timeClass, zCond2)
+
+# join in weigts from 2015 SAS code
+wt.cov <- left_join(wt.cov,lz.wt.willow) 
+
+## weight
+wt.cov <- wt.cov %>% 
+  filter(timeClass %in% c("BL","2013","2018")) %>% 
+  mutate(mean.wt = areawt_lz*mean) 
+
+wt.cov %>% 
+  mutate(timeClass = fct_drop(timeClass)) %>% 
+  mutate(timeClass = fct_rev(timeClass)) %>%
+  select(timeClass, zCond2, mean.wt) %>% 
+  pivot_wider(names_from = timeClass, values_from = c(mean.wt)) %>% 
+  clean_names() %>% 
+  datatable()
+
+wt.cov %>% 
+  arrange(zCond2) %>% 
+  datatable()
+
+
+canopy.all.willow.sum %>%
+  filter(SITE_ID == "WC52")
+
   
+```
+
+```{r}
+wt.cov %>% 
+  mutate(timeClass = fct_drop(timeClass)) %>% 
+  mutate(timeClass = fct_rev(timeClass))
+```
+
+
+```{r, eval=FALSE, echo=FALSE}
+canopy.all.willow.sum %>% 
+ filter(timeClass == "BL" & zCond2 == "WC-BG") %>% 
+  gt()
+
+site.info.willow %>% 
+  datatable()
+
+```
+
+```{r}
+canopy.all.willow.sum %>% 
+  mutate(timeClass = fct_drop(timeClass)) %>% 
+  mutate(timeClass = fct_rev(timeClass)) %>% 
+  filter(SITE_TYPE != "WK") %>% 
+  group_by(timeClass)
+
+```
+
+## transform
+```{r}
+
+## 
+# add transform
+# 
+canopy.all.willow.sum <- canopy.all.willow.sum %>% 
+  mutate(cover.transformed = cover.allwillow/100) %>%
+  mutate(cover.transformed = case_when(cover.transformed == 1 ~ 1-0.0883573,
+                                       cover.transformed == 0 ~ 0.0883573,
+                                       TRUE ~ cover.transformed)) %>% 
+  mutate(cover.transformed = log(cover.transformed/(1-cover.transformed)))
 
 ```
 
 ```{r}
 
+canopy.all.willow.sum
+
+
 ```
+
 
 ### Height
 ```{r}
@@ -6347,7 +6541,8 @@ percent_suckering_class.vtype %>%
 ```{r}
 ht.dbh.class %>%
   group_by(RANGE_TYPE, timeClass, BURNED, FENCED, DBHclGp01, HTclass) %>% 
-  summarise(mean.stemDen.ac = mean_r1(stemDen.ac), sd.stemDen.ac = sd_r1(stemDen.ac), n = n()) %>% 
+  descr(round.digits = 1, stats = "common") %>% 
+  tb() %>% 
   datatable(filter = "bottom")
 
 ```
