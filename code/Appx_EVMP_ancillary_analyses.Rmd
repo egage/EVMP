@@ -10,7 +10,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 library(knitr)
 opts_knit$set(root.dir=normalizePath('../')) # this is required if Rmd is nested below the project directory
 opts_chunk$set(fig.path = "../output/figures/") # corrected path and added dev. Needed to specify a subdirectory for figs
@@ -20,7 +20,6 @@ _Code author:_
 E. Gage  
 mycologica@gmail.com  
 https://github.com/egage/EVMP    
-Updated: `r format(Sys.time(), '%Y %B %d')`  
 
 ```{r, echo=FALSE}
 # package install
@@ -44,7 +43,7 @@ library(gt)
 ```
 
 # Introduction  
-This document contains code for running statistical analyses of of Elk
+This document contains code for running ancillary analyses of Elk
 Vegetation Management Plan (EVMP) data collected through the 2018
 sampling season. Analyses are limited to macroplot data from plots
 established in riparian areas in areas of the elk winter range and
@@ -59,32 +58,27 @@ monitoring plan [@zeigenfuss2011].
 
 # Methods
 
-## Covariates  
-Weather and ungulate population data were used as covariates in analyses of willow offtake. Weather data were obtained from were obtained from the National Climate Data Center for Estes Park (Estes Park 3 SSE, CO US, #52761). Snow depth data were acquired from the Bear Lake Snotel Site (Site #322) located southwest of the core elk winter range. Climate data were used to examine the relationship of weather and elk population to patterns in annual offtake data. Elk population estimates produced by RMNP and outside collaborators, produced using a combination of aerial and ground surveys, were used to create annual estimates of the winter population size of elk developed using a Bayesian population model of trends in elk population size after correcting for sightability factors in aerial survey data (T. Hobbs and H. Abouelezz, unpublished data). 
-
-The Probability of Direction (PD) was used to represent certainty associated with the most probable direction (positive or negative) of the effect (e.g., time class, fencing). The PD is correlated with the frequentist p-value, with a two-sided p-value of respectively .1, .05, and .01 approximated by a PD of 95%, 97.5%, and 99.5% [@makowski2019]. the “region of practical equivalence” (ROPE) to evaluate the probability of a parameter being outside a range that can be considered as “practically no effect”, i.e., a region enclosing values that are equivalent to the null value for practical purposes [@kruschke2018], with the proportion of the 95% HDI credible interval falling within the ROPE was used as an index for an analog to frequentist "null-hypothesis" testing.
+Weather and ungulate population data were obtained and explored for use as covariates in analyses of EVMP data. Weather data were obtained from were obtained from the National Climate Data Center for Estes Park (Estes Park 3 SSE, CO US, #52761). Snow depth data were acquired from the Bear Lake Snotel Site (Site #322) located southwest of the core elk winter range. Climate data were analyzed for reference to EVMP data and used to examine the relationship of weather and elk population to EVMP data. Elk population estimates produced by RMNP and outside collaborators (T. Hobbs and H. Abouelezz, unpublished data), produced using a combination of aerial and ground surveys, were used to create annual estimates of the winter population size of elk. A linear model estimated using OLS was used to predict median winter elk as a function of annual precipitation data. 
 
 # Results  
 
-## Covariates
-Modeled elk population estimates (T. Hobbs unpublished data) are negatively correlated with annual precipitation at both the Estes Park and Bear Lake climate stations (Figure 48). The model had moderate explanatory power (R2' median = 0.24, 89% CI [1.07e-05, 0.45], adj. R2 = 0.07). The model's intercept, corresponding to elk = 0 and precipitation = 0, is at 1291.28 (89% CI [788.17, 1818.43], 0.04% in ROPE). The effect of precipitation in the mode had a probability of 97.56% of being negative and can be considered as medium (median = -0.79, 100% in ROPE, std. median = -0.51). The algorithm successfully converged (R^ = 1.001) and estimates were stable (ESS = 1846). A similar trend but weaker correlation occurred with Bear Lake precipitation data (Figure 49). Additional results are presented in appendices.
+### Climate
 
- 
-Figure 51. Modeled RMNP elk population versus Estes Park annual precipitation and Bear Lake weather stations. Blue line represents a linear fit line.
+#### Estes Park
 
+Station: GHCND:USC00052761
 
-## Climate
+```{r}
+# Dataset	Daily Summaries
+# Order Start Date	1998-08-01 00:00
+# Order End Date	2020-08-22 23:59
+# Output Format	Custom GHCN-Daily CSV
+# Data Types	MDPR, DAPR, PRCP, SNWD, SNOW, TMAX, TMIN, TOBS
+# Custom Flag(s)	Station Name
+# Units	Metric
+# Stations/Locations	ESTES PARK 3 SSE, CO US (Station ID: GHCND:USC00052761)
+```
 
-### Estes Park
-
-Dataset	Daily Summaries
-Order Start Date	1998-08-01 00:00
-Order End Date	2020-08-22 23:59
-Output Format	Custom GHCN-Daily CSV
-Data Types	MDPR, DAPR, PRCP, SNWD, SNOW, TMAX, TMIN, TOBS
-Custom Flag(s)	Station Name
-Units	Metric
-Stations/Locations	ESTES PARK 3 SSE, CO US (Station ID: GHCND:USC00052761)
 
 ```{r}
 
@@ -124,6 +118,7 @@ ep.cln <- ep.raw %>%
 
 ```
 
+** Annual Precipitation**
 ```{r}
 
 ep.annual.sum.prcp <- ep.cln %>% 
@@ -148,8 +143,31 @@ ep.plt1
 
 ```
 
+**Daily Maximum Temperature**
+```{r}
+# temperature
+ep.annual.mean.tmax <- ep.cln %>% 
+  group_by(year) %>% 
+  summarise(temp_mean_ann = mean(tmax, na.rm=TRUE)) %>% 
+  ungroup()
 
-### Bear Lake Snotel
+ep.cln %>%
+  filter(year > 2007 & year < 2019) %>% 
+  mutate(year = as.character(year)) %>% 
+  ggplot(aes(year,tmax)) +
+  # geom_line() +
+  # geom_point() +
+  geom_boxplot() +
+  # geom_col(fill = 'grey40') +
+  theme_minimal() +
+  # scale_x_continuous(breaks = seq(from = 2008, to = 2018, by = 1)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Year", y = "Maxiumum daily temp (C)", caption = "Estes Park Station GHCND:USC00052761")
+
+```
+
+
+#### Bear Lake Snotel
 ```{r}
 # data\covariates\climate\BearToothSnotel
 snotel <- read_csv("./data/covariates/climate/BearLakeSnotel/snotel_2read.csv") %>% 
@@ -179,14 +197,12 @@ snotel <- snotel %>%
   mutate(ppt_accum_mm = 25.4*ppt_accum_in) %>% 
   mutate(ppt_incr_mm = 25.4*ppt_incr_in)
 
-snotel %>%
-  visdat::vis_dat()
+# snotel %>%
+#   visdat::vis_dat()
 ```
 
-What day had the latest peak swe?
-
-
 ```{r}
+# What day had the latest peak swe?
 top_ppt_accum <- snotel %>% 
   group_by(year) %>% 
   summarise(ppt_accum_mm_max = max(ppt_accum_mm)) %>% 
@@ -213,7 +229,6 @@ top_swe <- snotel %>%
   summarise(sum_swe = sum(swe)) %>% 
   ungroup()
 
-
 swe.pl <- top_swe %>%
   filter(year>1980 & year <2019) %>% 
   # mutate(year = as.character(year)) %>%
@@ -226,12 +241,12 @@ swe.pl <- top_swe %>%
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_x_continuous(breaks = seq(from = 1980, to = 2018, by = 5))
 
-swe.pl
+# swe.pl
 
 # ggsave("./output/figures_exported/bearLk_SWE.png", width = 3.85, height = 3.85)
 
 ```
-
+**Annual SWE and Accumulated Precipitation**
 ```{r}
 cowplot::plot_grid(swe.pl,ppt.pl, labels = "AUTO")
 # ggsave("./output/figures_exported/bear_lk_swe_ppt.png", width = 6.5, height = 3.8)
@@ -244,17 +259,19 @@ top_swe %>%
   datatable(rownames = FALSE, filter = "top")
 ```
 
-## Physiographic
-```{r}
+
+
+```{r, echo=FALSE, eval=FALSE}
+
+### Physiographic
 # distance from stream
 
 
 
 ```
 
-## Elk
+### Elk
 ```{r}
-
 elk.raw <- read_csv("./data/covariates/elk/RMNP_Population_summary.csv") %>% 
   janitor::clean_names()
 
@@ -295,17 +312,21 @@ elk.raw %>%
 ```
 
 
-## elk vs climate
-```{r}
-## Hobbs modeled elk vs Estes Park prcp
+Modeled elk population estimates (T. Hobbs unpublished data) are negatively correlated with annual precipitation at both the Estes Park and Bear Lake climate stations. The model had moderate explanatory power (R2' median = 0.24, 909% CI [1.07e-05, 0.45], adj. R2 = 0.07). The model's intercept, corresponding to elk = 0 and precipitation = 0, is at 1291.28 (90% CI [788.17, 1818.43], 0.04% in ROPE). Precipitation in the model had a probability of 97.56% of being negative and was medium in size (median = -0.79, 100% in ROPE, std. median = -0.51). The algorithm successfully converged (R^ = 1.001) and estimates were stable (ESS = 1846). A similar trend but weaker correlation occurred with Bear Lake precipitation data. 
 
-elk.raw %>% arrange(desc(year))
+
+
+```{r}
+### elk vs climate
+## Hobbs modeled elk vs Estes Park prcp
+# elk.raw %>% arrange(desc(year))
 elk.ep_prcp <- left_join(ep.annual.sum.prcp,elk.raw, by = "year")
 
-elk.ep_prcp %>% 
-  ggplot(aes(x = year)) +
-  geom_col(aes(y = ppt_mm_ann)) +
-  geom_col(aes(y = median), color = "red")
+# elk.ep_prcp %>% 
+#   ggplot(aes(x = year)) +
+#   geom_col(aes(y = ppt_mm_ann)) +
+#   geom_point(aes(y = median), color = "red") +
+#   labs(x = "", y = "")
 
 pl.cov1 <- elk.ep_prcp %>% 
   ggplot() +
@@ -313,18 +334,26 @@ pl.cov1 <- elk.ep_prcp %>%
   # geom_smooth(aes(x = ppt_mm_ann, y = median)) +
   geom_smooth(aes(x = ppt_mm_ann, y = median), method = "glm") +
   theme_minimal() +
-  labs(x= "Annual precipitation (mm)", y = "Number of elk", caption = "Hobbs modeled elk vs Estes Park prcp") 
+  labs(x= "Annual precipitation (mm)", y = "Number of elk", caption = "Hobbs modeled elk vs Estes Park Precip") 
 
 pl.cov1
-# ggsave("./output/figures_exported/covariates/elk_v_prcp.png", width = 3.75, height = 4)  
+ggsave("./output/figures_exported/covariates/elk_v_prcp.png", width = 3.75, height = 4)
 
+
+```
+
+```{r, eval=FALSE, echo=FALSE}
 top_swe <- top_swe %>% 
   mutate(year = as.integer(year))
 
-elk.ep_EPprcp_BLkppt <- left_join(elk.ep_prcp, top_ppt_accum, by = "year")
+
 ```
 
+
 ```{r}
+
+elk.ep_EPprcp_BLkppt <- left_join(elk.ep_prcp, top_ppt_accum, by = "year")
+
 pl.cov2 <- elk.ep_EPprcp_BLkppt %>% 
   ggplot() +
   geom_point(aes(x = ppt_accum_mm_max , y = median)) +
@@ -334,12 +363,13 @@ pl.cov2 <- elk.ep_EPprcp_BLkppt %>%
   labs(x= "Annual precipitation (mm)", y = "Number of elk", caption = "Hobbs modeled elk vs Bear Lake SWE")
 pl.cov2
 
-lm(median ~ ppt_mm_ann, data = elk.ep_EPprcp_BLkppt)
-
 ```
 
+A linear model (estimated using OLS) predicting median elk with annual precipitation (formula: median ~ ppt_mm_ann) explains a significant and substantial proportion of variance (R2 = 0.39, F(1, 13) = 8.16, p = 0.013, adj. R2 = 0.34). The model's intercept, corresponding to ppt_mm_ann = 0, is at 1145.02 (95% CI [741.20, 1548.84], t(13) = 6.13, p < .001). Within the model, the effect of ppt_mm_ann is significantly negative (beta = -1.19, 95% CI [-2.09, -0.29], t(13) = -2.86, p < .05; Std. beta = -0.62, 95% CI [-1.09, -0.15]). Standardized parameters were obtained by fitting the model on a standardized version of the data.
 
 ```{r}
+
+# lm(median ~ ppt_mm_ann, data = elk.ep_EPprcp_BLkppt)
 library(moderndive)
 mod.elkXepPrcp <- lm(median ~ ppt_mm_ann, data = elk.ep_EPprcp_BLkppt) 
 
@@ -349,16 +379,14 @@ mod.elkXepPrcp %>%
   tab_header(title = "lm: elk media ~ Estes Park annual prcp")
 
 
+## elk ~ Bear lake
 mod.elkXblkPrcp <- lm(median ~ ppt_accum_mm_max, data = elk.ep_EPprcp_BLkppt) 
 
 ## broom::
 broom::tidy(mod.elkXblkPrcp)
 
-## report::
-# devtools::install_github("neuropsychology/report")
-
 library(report)
-mod.elkXblkPrcp
+# mod.elkXblkPrcp
 # report::report(mod.elkXepPrcp)
 # report::report(mod.elkXblkPrcp)
 
@@ -368,6 +396,7 @@ broom::tidy(mod.elkXblkPrcp) %>%
 
 ```
 
+Bayesian generalized linear model of median winter elk numbers (Hobbs unpublished) and accumulated annual precipitation at the Estes Park climate station. 
 ```{r}
 # bayesian lm
 library(rstanarm)
@@ -377,11 +406,19 @@ stanlm.elkXep <- stan_glm(median ~ ppt_accum_mm_max, data = elk.ep_EPprcp_BLkppt
                          seed = 12345,
                          refresh = 0)
 
+```
+
+A Bayesian linear model estimated using MCMC sampling predict median elk with accumulated annual precipitation had moderate explanatory power (R2 = 0.24, 89% CI [1.07e-05, 0.45], adj. R2 = 0.07). The model's intercept, corresponding to precipitation = 0, is at 1291 (95% CI [619.77, 1912.85]). Within this model the effect of precipitation (Median = -0.79, 0.95% CI [-1.54, -0.01]) had a 97.56% probability of being negative (< 0), but a low probability of being significant or large. The estimation successfully converged (Rhat = 1.001) and the indices are reliable (ESS = 1846).
+
+
+```{r, echo=FALSE}
 plot(stanlm.elkXep, "hist", pars = c("ppt_accum_mm_max", "sigma"), 
      transformations = list(sigma = "log"))
-report::report(stanlm.elkXep )
+
+# report::report(stanlm.elkXep )
 
 ```
+
 
 ```{r}
 ## plot grid
@@ -389,13 +426,33 @@ cowplot::plot_grid(pl.cov1, pl.cov2, labels = "AUTO")
 # ggsave("./output/figures_exported/covariates/prcp_x_elk_2panel.png", width = 6.5, height = 3.75, dpi = 300)
 ```
 
+```{r, echo=FALSE, eval=FALSE}
 
-## elk vs offtake upland
+### elk vs offtake upland
 
 
-## climate vs elk
+### climate vs elk
 
-## Moose
+### Moose
 
-# Results
+
+```
+
+
+
+# Session info
+
+R version 4.0.3 (2020-10-10)  
+Platform: x86_64-w64-mingw32/x64 (64-bit)  
+Running under: Windows 10 x64 (build 19041)  
+Run date: `r format(Sys.time(), '%Y %B %d')`  
+
+```{r, echo=FALSE}
+subset(data.frame(sessioninfo::package_info()), attached==TRUE, c(package, loadedversion)) %>% 
+  gt() %>% 
+  tab_header(title = "Attached packages and versions")
+
+```
+
+# References
 

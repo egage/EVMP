@@ -19,7 +19,6 @@ _Code author:_
 E. Gage  
 mycologica@gmail.com  
 https://github.com/egage/EVMP  
-Updated: `r format(Sys.time(), '%Y %B %d')`  
 
 ```{r setup, include=FALSE}
 # Rmd setup
@@ -67,34 +66,12 @@ fun.desc.post1 <- function(model){
 
 ## Functions for summarizing posterior distributions, creating tables with the gt
 fun.sexit.gt <- function(model){
-  bayestestR::sexit(model) %>% 
+  bayestestR::sexit(model, ci=0.9) %>% 
   as_tibble() %>% 
   mutate(across(where(is.numeric), round, 2)) %>% 
   gt() %>% 
   tab_header(title = "Effect Existence and Significance Testing") }
 
-
-fun.desc.post1.gt <- function(model){
-  describe_posterior(
-  model,
-  effects = "fixed",
-  component = "all",
-  ci_method = "hdi",
-  test = c("rope"),
-  ci=0.95,
-  rope_ci = 0.9,
-  rope_range("default"),
-  centrality = "median"
-) %>% 
-    as_tibble() %>% 
-    gt() %>% 
-    tab_header(title = "Posterior description") %>% 
-    fmt_number(
-    columns = 2:12,
-    decimals = 2,
-    suffixing = TRUE
-  )
-}
 
 # describe posterior
 fun.desc.post1.gt.rope <- function(model){
@@ -318,8 +295,8 @@ willow.ht.wc.wnc %>%
 ```{r, cache=TRUE}
 ## run with gamma
 wc.wnc.stmod_TCxF <- stan_glmer(plant_ht_cm ~ time_class*fenced +  (1 | site_id), data = willow.ht.wc.wnc,
-                       family=Gamma(link="log"),
-                      iter = 10000,
+                      family=Gamma(link="log"),
+                      iter = 8000,
                       )
 ```
 
@@ -356,17 +333,23 @@ posteriors.wc.wnc.ht.tidy %>%
 ```{r}
 # use function defined above
 fun.sexit.gt(wc.wnc.stmod_TCxF)
+
+## save as RTF
+fun.sexit.gt(wc.wnc.stmod_TCxF) %>%
+ tab_header(title = "Combined WC and WNC", subtitle = "Willow Height Posterior Description") %>%
+ gt::gtsave(filename = "./output/tables/willow_height/postdesc_willowht_TCxF_wcwnc.rtf")
+
 ```
 
-```{r, echo=TRUE}
+```{r, echo=FALSE, eval=FALSE}
 #### Describe posterior distributions
 fun.desc.post1.gt.rope(wc.wnc.stmod_TCxF) %>% 
   tab_header(title = "Combined WC and WNC", subtitle = "Willow Height Posterior Description")
 
 ## save as RTF
-# fun.desc.post1.gt.rope(wc.wnc.stmod_TCxF) %>%
-#  tab_header(title = "Combined WC and WNC", subtitle = "Willow Height Posterior Description") %>%
-#   gt::gtsave(filename = "./output/tables/willow_height/postdesc_willowht_TCxF_wcwnc.rtf")
+fun.desc.post1.gt.rope(wc.wnc.stmod_TCxF) %>%
+ tab_header(title = "Combined WC and WNC", subtitle = "Willow Height Posterior Description") %>%
+  gt::gtsave(filename = "./output/tables/willow_height/postdesc_willowht_TCxF_wcwnc.rtf")
 ```
 
 #### Probability of Direction
@@ -515,7 +498,7 @@ willow.ht.wc %>%
 # Previously run for comparisons but not otherwise reported
 stmod_ht.0 <- stan_glmer(plant_ht_cm ~ 1 + (1 | site_id), data = willow.ht.wc,
                       family=Gamma(link="log"),
-                      iter = 10000,
+                      iter = 8000,
                       seed = 1234
                       )
 
@@ -526,7 +509,7 @@ pp_check(stmod_ht.0)
 ## Run, but not used for reporting after model comparisons
 stmod_ht1 <- stan_glmer(plant_ht_cm ~ time_class + fenced + (1 | site_id), data = willow.ht.wc,
                       family=Gamma(link="log"),
-                      iter = 10000,
+                      iter = 8000,
                       seed = 1234
                       )
 
@@ -540,7 +523,7 @@ pp_check(stmod_ht1)
 # After model comparisons, this is the selected model reported
 stmod_ht2 <- stan_glmer(plant_ht_cm ~ time_class*fenced + (1 | site_id), data = willow.ht.wc,
                       family=Gamma(link="log"),
-                      iter = 10000,
+                      iter = 8000,
                       seed = 1234
                       )
 
@@ -596,8 +579,13 @@ ppc.plot(stmod_ht2) +
 
 ### Effect Existence and Significance Testing
 ```{r}
-# use function defined above
 fun.sexit.gt(stmod_ht2)
+
+## save as RTF
+fun.sexit.gt(stmod_ht2) %>% 
+  tab_header(title = "Core Winter Range", subtitle = "Willow Height Posterior Description") %>% 
+  gt::gtsave(filename = "./output/tables/willow_height/xpostdesc_willowht_TCxF_wc.rtf")
+  
 ```
 
 ```{r, echo=FALSE, eval=FALSE}
@@ -605,6 +593,7 @@ fun.sexit.gt(stmod_ht2)
 fun.desc.post1.gt.rope(stmod_ht2) %>% 
   tab_header(title = "Core Winter Range", subtitle = "Willow Height Posterior Description") %>% 
   gt::gtsave(filename = "./output/tables/willow_height/postdesc_willowht_TCxF_wc.rtf")
+
 ```
 
 #### Probability of Direction
@@ -742,7 +731,7 @@ willow.ht.nc %>%
 ## run with gamma
 nc.stmod_ht1 <- stan_glmer(plant_ht_cm ~ time_class +  (1 | site_id), data = willow.ht.nc,
                        family=Gamma(link="log"),
-                      iter = 10000,
+                      iter = 8000,
                       )
 posteriors.nc.ht <- insight::get_parameters(nc.stmod_ht1)
 ```
@@ -767,9 +756,14 @@ ppc.plot(nc.stmod_ht1) +
 ```{r}
 # use function defined above
 fun.sexit.gt(nc.stmod_ht1)
+
+## save as RTF
+fun.sexit.gt(nc.stmod_ht1) %>% 
+  tab_header(title = "Noncore Winter Range", subtitle = "Willow Height Posterior Description") %>% 
+  gt::gtsave(filename = "./output/tables/willow_height/xposterior_willowht_wnc.rtf")
 ```
 
-```{r, eval = TRUE}
+```{r, echo=FALSE, eval = FALSE}
 # describe posterior
 fun.desc.post1.gt.rope(nc.stmod_ht1)%>% 
   tab_header(title = "Noncore Winter Range", subtitle = "Willow Height Posterior Description")
@@ -783,16 +777,14 @@ fun.desc.post1.gt.rope(nc.stmod_ht1) %>%
   gt::gtsave(filename = "./output/tables/willow_height/posterior_willowht_wnc.rtf")
 ```
 
-```{r, echo=FALSE, eval=FALSE}
+```{r}
 # tidy the posteriors
 posteriors.nc.ht.tidy <- posteriors.nc.ht %>%
   pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
 
 ```
 
-
-#### Probability of Direction
-
+#### Probability of Direction 
 ```{r}
 # Visualize the pd
 p_direction(nc.stmod_ht1) %>% 
@@ -931,7 +923,7 @@ ggsave("./output/figures_exported/willow_height/hist_willowht_TC_WK.png", dpi = 
 #### TC only (no fencing or burned)
 stmod_ht_wk_TC <- stan_glmer(plant_ht_cm ~ time_class + (1 | site_id), data = willow.ht.wk,
                       family=Gamma(link="log"),
-                      iter = 10000,
+                      iter = 8000,
                       seed = 1234
                       )
 
@@ -957,17 +949,22 @@ ggsave("./output/figures_exported/willow_height/ppc_willowht_wk.pdf", width = 4.
 ### Effect Existence and Significance Testing
 ```{r}
 # use function defined above
-fun.sexit.gt(stmod_ht_wk_TC)
+fun.sexit.gt(stmod_ht_wk_TC) 
+
+fun.sexit.gt(stmod_ht_wk_TC) %>% 
+  tab_header(title = "Kawuneeche Valley", subtitle = "Willow Height Posterior Description") %>% 
+  gt::gtsave(filename = "./output/tables/willow_height/xpostdesc_willowht_TC_wk.rtf") 
+
 ```
 
-```{r}
+```{r, echo=FALSE, eval=FALSE}
 # full posterior description
 fun.desc.post1.gt.rope(stmod_ht_wk_TC) %>% 
   tab_header(title = "Kawuneeche Valley", subtitle = "Willow Height Posterior Description")
 
 ```
 
-```{r}
+```{r, echo=FALSE, eval=FALSE}
 ### Model posterior parameters to table
 fun.desc.post1.gt.rope(stmod_ht_wk_TC) %>% 
   tab_header(title = "Kawuneeche Valley", subtitle = "Willow Height Posterior Description") %>% 
@@ -1163,8 +1160,8 @@ stmod_cov.wc.wnc <- stan_glmer(cover_allwillow ~ time_class * fenced + (1 | site
                       data = cov.wc.wnc,
                       family = mgcv::betar,
                       prior_aux = exponential(1),
-                      iter = 10000,
-                      seed = 12345)
+                      iter = 8000,
+                      seed = 1234)
 
 ```
 
@@ -1211,22 +1208,25 @@ ggsave("./output/figures_exported/willow_cover/ppc_willowcov_wcwnc.pdf", width =
 
 ```
 
-```{r, eval = TRUE}
+### Effect Existence and Significance Testing
+```{r}
+fun.sexit.gt(stmod_cov.wc.wnc$stanfit)
+
+fun.sexit.gt(stmod_cov.wc.wnc$stanfit) %>%
+  tab_header(title = "Combined Core and Noncore Winter Range", subtitle = "Willow Cover Posterior Description") %>% 
+  gt::gtsave(filename = "./output/tables/willow_cover/xposterior_willowht_wcwnc.rtf")
+```
+
+```{r, echo=FALSE, eval=FALSE}
 #### Model posterior parameters to table
 fun.desc.post1.gt.rope(stmod_cov.wc.wnc$stanfit)
 ```
 
-```{r, eval=TRUE}
+```{r, echo=FALSE, eval=FALSE}
 ## save rtf
 fun.desc.post1.gt.rope(stmod_cov.wc.wnc$stanfit) %>%
   tab_header(title = "Combined Core and Noncore Winter Range", subtitle = "Willow Cover Posterior Description") %>% 
   gt::gtsave(filename = "./output/tables/willow_cover/posterior_willowht_wcwnc.rtf")
-```
-
-### Effect Existence and Significance Testing
-```{r}
-
-fun.sexit.gt(stmod_cov.wc.wnc$stanfit)
 ```
 
 
@@ -1319,7 +1319,7 @@ stmod_cov.wc.wnc.TCxFxB <- stan_glmer(cover_allwillow ~ time_class * burned * fe
                       family = mgcv::betar,
                       prior_aux = exponential(1),
                       iter = 10000,
-                      seed = 12345)
+                      seed = 1234)
 
 ```
 
@@ -1385,7 +1385,7 @@ stmod_cov.wc <- stan_glmer(cover_allwillow ~ time_class * fenced + (1 | site_id)
                       family = mgcv::betar,
                       prior_aux = exponential(2),
                       iter = 10000,
-                      seed = 12345)
+                      seed = 1234)
 
 ```
 
@@ -1405,23 +1405,27 @@ ggsave("./output/figures_exported/willow_cover/ppc_willowcov_wc.png", dpi = 300,
 ggsave("./output/figures_exported/willow_cover/ppc_willowcov_wc.pdf", width = 4.75, height = 3.75)
 
 ```
+### Effect Existence and Significance Testing
+```{r}
 
-```{r, eval = TRUE}
+fun.sexit.gt(stmod_cov.wc$stanfit)
+
+fun.sexit.gt(stmod_cov.wc$stanfit) %>%
+  tab_header(title = "Core Winter Range", subtitle = "Willow Cover Posterior Description") %>% 
+  gt::gtsave(filename = "./output/tables/willow_cover/posterior_willowht_wc.rtf")
+```
+
+```{r, echo=FALSE, eval=FALSE}
 #### Model posterior parameters to table
 fun.desc.post1.gt.rope(stmod_cov.wc$stanfit)
 ```
 
-```{r, eval=TRUE}
+```{r, echo=FALSE, eval=FALSE}
 ## save rtf
 fun.desc.post1.gt.rope(stmod_cov.wc$stanfit) %>%
   tab_header(title = "Core Winter Range", subtitle = "Willow Cover Posterior Description") %>% 
   gt::gtsave(filename = "./output/tables/willow_cover/posterior_willowht_wc.rtf")
 
-```
-### Effect Existence and Significance Testing
-```{r}
-
-fun.sexit.gt(stmod_cov.wc$stanfit)
 ```
 
 #### Probability of Direction
@@ -1518,7 +1522,7 @@ stmod_cov.wnc <- stan_glmer(cover_allwillow ~ time_class + (1 | site_id),
                       family = mgcv::betar,
                       # prior_aux = exponential(2),
                       iter = 15000,
-                      seed = 12345)
+                      seed = 1234)
 
 
 
@@ -1554,14 +1558,18 @@ ggsave("./output/figures_exported/willow_cover/ppc_willowcov_wc.pdf", width = 4.
 ### Effect Existence and Significance Testing
 ```{r}
 fun.sexit.gt(stmod_cov.wnc$stanfit)
+
+fun.sexit.gt(stmod_cov.wnc$stanfit) %>% 
+  tab_header(title = "Noncore Winter Range", subtitle = "Willow Cover Posterior Description") %>% 
+  gt::gtsave(filename = "./output/tables/willow_cover/xposterior_willowht_wnc.rtf")
 ```
 
-```{r, eval = TRUE}
+```{r, echo=FALSE, eval=FALSE}
 #### Model posterior parameters to table
 fun.desc.post1.gt.rope(stmod_cov.wnc$stanfit)
 ```
 
-```{r, eval=TRUE}
+```{r, echo=FALSE, eval=FALSE}
 ## save rtf
 fun.desc.post1.gt.rope(stmod_cov.wnc$stanfit) %>%
   tab_header(title = "Noncore Winter Range", subtitle = "Willow Cover Posterior Description") %>% 
@@ -1569,8 +1577,7 @@ fun.desc.post1.gt.rope(stmod_cov.wnc$stanfit) %>%
 
 ```
 
-#### Probability of Direction
-
+#### Probability of Direction  
 ```{r}
 # Visualize the pd
 p_direction(stmod_cov.wnc) %>% 
@@ -1584,8 +1591,7 @@ ggsave("./output/figures_exported/willow_cover/pd_willowht_wnc.pdf", width = 6.7
 
 ```
 
-#### Region of Practical Equivalence (ROPE)
-
+#### Region of Practical Equivalence (ROPE) 
 ```{r}
 rope.cov.wnc.gt <- rope(stmod_cov.wnc$stanfit, ci=0.9) %>% 
   gt() %>%
@@ -1650,7 +1656,8 @@ wbasin.loc <- wbasin %>%
 
 R version 4.0.3 (2020-10-10)  
 Platform: x86_64-w64-mingw32/x64 (64-bit)  
-Running under: Windows 10 x64 (build 19041)
+Running under: Windows 10 x64 (build 19041)  
+Run date: `r format(Sys.time(), '%Y %B %d')`  
 
 ```{r, echo=FALSE}
 subset(data.frame(sessioninfo::package_info()), attached==TRUE, c(package, loadedversion)) %>% 

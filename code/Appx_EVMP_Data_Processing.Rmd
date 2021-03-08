@@ -23,7 +23,6 @@ _Code author:_
 E. Gage  
 mycologica@gmail.com  
 https://github.com/egage/EVMP  
-__Updated:__ `r format(Sys.time(), '%Y %B %d')`
 
 ```{r, echo=FALSE}
 
@@ -2472,12 +2471,15 @@ ggsave("./output/figures_exported/WCxWNC_willow_percentPlotCovThresh_dfc.png", w
 
 ```
 
-```{r}
+
+### Range-wide weighted summaries  
+
+```{r, echo=FALSE, eval=FALSE}
+
+# calculating the weighting factors
 
 ```
 
-
-### Weighted estimates
 ```{r}
 ## add condition classes per Zeigenfuss SAS code
 
@@ -2639,11 +2641,11 @@ canopy.all.willow.sum %>%
 
 ```
 
-## transform
-```{r}
 
+```{r}
+## transform
 ## 
-# add transform
+# add transform following method in Zeigenfuss
 # 
 canopy.all.willow.sum <- canopy.all.willow.sum %>% 
   mutate(cover.transformed = cover.allwillow/100) %>%
@@ -2653,14 +2655,6 @@ canopy.all.willow.sum <- canopy.all.willow.sum %>%
   mutate(cover.transformed = log(cover.transformed/(1-cover.transformed)))
 
 ```
-
-```{r}
-
-canopy.all.willow.sum
-
-
-```
-
 
 ### Height
 ```{r}
@@ -2955,9 +2949,7 @@ will.ht.mean.sf %>%
 
 ```
 
-#### Ht difference: 2018 to baseline
-
-
+#### Height difference from baseline  
 ```{r}
 # WC and WNC
 will.ht.mean.sf %>%
@@ -3933,7 +3925,6 @@ offt.raw.spr.tidy <- offt.raw.spr.tidy %>%
 
 ```
 
-# !
 ```{r, eval = FALSE}
 # There is little consistency in the format of data entry between years...
 ## qc
@@ -4299,7 +4290,7 @@ offt.percbrowsed.summary %>%
 
 ```
 
-## >>> percent browsed looks weird for last 4 yrs
+
 ```{r}
 
 offt.percbrowsed.summary %>%
@@ -4309,6 +4300,7 @@ offt.percbrowsed.summary %>%
   facet_wrap(~site_type) +
   theme_minimal()
 
+## percent browsed looks odd last 4 yrs
 ```
 
 
@@ -7402,26 +7394,22 @@ asp_inDFC_summary2 %>%
 
 
 
-```{r}
+```{r, echo=FALSE, eval=FALSE}
 #
-
-
-```
-
 # in/out DFC 
 
-# Range-wide weighted summaries
-```{r}
+```
+
+### Range-wide weighted summaries
+```{r, echo=FALSE, eval=FALSE}
+
 # calculating the weighting factors
-
-
 
 ```
 
 
-
-# Aspen animal signs
-```{r, echo=TRUE}
+## Aspen plot - animal signs
+```{r}
 
 ## distinct animal species codes
 asp.siteinfo2018 %>% 
@@ -7948,6 +7936,8 @@ gg.emm.wb.ht
 R version 4.0.3 (2020-10-10)\
 Platform: x86_64-w64-mingw32/x64 (64-bit)\
 Running under: Windows 10 x64 (build 19041)
+__Updated:__ `r format(Sys.time(), '%Y %B %d')`
+
 
 ```{r, echo=FALSE}
 subset(data.frame(sessioninfo::package_info()), attached==TRUE, c(package, loadedversion)) %>% 
