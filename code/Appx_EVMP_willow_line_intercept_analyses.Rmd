@@ -1,5 +1,5 @@
 ---
-title: "Appendix C - Willow Line Intercept Data"
+title: "Appendix F - Willow Line Intercept Data"
 author: ''
 date: ''
 output:
@@ -26,12 +26,10 @@ opts_chunk$set(fig.path = "../output/figures/")
 set.seed(1234)
 ```
 
-**Willow plots: Line intercept data**
 
-*Code author:* E. Gage
-[mycologica\@gmail.com](mailto:mycologica@gmail.com){.email}\
-<https://github.com/egage>\
-Updated: `r format(Sys.time(), '%Y %B %d')`
+*Repository:*\
+<https://github.com/egage/EVMP>
+
 
 ```{r, echo=FALSE}
 suppressPackageStartupMessages(library(tidyverse))
@@ -638,5 +636,12 @@ emmeans(wc.wnc.stmod_li_TCxF, ~ time_class | fenced) %>%
   gt() %>% 
   tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the log (not the response) scale.")
 ```
+
+# Session info
+
+R version 4.0.3 (2020-10-10)\
+Platform: x86_64-w64-mingw32/x64 (64-bit)\
+Running under: Windows 10 x64 (build 19041)  
+Run date: `r format(Sys.time(), '%Y %B %d')`
 
 # References

@@ -13,9 +13,8 @@ editor_options:
 bibliography: references.bib
 ---
 
-_Code author:_ 
-E. Gage  
-https://github.com/egage/EVMP    
+*Repository:*\
+<https://github.com/egage/EVMP>   
 
 ```{r setup, include=FALSE}
 library(knitr)

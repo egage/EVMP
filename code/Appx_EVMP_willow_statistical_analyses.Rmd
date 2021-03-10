@@ -13,12 +13,10 @@ editor_options:
 bibliography: references.bib
 ---
 
-**Willow Statistical Analyses**
+**Willow Macroplot Statistical Analyses**
 
-_Code author:_ 
-E. Gage  
-mycologica@gmail.com  
-https://github.com/egage/EVMP  
+*Repository:*\
+<https://github.com/egage/EVMP>
 
 ```{r setup, include=FALSE}
 # Rmd setup
