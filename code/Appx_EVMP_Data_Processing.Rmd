@@ -3146,10 +3146,44 @@ willow.mcro.all %>%
   theme_minimal() +
   labs(x = "", y = "Willow height (cm)", fill = "", caption = "Macroplot, WC only")
 
+
 # ggsave("./output/figures_exported/WC_willow_ht_boxplot_dfc.png", width = 5.5, height = 3.5)
 
 # ggsave("./output/figures_exported/WC_allnonwillow_ht_boxplot_dfc.png", width = 5.5, height = 3.5)
+
+
 ```
+
+```{r}
+## two panel revised fig
+
+pl.b.wc <- willow.mcro.all %>%
+  filter(site_type == "WC") %>%
+  ggplot(aes(time_class, plant_ht_cm)) +
+  geom_boxplot(aes(fill = fenced),outlier.shape = NA) +
+  scale_fill_manual(values = c("grey80", "grey40")) +
+  ylim(0,350) +
+  geom_hline(aes(yintercept = 110), color = "red", lty = "dashed", size = 1) +
+  theme_minimal() +
+  labs(x = "", y = "Willow height (cm)", fill = "", subtitle = "Core range")
+
+pl.b.wnc <- willow.mcro.all %>%
+  filter(site_type == "WNC") %>%
+  ggplot(aes(time_class, plant_ht_cm)) +
+  geom_boxplot(aes(fill = fenced),outlier.shape = NA) +
+  scale_fill_manual(values = c("grey80", "grey40")) +
+  ylim(0,350) +
+  geom_hline(aes(yintercept = 110), color = "red", lty = "dashed", size = 1) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(x = "", y = "Willow height (cm)", fill = "", subtitle = "Non-core range")
+
+pl.b.wnc + pl.b.wc + plot_layout(widths = c(1, 2))
+
+ggsave("./output/figures_exported/willow_height/wilht_wc_wnc.png", width = 6.5, height = 3.75, dpi=300)
+
+```
+
 
 ```{r}
 ##### WC by species
@@ -5391,7 +5425,7 @@ asp.tally.dbh.tidy %>%
 
 ```
 
-### burned plots through time
+### Burned plots through time
 
 ```{r}
 ## add just burned plots
