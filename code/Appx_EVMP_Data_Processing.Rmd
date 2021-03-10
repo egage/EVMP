@@ -6,8 +6,12 @@ output:
   html_document: 
     theme: journal
     toc: yes
-    toc_depth: 3
+    toc_depth: 2
     fig_caption: yes
+editor_options: 
+  markdown: 
+    wrap: 72
+bibliography: references.bib
 ---
 
 ```{r setup, include=FALSE}
@@ -19,10 +23,8 @@ opts_chunk$set(fig.path = "../output/figures/")
 set.seed(1234)
 ```
 
-_Code author:_ 
-E. Gage  
-mycologica@gmail.com  
-https://github.com/egage/EVMP  
+*Repository:*\
+<https://github.com/egage/EVMP>
 
 ```{r, echo=FALSE}
 
@@ -111,13 +113,15 @@ ggTile_yr_season_site <- function(df){
 
 # Introduction
 
-This document provides code used to combine and pre-process a raw EVMP data files provided by RMNP. Raw data are combined and cleaned to facilitate exploratory data analyses, quality assurance, and statistical modeling. Specific issues addressed encountered and addressed include:   
-* Inconsistently named/typed factors    
-* Missing values
-* Data values outside of expected range or showing unusual patterns
-
-Derived data sets are produced and exported to for statistical analyses.
-
+This document contains code for combining, cleaning, and exploring raw
+Elk Vegetation Management Plan (EVMP) data collected through the 2018
+sampling season. The code and results are provided as a supplement to
+the NPS NRR Report "Monitoring of Vegetation Response to Elk Population
+and Habitat Management in Rocky Mountain National Park - Analysis of Elk
+Vegetation Management Plan monitoring Data: 2008--2018". For information
+on sampling and the broader analysis and interpretation of the results,
+refer to this report, past analyses, and the original EVMP monitoring
+plan @zeigenfuss2015 \@zeigenfuss2011.
 
 ```{r, eval=FALSE, echo=FALSE}
 # Create a cache of workbook tabs as CSV files
@@ -150,7 +154,6 @@ csv.all.lc <- csv.all %>%
   mutate(data = map(ffname,read_csv))
 
 ```
-
 
 ```{r}
 #### maps
@@ -339,6 +342,7 @@ write_csv(site.info.clean, "./data/EVMP_derived/site_info_clean.csv")
 ```
 
 **Site information:**
+
 ```{r}
 ## create some tables
 site.info.clean %>%
@@ -413,7 +417,6 @@ gt.siteinfo %>%
 
 ```
 
-
 ```{r}
 #### create SF from coordinates
 site.info.clean.sf <- site.info.clean %>%
@@ -426,9 +429,21 @@ site.info.clean.sf <- site.info.clean %>%
 
 # Methods and Exploratory Analyses
 
+Raw data provided by RMNP as various excel workbooks are combined and
+cleaned in this code to facilitate exploratory data analyses, quality
+assurance, and statistical modeling. Specific issues encountered and
+addressed include:\
+\* Inconsistently named/typed factors\
+\* Missing values\
+\* Data values outside of expected range or showing unusual patterns\
+Derived data sets are produced and exported for use in statistical
+analyses presented in other report appendices.
+
 ## Study Area and Sampling Design
 
-Excluding plots removed from the data set due to issues like the 2013 flood, their were 241 plots in total. Approximately 49% (n=118) were willow plots, followed in abundance by aspen and upland plots: 
+Excluding plots removed from the data set due to issues like the 2013
+flood, their were 241 plots in total. Approximately 49% (n=118) were
+willow plots, followed in abundance by aspen and upland plots:
 
 ```{r}
 site.info.clean.sf %>%
@@ -472,7 +487,6 @@ site.info.clean.sf %>%
 
 ```
 
-  
 ```{r, eval=FALSE}
 #### Map of fenced and unfenced areas - all plots
 # Change basemap or pan and zoom.
@@ -486,7 +500,6 @@ site.info.clean.sf %>%
   mapview(zcol='FENCED')
 
 ```
-
 
 ```{r}
 site.info.clean.sf %>%
@@ -502,7 +515,6 @@ site.info.clean.sf %>%
 # Approximately 21% of plots occur in fenced locations
 ```
 
-
 ```{r}
 site.info.clean.sf %>%
   as_tibble() %>% 
@@ -514,7 +526,6 @@ site.info.clean.sf %>%
   tab_header(title = "Fenced/non-fenced")
 
 ```
-
 
 ```{r, eval=FALSE}
 # **Table of records with NA for "VALLEY"**
@@ -528,7 +539,6 @@ site.info.clean.sf %>%
   datatable(caption = "Records missing VALLEY attributes.")
 ```
 
-
 ```{r, eval=FALSE}
 #### Map of burned plots
 site.info.clean.sf %>%
@@ -539,7 +549,6 @@ site.info.clean.sf %>%
 
 ```
 
-
 ```{r, eval=FALSE}
 #### Map of Kawuneeche Valley EVMP sites
 site.info.clean.sf %>% 
@@ -548,7 +557,6 @@ site.info.clean.sf %>%
                   map.types = c("Esri.WorldImagery", "Esri.WorldTopoMap"))
 
 ```
-
 
 ```{r}
 # A total of 17 plots occur in the Kawuneeche Valley: 
@@ -1004,8 +1012,7 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
 write_csv(csv.all.lc.mcro.df, "./data/EVMP_derived/macroplot_derived.csv")
 ```
 
-## Willow Plots: Line Intercept Data
-
+## Willow plots: line intercept data
 
 ```{r, eval = FALSE, echo=FALSE}
 # > From discussions with HA in the field, the orientation of line-intercept transects may not have had a consistent orientation from sampling interval to interval.
@@ -1063,8 +1070,10 @@ csv.all.lc.li.df <- csv.all.lc.li.df %>%
 write_csv(csv.all.lc.li.df, "./data/EVMP_derived/line_intercept_willow_cleaned.csv")
 ```
 
-### Height: all shrubs  
-#### All shrubs, site type  
+### Height: all shrubs
+
+#### All shrubs, site type
+
 ```{r}
 ## Boxplot
 csv.all.lc.li.df %>% 
@@ -1098,7 +1107,8 @@ csv.all.lc.li.df %>%
 
 ```
 
-#### All shrubs, site type, fenced/unfenced  
+#### All shrubs, site type, fenced/unfenced
+
 ```{r}
 #### Table of mean max height
 csv.all.lc.li.df %>% 
@@ -1112,7 +1122,8 @@ csv.all.lc.li.df %>%
 
 ```
 
-#### All shrubs, site type, fenced/unfenced, burned/unburned  
+#### All shrubs, site type, fenced/unfenced, burned/unburned
+
 ```{r}
 ## Boxplot
 csv.all.lc.li.df %>% 
@@ -1196,9 +1207,12 @@ plx1 + plx2 + plx3 +
 
 ```
 
-### Height: willow species only  
-#### All willow species, site type  
+### Height: willow species only
+
+#### All willow species, site type
+
 **Max shrub height in-line intercept**
+
 ```{r}
 csv.wil.lc.li.df <- csv.all.lc.li.df %>% 
   filter(str_detect(SPECIES_CODE, "^SA"))
@@ -1237,7 +1251,8 @@ csv.wil.lc.li.df %>%
 
 ```
 
-#### All willow species, site type, fenced/unfenced  
+#### All willow species, site type, fenced/unfenced
+
 ```{r}
 #### Table of mean max height
 csv.wil.lc.li.df %>% 
@@ -1251,7 +1266,8 @@ csv.wil.lc.li.df %>%
 
 ```
 
-#### All willow species, site type, fenced/unfenced, burned/unburned  
+#### All willow species, site type, fenced/unfenced, burned/unburned
+
 ```{r}
 ## Boxplot
 csv.wil.lc.li.df %>% 
@@ -1309,8 +1325,10 @@ csv.wil.lc.li.df %>%
 
 ```
 
-#### Individual willow species  
-_Salix moniticola_ 
+#### Individual willow species
+
+*Salix moniticola*
+
 ```{r}
 
 csv.all.lc.li.df %>%
@@ -1352,7 +1370,8 @@ csv.all.lc.li.df %>%
 
 ```
 
-_Line intercept summary table_  
+*Line intercept summary table*
+
 ```{r}
 csv.all.lc.li.df %>%
   filter(yr !=2009 & yr != 2015 & yr !=2017) %>% 
@@ -1368,8 +1387,8 @@ csv.all.lc.li.df %>%
 
 ```
 
+*Salix planifolia*
 
-_Salix planifolia_  
 ```{r}
 ## another species: SAPL
 csv.all.lc.li.df %>%
@@ -1394,7 +1413,6 @@ csv.all.lc.li.df %>%
 
 
 ```
-
 
 ```{r, eval=FALSE, fig.height=9, fig.width=8}
 
@@ -1479,21 +1497,17 @@ csv.all.lc.li.df %>%
   filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
   filter(!is.na(MAX_HEIGHT_CM)) %>%
   filter(str_detect(SPECIES_CODE, "^SA")) %>% 
-  filter(FENCED == "N" | FENCED == "Y") %>% 
   # filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER") %>%
-  # filter(SPECIES_CODE !="SAXX") %>% 
   filter(SPECIES_CODE =="SAMO") %>% 
-  # distinct(SPECIES_CODE)
   filter(SITE_TYPE == "WC") %>% 
   ggplot(aes(yr, MAX_HEIGHT_CM)) +
   geom_boxplot(aes(fill=FENCED), color = 'black', outlier.shape = NA) +
   scale_fill_viridis(discrete = TRUE) +
-  # theme_minimal() +
   theme_minimal() +
   ylim(0,320) +
   scale_fill_manual(values = c("ivory2","lightgreen")) +
   labs(x = "Year", y = "Max height (cm)", fill = "Fenced") +
-  labs(x = "Year", y = "Max height (cm)", fill = "Fenced?", title = "Core Winter Range Plots: SAMO only", caption = "Line intercept data")
+  labs(x = "Year", y = "Max height (cm)", fill = "", title = "Core Winter Range Plots: SAMO only", caption = "Line intercept data")
   # labs(title = "Salix monticola maximum shrub height by year, fencing", x = "Year", y = "Species")
 
 # ggsave("./output/figures/WC_willLI_SAMO_bxplt01.png", width = 6, height = 4.5, dpi= 300)
@@ -1508,7 +1522,6 @@ csv.all.lc.li.df %>%
   filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
   filter(!is.na(MAX_HEIGHT_CM)) %>%
   # filter(str_detect(SPECIES_CODE, "^SA")) %>% 
-  filter(FENCED == "N" | FENCED == "Y") %>% 
   # filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER") %>%
   # filter(SPECIES_CODE !="SAXX") %>% 
   # filter(SPECIES_CODE =="SAMO") %>% 
@@ -1522,7 +1535,7 @@ csv.all.lc.li.df %>%
   ylim(0,320) +
   scale_fill_manual(values = c("ivory2","slategray")) +
   # labs(x = "Year", y = "Max height (cm)", fill = "Fenced?") +
-  labs(x = "Year", y = "Max height (cm)", fill = "Fenced?", title = "Core Winter Range Plots: All Shrub Species", caption = "Line intercept data")
+  labs(x = "Year", y = "Max height (cm)", fill = "", title = "Core Winter Range Plots: All Shrub Species", caption = "Line intercept data")
   # labs(title = "Salix monticola maximum shrub height by year, fencing", x = "Year", y = "Species")
 
 # ggsave("./output/figures/WC_willLI_allShrubSpp_bxplt01.png", width = 6, height = 4.5, dpi= 300)
@@ -1551,7 +1564,7 @@ csv.all.lc.li.df %>%
 
 ```
 
-```{r}
+```{r, echo=FALSE, eval=FALSE}
 
 csv.all.lc.li.df %>%
   filter(pType == "willow") %>% 
@@ -1717,7 +1730,8 @@ csv.all.lc.li.df %>%
 
 ```
 
-## Willow macroplot data
+## Willow plots: macroplot data
+
 ```{r}
 ## Data munging 
 # calculate the average canopy diameter
@@ -1749,7 +1763,6 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
   mutate(LOCATION = str_replace(LOCATION, "_", " ")) 
 ```
 
-
 ```{r}
 #**Note: WC5,6,7,8,11,33 are listed as "removed" so are eliminated**
 
@@ -1767,7 +1780,8 @@ csv.all.lc.mcro %>%
 
 ```
 
-### Canopy cover  
+### Canopy cover
+
 ```{r, eval=TRUE}
 ## 
 # Canopy diameter measurements from macroplots. Calculated as the mean of CANOPY_DIA_1_CM + CANOPY_DIA_2_CM. 
@@ -1790,7 +1804,7 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
 
 csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>% 
   mutate(BURNED = case_when(BURNED == "Unburned" ~ "Unburned",
-                            BURNED == "N Y" ~ "Unburned", # ??
+                            BURNED == "N Y" ~ "Burned", # ??
                             BURNED == "Completely" ~ "Burned",
                             BURNED == "Moderately" ~ "Burned",
                             BURNED == "Moderately to Completely" ~ "Burned",
@@ -1898,14 +1912,22 @@ canopy.willow.allspp <- canopy.all.spp %>%
 #                            )) %>%
 #   mutate(zCond2 = paste0(SITE_TYPE,"-",zCond)) ## add the 'condition' classes used by Zeignfuss etal in their 2015 report
   
+```
 
-## Changing bl burned to unburned
+```{r}
+
+# canopy.all.spp %>% 
+#   tabyl(timeClass, BURNED)
+
 canopy.all.willow.sum <- canopy.all.spp %>%
   filter(str_detect(SPECIES_CODE, "^SA")) %>%
-  mutate(BURNED = case_when(timeClass == "BL" ~ "Unburned",
-                            TRUE ~ BURNED)) %>% 
+  # mutate(BURNED = case_when(timeClass == "BL" ~ "Unburned",
+  #                           TRUE ~ BURNED)) %>% ## Changing bl burned to unburned
+  # mutate(BURNED = case_when(timeClass == "2013" & BURNED == "Burned" ~ "Burned",
+  #                           timeClass == "BL" & BURNED == "Unburned" & timeClass == "2013" & BURNED == "Burned" ~ "Burned",
+  #                           TRUE ~ BURNED)) %>% ## Changing bl unburned to burned
   group_by(timeClass, SITE_ID, SITE_TYPE, LOCATION, FENCED, BURNED) %>%
-  dplyr::summarise(cano.sum.m2 = sum(cano.area.m2), cano.mean.m2 = mean(cano.area.m2)) %>%
+  dplyr::summarise(cano.sum.m2 = sum(cano.area.m2), cano.mean.m2 = mean(cano.area.m2, na.rm=TRUE)) %>%
   mutate(cover.allwillow = cano.sum.m2/16*100) %>%
   mutate(cover.allwillow = case_when(cover.allwillow > 100 ~ 100,
                                TRUE ~ cover.allwillow)) %>%
@@ -1916,13 +1938,13 @@ canopy.all.willow.sum <- canopy.all.spp %>%
                            BURNED == "Unburned" & FENCED == "Fenced" ~ "UF"
                            )) %>%
   mutate(zCond2 = paste0(SITE_TYPE,"-",zCond)) ## add the 'condition' classes used by Zeignfuss etal in their 2015 report
-```
 
+```
 
 ```{r, echo=FALSE, eval=FALSE}
 ## quick checks before exporting
 canopy.all.willow.sum %>% 
-  tabyl(SITE_TYPE,zCond)
+  tabyl(timeClass,zCond)
 
 canopy.willow.allspp %>% 
   filter(timeClass == "2013") %>% 
@@ -1934,11 +1956,9 @@ canopy.willow.allspp %>%
 ## write to csv
 # canopy.all.willow.sum %>%
 #   write_csv("./output/exported_data/willow_cover_20200725.csv")
-# canopy.all.willow.sum %>%
-#   write_csv("./output/exported_data/willow_macroplot_cover_BLto2018.csv") # re-exported 2/15/21
 
-# canopy.all.willow.sum %>% 
-#   write_csv("./output/exported_data/willow_macroplot_cover_BLto2018.csv") # re-exported 2/22/21
+canopy.all.willow.sum %>%
+  write_csv("./output/exported_data/willow_macroplot_cover_BLto2018.csv") # re-exported 2/22/21
 
 ```
 
@@ -1956,7 +1976,8 @@ wide2join.cov.willow <- left_join(canopy.all.willow.sum, site.id.coords) %>%
 
 ```
 
-**Combined WC and WNC**   
+**Combined WC and WNC**
+
 ```{r}
 ####  All willow species
 #### Winter range weighted average
@@ -2076,7 +2097,6 @@ summary.TC.site_type
 #   gt::gtsave(file = "./output/tables/summary_cover_all_willow_TCxSITE_Type.rtf")
 
 ```
-
 
 ```{r}
 ## Time class FENCED SITE_TYPE
@@ -2242,6 +2262,7 @@ canopy.all.willow.sum %>%
 ```
 
 **WC**
+
 ```{r}
 canopy.all.willow.sum %>% 
   group_by(timeClass, SITE_TYPE) %>% 
@@ -2334,8 +2355,10 @@ cov.willow.sf %>%
   mapview(zcol= "cover2018")
 ```
 
-#### Cover thresholds  
+#### Cover thresholds
+
 **Cover thresholds: winter range, TC**
+
 ```{r}
 ####  All willow species
 canopy.all.willow.sum %>%
@@ -2354,6 +2377,7 @@ canopy.all.willow.sum %>%
 ```
 
 **Cover thresholds: winter range, TC x Fenced**
+
 ```{r}
 canopy.all.willow.sum %>%
   clean_names() %>% 
@@ -2374,6 +2398,7 @@ canopy.all.willow.sum %>%
 ```
 
 **Cover thresholds: winter range, TC x burned**
+
 ```{r}
 canopy.all.willow.sum %>%
   clean_names() %>% 
@@ -2396,6 +2421,7 @@ canopy.all.willow.sum %>%
 ```
 
 **Cover thresholds: winter range, TC x fenced x burned**
+
 ```{r}
 canopy.all.willow.sum %>%
   clean_names() %>% 
@@ -2471,8 +2497,7 @@ ggsave("./output/figures_exported/WCxWNC_willow_percentPlotCovThresh_dfc.png", w
 
 ```
 
-
-### Range-wide weighted summaries  
+### Range-wide weighted summaries
 
 ```{r, echo=FALSE, eval=FALSE}
 
@@ -2578,7 +2603,6 @@ wts.2 %>%
 
 ```
 
-
 ```{r}
 # unweighted
 wt.cov <- canopy.all.willow.sum %>% 
@@ -2621,7 +2645,6 @@ wt.cov %>%
   mutate(timeClass = fct_rev(timeClass))
 ```
 
-
 ```{r, eval=FALSE, echo=FALSE}
 canopy.all.willow.sum %>% 
  filter(timeClass == "BL" & zCond2 == "WC-BG") %>% 
@@ -2641,7 +2664,6 @@ canopy.all.willow.sum %>%
 
 ```
 
-
 ```{r}
 ## transform
 ## 
@@ -2657,6 +2679,7 @@ canopy.all.willow.sum <- canopy.all.willow.sum %>%
 ```
 
 ### Height
+
 ```{r}
 # All shrub species
 # all winter range combined (-WK)
@@ -2855,7 +2878,6 @@ csv.all.lc.mcro.df %>%
 
 ```
 
-
 ```{r, eval=FALSE}
 ## write_csv
 csv.all.lc.mcro.df %>%
@@ -2920,8 +2942,6 @@ nonwillowshrub.mcro.all %>%
 
 ```
 
-
-
 ```{r}
 # ### Mean ht in plots, willow species only
 # join cover for spatial export
@@ -2938,33 +2958,52 @@ will.ht.mean <- willow.mcro.all %>%
 
 ## join
 will.ht.mean.sf <- left_join(will.ht.mean, clean_names(site.info.clean.sf)) %>% 
+  mutate(range_type = case_when(is.na(range_type) ~ "core winter range",
+                                TRUE ~ range_type)) %>% 
   st_as_sf(sf_column_name = "geometry")
-
-will.ht.mean.sf %>% 
-  filter(!is.na(htmean2018)) %>% 
-  mapview(zcol = "htmean2018")
 
 # will.ht.mean.sf %>%
 #   st_write("./output/exported_data/spatial/willow_htmean_20200907.shp")
 
 ```
 
-#### Height difference from baseline  
+```{r}
+will.ht.mean.sf %>% 
+  filter(!is.na(htmean2018)) %>% 
+  mapview(zcol = "htmean2018")
+```
+
+#### Height difference from baseline
+
 ```{r}
 # WC and WNC
-will.ht.mean.sf %>%
-  as_tibble() %>% 
+pl.diff1.wc <- will.ht.mean.sf %>%
+  as_tibble() %>%
+  # distinct(range_type)
   filter(!is.na(fenced)) %>% 
-  filter(range_type != "Kawuneeche Valley") %>%
+  filter(range_type == "core winter range") %>%
   ggplot(aes(fenced, difBL18)) +
   geom_boxplot(outlier.shape = NA, fill = "grey70") +
   geom_hline(yintercept=0, color = "black", size=1, alpha = 0.25) +
   ylim(-75,175) +
   theme_minimal() +
-  facet_wrap(~range_type) +
-  labs(x = "", y = "Height difference (cm)", caption = "mean willow height, all willow spp, 2018-BL")
+  labs(subtitle = "Core range", x = "", y = "Height difference (cm)")
 
-# ggsave("./output/figures_exported/revised_WC_WNC_HtMeanDiff18BL_TCxfenced_dfc.png", width = 5.5, height = 3.75, dpi = 300)
+pl.diff1.wnc <- will.ht.mean.sf %>%
+  as_tibble() %>%
+  # distinct(range_type)
+  filter(!is.na(fenced)) %>% 
+  filter(range_type == "non-core winter range") %>%
+  ggplot(aes(fenced, difBL18)) +
+  geom_boxplot(outlier.shape = NA, fill = "grey70") +
+  geom_hline(yintercept=0, color = "black", size=1, alpha = 0.25) +
+  ylim(-75,175) +
+  theme_minimal() +
+  labs(x = "", y = "Height difference (cm)", subtitle = "Non-core range",caption = "mean willow height, all willow spp, 2018-BL")
+
+pl.diff1.wc + pl.diff1.wnc + plot_layout(widths=c(2,1))
+
+ggsave("./output/figures_exported/revised_WC_WNC_HtMeanDiff18BL_TCxfenced_dfc.png", width = 6.5, height = 3.75, dpi = 300)
 
 ```
 
@@ -3035,6 +3074,19 @@ will.ht.mean.sf %>%
   facet_wrap(~range_type) +
   labs(x = "", y = "Height difference (cm)", caption = "mean willow height, all willow spp, 2018-BL")
 
+
+will.ht.mean.sf %>%
+  as_tibble() %>% 
+  filter(!is.na(burned)) %>% 
+  filter(range_type != "Kawuneeche Valley") %>%
+  ggplot(aes(burned, difBL18)) +
+  geom_boxplot(outlier.shape = NA, fill = "grey70") +
+  geom_hline(yintercept=0, color = "black", size=1, alpha = 0.25) +
+  ylim(-75,175) +
+  theme_minimal() +
+  facet_wrap(~range_type) +
+  labs(x = "", y = "Height difference (cm)", caption = "mean willow height, all willow spp, 2018-BL")
+
 ggsave("./output/figures_exported/revised_WC_WNC_HtMeanDiff18BL_TCxburned_dfc.png", width = 5.5, height = 3.75, dpi = 300)
 
 will.ht.mean.sf %>%
@@ -3054,7 +3106,6 @@ will.ht.mean.sf %>%
   )
 
 ```
-
 
 ```{r}
 ### max to spatial
@@ -3153,9 +3204,7 @@ willow.mcro.all %>%
 
 ```
 
-
 ### Thresholds: count of plots above 1.1 m
-
 
 ```{r}
 ## thresholds
@@ -3179,7 +3228,6 @@ willow.mcro.all %>%
   
 ```
 
-
 ```{r}
 ### WC & WNC: fenced threholds
 willow.mcro.all %>%
@@ -3201,7 +3249,6 @@ willow.mcro.all %>%
   gt() %>% 
   tab_header(title = "WC+WNC: fenced")
 ```
-
 
 ```{r}
 #### Range type x fenced
@@ -3225,7 +3272,6 @@ willow.mcro.all %>%
 
 
 ```
-
 
 ```{r}
 #### WC & WNC: burned fenced
@@ -3253,15 +3299,14 @@ willow.mcro.all %>%
 
 **DD2**
 
-“stem-scaled diameter difference method”
+"stem-scaled diameter difference method"
 
-__DD2 = (b/b +u) * (Dp - Dt)/(Db - Dt)__
+**DD2 = (b/b +u) \* (Dp - Dt)/(Db - Dt)**
 
-b, the number of browsed shoots on the stem;
-u, the number of unbrowsed shoots;
-Dp, shoot diameter at the point of browsing;
-Dt, the average diameter of unbrowsed shoot tips; and
-Db, the diameter at the base of the shoot.
+b, the number of browsed shoots on the stem; u, the number of unbrowsed
+shoots; Dp, shoot diameter at the point of browsing; Dt, the average
+diameter of unbrowsed shoot tips; and Db, the diameter at the base of
+the shoot.
 
 ```{r, echo = FALSE, eval = FALSE}
 # Looking for baseline data?  	
@@ -3294,7 +3339,6 @@ Db, the diameter at the base of the shoot.
 # ADDITIONAL_SHOOT (Additional shoot 1=yes, 0=no)
 ```
 
-
 ```{r}
 #### Baseline
 ### LZ 2013 baseline
@@ -3323,7 +3367,6 @@ lz.bl13.wil %>%
   gt() %>% 
   tab_header(title = "Distinct sheets", subtitle = "Baseline Data from Linda/ROMO_elk_vegetation_monitoring_data_willow2013 update.xls")
 ```
-
 
 ```{r}
 ### BL-2013 spring offtake   
@@ -3380,8 +3423,8 @@ lz.bl13.twig2008.clean <- lz.bl13.twig2008.clean %>%
 ```
 
 ```{r}
-lz.bl13.twig2008.clean %>%  
-  visdat::vis_dat()
+# lz.bl13.twig2008.clean %>%  
+#   visdat::vis_dat()
 
 lz.bl13.twig2008.clean %>% 
   ggplot(aes(shoot_weight_g,shoot_length_cm)) +
@@ -3391,7 +3434,6 @@ lz.bl13.twig2008.clean %>%
   theme_minimal() +
   labs(x = "Shoot weight (g)", y = "Shoot length (cm)", caption = "BL 2013 data lz.bl13.twig2008.clean")
 ```
-
 
 ```{r, echo=FALSE, eval=FALSE}
 ## regressions
@@ -3516,7 +3558,6 @@ lz.bl.fasp <- lz.bl.fasp %>%
 
 ```
 
-
 ```{r, eval=FALSE}
 ## qaqc
 lz.bl.fasp %>%
@@ -3534,9 +3575,7 @@ lz.bl.fasp <- lz.bl.fasp %>%
 
 ```
 
-
-_Master excel file: Willow_Offtake_Data_2009_Through_2018.xlsx_
-
+*Master excel file: Willow_Offtake_Data_2009_Through_2018.xlsx*
 
 ```{r, eval=TRUE, echo = FALSE}
 # The following reads in the offtake data in the 10yr review files. These don't seem to be inclusive of all the data - BL seems incomplete
@@ -3610,7 +3649,6 @@ offt.raw <- offt.sheets %>%
 
 ```
 
-
 ```{r}
 ## remove the "DIRECTIONS" tab and create new field for season
 offt.raw <- offt.raw %>% 
@@ -3625,7 +3663,6 @@ offt.raw <- offt.raw %>%
   mutate(yr = as.integer(str_sub(sheet,1,4)))
 
 ```
-
 
 ```{r}
 #### Stem diameter data
@@ -3644,7 +3681,6 @@ twig.raw <- twig.raw %>%
 
 ```
 
-
 ```{r}
 offt.raw.spr <- offt.raw %>%
   filter(season == "spring")
@@ -3655,7 +3691,6 @@ offt.raw.spr.tidy <- offt.raw.spr %>%
   janitor::clean_names()
 
 ```
-
 
 ```{r}
 ## Distinct
@@ -3748,7 +3783,6 @@ offt.raw.spr.tidy %>%
 
 ```
 
-
 ```{r, eval=FALSE}
 ## these sheets are missing basal diameters
 offt.raw.spr.tidy %>% 
@@ -3824,7 +3858,6 @@ offt.raw.spr.tidy <- bind_rows(offt.raw.spr.tidy, lz.bl.fasp)
 
 ```
 
-
 ```{r}
 ## standardize site id
 ## this is done for the 10yr update-derived object, but not th LZ BL
@@ -3870,7 +3903,6 @@ offt.raw.spr.tidy <- offt.raw.spr.tidy %>%
 
 ```
 
-
 ```{r}
 #### Create unique stem id
 ## Create unique stem id
@@ -3888,7 +3920,7 @@ offt.raw.spr.tidy <- offt.raw.spr.tidy %>%
 #   View()
 
 ## diagnose and fix issues with b/u
-# these are not 
+ 
 offt.raw.spr.tidy %>% 
   tabyl(browsed_or_unbrowsed) %>% 
   # distinct(browsed_or_unbrowsed) %>% 
@@ -3935,6 +3967,7 @@ offt.raw.spr.tidy %>%
 offt.raw.spr.tidy %>% 
   tabyl(yr, site_id) %>% 
   gt()
+
 offt.raw.spr.tidy %>% 
   tabyl(yr, sheet) %>% 
   gt()
@@ -3989,7 +4022,6 @@ offt.cln <- offt.cln %>%
   distinct()
 
 ```
-
 
 ```{r, eval=FALSE}
 offt.cln %>% 
@@ -4057,7 +4089,6 @@ offt.cln <- offt.cln %>%
 offt.cln <- left_join(offt.cln,site.info.fenced.burned, by = "site_id")
 
 ```
-
 
 ```{r, eval = FALSE}
 
@@ -4165,7 +4196,6 @@ offt.percbrowsed %>%
   filter(is.na(fenced)) %>% 
   View()
 ```
-
 
 ```{r}
 ## offtake
@@ -4290,7 +4320,6 @@ offt.percbrowsed.summary %>%
 
 ```
 
-
 ```{r}
 
 offt.percbrowsed.summary %>%
@@ -4302,7 +4331,6 @@ offt.percbrowsed.summary %>%
 
 ## percent browsed looks odd last 4 yrs
 ```
-
 
 ```{r}
 #### Percent browsed
@@ -4350,7 +4378,6 @@ offt.percbrowsed.summary.allRange.fen %>%
   # gtsave("./output/tables/WillowPercOfft_WCplusWNC.rtf")
 ```
 
-
 ```{r}
 ## yr x site type
 offt.percbrowsed.summary <- offt.percbrowsed %>% 
@@ -4375,14 +4402,13 @@ offt.percbrowsed.summary %>%
 
 ```
 
-**Calculate DD1, the avg proportion of shoot consumed per stem (step 3 in Zeigenfuss 2011)**
+**Calculate DD1, the avg proportion of shoot consumed per stem (step 3
+in Zeigenfuss 2011)**
 
 DD1 = (Dp - Dt)/(Db -Dt)
 
-Dp = shoot diameter at point of browsing
-Dt = Avg diam of of unbrowsed stems
-Db = diamter at base of shoot
-
+Dp = shoot diameter at point of browsing Dt = Avg diam of of unbrowsed
+stems Db = diamter at base of shoot
 
 ```{r}
 ## Calculate: 
@@ -4435,9 +4461,12 @@ offt.cln.br <- offt.cln %>%
 
 offt.cln.br %>%
   visdat::vis_dat(warn_large_data = FALSE)
+
 ```
 
 ```{r, eval=FALSE}
+# cont below
+
 ## IF Dt is NA after sub in Dtsite (if available. Will still be Na, but fewer)
 offt.cln.br <- offt.cln.br %>%
   mutate(Dtadj = case_when(
@@ -4476,7 +4505,6 @@ offt.cln.br <- offt.cln.br %>%
 
 ```
 
-
 ```{r, eval=FALSE}
 # DD1stem >>>
 ### calc DD1
@@ -4511,11 +4539,6 @@ offt.cln <- offt.cln %>%
 browsed_percent <- a.stid.cnt.bu %>% 
   filter(browsed_or_unbrowsed == "B") %>% 
   dplyr::select(stid, yr, species_code, browsed_or_unbrowsed, perc_bu_shoots)
-
-# browsed_percent %>% 
-#   filter(!is.na(perc_bu_shoots)) %>% 
-#   distinct() %>% 
-#   View()
 
 offt.cln.spr.tidy <- offt.cln.spr.tidy %>%   
   filter(is.na(shoot_ratio))
@@ -4578,7 +4601,6 @@ df.names %>%
   at_depth(2,map_df(.,rbind))
 
 
-
 ##################
 # purrr::map(c(#"2008-09 Macroplot Baseline",
 #   "2013 Macroplot Inventory",
@@ -4590,39 +4612,20 @@ df.names %>%
 
 ```
 
-
 ```{r, echo=FALSE}
-
 # Rewrite the SAS program used to analyze willow height data as found in table 9 of Zeigenfuss and Johnson (2015)--Least squares means of average and maximum willow height and percent willow cover on burned sites compared to unburned sites using the macroplot method at EVMP willow monitoring sites in Rocky Mountain National Park, Colorado. 
 # 
 # **Steps:** 
-# 
 # 1. Read in data from a file containing the baseline data from willow macroplots  
 # 2. Calculate canopy area for each plot and assigns the baseline year (2008) to these data 
 # 3. Sort data down to willow and non-willow species groups and calculates mean for the variables "average height" and "maximum ht" for each group.
-# 
-# 
-# 
-# [follow up]
-# **See: **  
-# 
-# >willow shrub cover macro table 8.sas  
-# >willow shrub height table 8.sas  
-# >willow shrub cover macro table 9.txt    
-# >willow shrub height table 9.txt 
-
-```
- 
-```{r}
-
-
 
 ```
 
+### Beaver and Moose Presence
 
-## Beaver and Moose Presence
-
-The following plots and tables summarize the beaver and moose presence observation for 2018
+The following plots and tables summarize the beaver and moose presence
+observation for 2018
 
 ```{r beaver18, eval=TRUE}
 
@@ -4683,18 +4686,14 @@ bv.tally %>%
 
 ```
 
-```{r}
+```{r, echo=FALSE, eval=FALSE}
 #vtree status
-
 sinfo.df %>%
   mutate(BEAVER_PRESENCE = recode(BEAVER_PRESENCE, 
                          "Absence_" = "Absence",
                          "Food_cache_cuttings"="Cuttings")) %>% 
   vtree::vtree(z = .,vars = "LOCATION BEAVER_PRESENCE")
 
-```
-
-```{r}
 sinfo.df %>%
   filter(LOCATION == "Moraine_Park") %>% 
   mutate(BEAVER_PRESENCE = recode(BEAVER_PRESENCE, 
@@ -4729,7 +4728,6 @@ bv.mcro.sum %>%
   
 
 ```
-
 
 ```{r}
 
@@ -4797,7 +4795,6 @@ sinfo.df %>%
 #   )
 
 ```
-
 
 ```{r Moose, eval=TRUE}
 #### Observations of moose presence noted in plots
@@ -4882,9 +4879,12 @@ csv.all.lc.mcro.df %>%
 
 ```
 
-## Aspen data  
-**Master excel file: Aspen_Data_Baseline_through_2018.xlsx**  
-The excel datafile provided by RMNP (Aspen_Data_Baseline_Through_2018.xlsx) includes **10 tabs**.  
+## Aspen data
+
+**Master excel file: Aspen_Data_Baseline_through_2018.xlsx**\
+The excel datafile provided by RMNP
+(Aspen_Data_Baseline_Through_2018.xlsx) includes **10 tabs**.
+
 ```{r}
 ## **Data import** 
 asp <- readxl::excel_sheets("./data/EVMP_data/TenYearReview/Aspen_Data_Baseline_Through_2018.xlsx")
@@ -5008,8 +5008,8 @@ asp.tally.all <- asp.tally.all %>%
                             TRUE ~ as.character(FENCED))
   ) 
 
-asp.tally.all %>% 
-  visdat::vis_dat()
+# asp.tally.all %>% 
+#   visdat::vis_dat()
 
 asp.tally.all %>% 
   select(tab, SITE_ID, DBH_0_2_CM) %>% 
@@ -5017,7 +5017,6 @@ asp.tally.all %>%
 
 asp.tally.all %>%
   tabyl(tab)
-
 
 
 asp.tally.all %>%
@@ -5034,7 +5033,6 @@ asp.tally.all <-
 ### write table
 # write_csv(asp.tally.all, "./data/EVMP_derived/asp_tally_all.csv")
 ```
-
 
 ```{r, eval=FALSE}
 
@@ -5057,14 +5055,15 @@ asp.tally.all %>%
   gt::gt()
 ```
 
-_Tally of records by year and core, non-core, and Kawuneeche Valley sites_
+*Tally of records by year and core, non-core, and Kawuneeche Valley
+sites*
+
 ```{r}
 asp.tally.all %>% 
   janitor::tabyl(YEAR,SITE_TYPE) %>% 
   gt::gt()
 
 ```
-
 
 ```{r, echo=FALSE, eval=FALSE}
 # _Tally of records by site type (e.g., core, non-core, and Kawuneeche Valley sites) and fenced status_
@@ -5080,7 +5079,7 @@ asp.gt1 <- asp.tally.all %>%
 ```
 
 ```{r}
-## tidy up the height and dbh classes
+## tidy height and dbh classes
 ## tidy the dbh
 asp.tally.dbh.tidy <- asp.tally.all %>%
   pivot_longer(
@@ -5103,7 +5102,6 @@ asp.tally.ht.tidy <- asp.tally.all %>%
 asp.tally.ht.tidy <- asp.tally.ht.tidy %>% 
   select(-contains("DBH"))
 ```
-
 
 ```{r asp_dbhmod}
 ## mod the dbh factor levels
@@ -5191,6 +5189,7 @@ asp.tally.ht.tidy <-
 ```
 
 ### Stem count by diameter
+
 ```{r asp_dbh_tileTally, fig.width=9, fig.height=9}
 ### Core winter range
 asp.tally.dbh.tidy %>%
@@ -5226,6 +5225,7 @@ asp.tally.dbh.tidy %>%
 ```
 
 **Mean aspen stem count**
+
 ```{r}
 ## make site_type as factor, sort 
 asp.tally.dbh.tidy <- asp.tally.dbh.tidy %>%
@@ -5291,6 +5291,7 @@ asp.tally.dbh.tidy %>%
 ```
 
 ### Live stem density
+
 ```{r, fig.height=8, fig.width=8}
 ### Core winter range
 asp.tally.dbh.tidy %>%
@@ -5391,6 +5392,7 @@ asp.tally.dbh.tidy %>%
 ```
 
 ### burned plots through time
+
 ```{r}
 ## add just burned plots
 asp.tally.dbh.tidy %>%
@@ -5531,7 +5533,9 @@ dbh.perc <- asp.tally.dbh.tidy %>%
   filter(SITE_ID != "AC21")
 
 ```
-### Aspen DBH: Core winter range  
+
+### Aspen DBH: Core winter range
+
 ```{r}
 ## prep for revised stacked order barplot 2021-02-09
 dbh.perc.clean <- dbh.perc %>% 
@@ -5607,9 +5611,8 @@ ggsave("./output/figures_exported/revised_figs_aspen/AsppercTotXdbh_ac_FxUf.pdf"
 
 ```
 
+*DBH classes: Fenced plots*
 
-
-_DBH classes: Fenced plots_
 ```{r}
 ## DBH
 dbh.perc.f <- asp.tally.dbh.tidy %>%
@@ -5734,7 +5737,7 @@ dbh.perc3 %>%
 
 ### Aspen DBH: Non-core winter range
 
-_DBH classes: Non-fenced plots_
+*DBH classes: Non-fenced plots*
 
 ```{r}
 ## prep for revised stacked order barplot 2021-02-09
@@ -5850,7 +5853,8 @@ dbh.perc.anc %>%
 
 ```
 
-### Aspen DBH: Kawuneeche Valley  
+### Aspen DBH: Kawuneeche Valley
+
 ```{r}
 ### revised plots 2021-02-09
 # stacked sorted boxplot
@@ -5917,6 +5921,7 @@ dbh.perc.kv %>%
 ```
 
 ### Proportion of plots with regeneration above threshold
+
 ```{r}
 asp.tally.dbh.tidy %>%
   filter(is.na(REMOVED)) %>% 
@@ -5973,6 +5978,7 @@ asp.tally.dbh.tidy %>%
 ```
 
 ### Suckering by height class
+
 ```{r}
 
 ### Add Short/Tall stem field 
@@ -6021,6 +6027,7 @@ ht.dbh.class <- ht.dbh.class %>%
 ```
 
 **Suckering: stems 1.5 m to 2.5 m in height**
+
 ```{r}
 ### suckering classes: by range type
 # the following combines the tally for stems between 1.5 and 2.5 m
@@ -6072,7 +6079,8 @@ suckering.vtype %>%
   mutate(sum = sum(c_across(High:Poor))) %>% 
   mutate(perc.high = High/sum*100) %>%
   mutate(perc.mod = Moderate/sum*100) %>%
-  mutate(perc.poor = Poor/sum*100) %>% 
+  mutate(perc.poor = Poor/sum*100) %>%
+  mutate(across(contains("perc"),round,1)) %>% 
   gt()
 
 
@@ -6114,7 +6122,7 @@ suckering.vtype %>%
   datatable(rownames = FALSE, caption = "stemDen.ac aspen suckering 1.5 m to 2.5 m", filter = "top")
 
 ## broken out by fenced, just for AC
-suckering.vtype %>%
+asp.pl.ac <- suckering.vtype %>%
   filter(!is.na(RANGE_TYPE)) %>%
   filter(RANGE_TYPE == "core winter range") %>%
   # filter(RANGE_TYPE != "Kawuneeche Valley") %>%
@@ -6124,12 +6132,41 @@ suckering.vtype %>%
   # scale_fill_manual(values = c("darkgreen","green","grey90")) +
   scale_fill_grey() +
   theme_minimal() +
-  # theme(legend.position = "top") +
-  labs(x = "", y = "Site ID", fill = "", caption = "Suckering: Stem density 1.5 m to 2.5 m in ht. AC plots only") +
+  theme(legend.position = "none") +
+  labs(x = "", y = "Site ID", fill = "", title = "Core winter range") +
+  # labs(x = "", y = "Site ID", fill = "", caption = "Suckering: Stem density 1.5 m to 2.5 m in ht. AC plots only") +
   # facet_grid(FENCED~RANGE_TYPE)
   facet_wrap(~FENCED, scales = "free_y")
 
+# asp.pl.ac
 # ggsave("./output/figures_exported/AC_suckering_1p5to2p5m_fenced.png", width = 5.5, height = 5)
+
+asp.pl.anc <- suckering.vtype %>%
+  filter(!is.na(RANGE_TYPE)) %>%
+  filter(RANGE_TYPE == "non-core winter range") %>%
+  # filter(RANGE_TYPE != "Kawuneeche Valley") %>%
+  filter(timeClass %in% c("BL","2013","2018")) %>% 
+  ggplot(aes(timeClass, SITE_ID)) +
+  geom_tile(aes(fill = suckering_class), color = "white") +
+  # scale_fill_manual(values = c("darkgreen","green","grey90")) +
+  scale_fill_grey() +
+  theme_minimal() +
+  # theme(legend.position = "top") +
+  # labs(x = "", y = "Site ID", fill = "", caption = "Suckering: Stem density 1.5 m to 2.5 m in ht. AC plots only") +
+  labs(x = "", y = "Site ID",title = "Non-core range", fill = "") +
+  # facet_grid(FENCED~RANGE_TYPE)
+  facet_wrap(~FENCED, scales = "free_y")
+
+# asp.pl.anc
+
+
+## combine
+library(patchwork)
+asp.pl.ac + asp.pl.anc + plot_layout(ncol=2,widths=c(2,1))
+
+## save revised figure
+ggsave("./output/figures_exported/aspen_stem_count/AC_ANC_suckering_1p5to2p5m_fenced.png", width = 7.5, height = 5)
+
 ```
 
 ```{r}
@@ -6529,7 +6566,6 @@ percent_suckering_class.vtype %>%
 
 ```
 
-
 ```{r}
 ht.dbh.class %>%
   group_by(RANGE_TYPE, timeClass, BURNED, FENCED, DBHclGp01, HTclass) %>% 
@@ -6538,7 +6574,6 @@ ht.dbh.class %>%
   datatable(filter = "bottom")
 
 ```
-
 
 ```{r}
 ### Suckering: live unburned 
@@ -6635,7 +6670,8 @@ asp.tally.ht.tidy %>%
 
 ```
 
-### AC dead stems --  by fencing
+### AC dead stems -- by fencing
+
 ```{r}
 ### AC dead stems --  by fencing
 asp.tally.ht.tidy %>%
@@ -6654,7 +6690,8 @@ asp.tally.ht.tidy %>%
 ggsave("./output/figures_exported/AC_sum_dead.png", width = 3.75, height = 4)
 ```
 
-### AC dead stems --  by fencing
+### AC dead stems -- by fencing
+
 ```{r}
 ### AC dead stems --  by fencing
 asp.tally.ht.tidy %>%
@@ -6687,7 +6724,6 @@ asp.tally.ht.tidy %>%
   datatable()
 
 ```
-
 
 ```{r}
 asp.tally.ht.tidy %>%
@@ -6831,7 +6867,6 @@ ggsave("./output/figures_exported/AK_fenced_medTally.png", width = 4.25, height 
 
 ```
 
-
 ```{r asp_tally_tileTxt, include=TRUE, fig.width=11, fig.height=8}
 ### Live stem tally: core winter range
 ### Core winter range: Aspen Stem Tallies
@@ -6912,7 +6947,6 @@ asp.tally.ht.tidy %>% # distinct(RANGE_TYPE)
 ggsave("./output/figures_exported/asp_KV_liveTallyx.png", width = 6.5, height = 4, dpi = 300)
 
 ```
-
 
 ```{r, eval=TRUE}
 
@@ -7155,6 +7189,7 @@ ht.perc01 %>%
 ```
 
 ### Percent of total stems in height class
+
 ```{r}
 ### Revised figures for manuscript
 ## Generate lu for boxplot sorting on %stems in 0-50cm height class
@@ -7246,13 +7281,13 @@ ggsave("./output/figures_exported/revised_figs_aspen/AspPercTotXhtclass_ak.pdf",
 
 ```
 
-
 ### Aspen management goals
 
-_Targets from Ziegenfuss and Johnson 2015:_
+*Targets from Ziegenfuss and Johnson 2015:*
 
-1.Progressive increase in aspen regeneration above the baseline level of 13 percent to at least 45 percent of winter range stands (presence of stems less than 2 cm dbh reaching 1.5–2.5 m tall).
-
+1.Progressive increase in aspen regeneration above the baseline level of
+13 percent to at least 45 percent of winter range stands (presence of
+stems less than 2 cm dbh reaching 1.5--2.5 m tall).
 
 ```{r}
 
@@ -7279,8 +7314,6 @@ asp.tally.dbh.tidy %>%
 
 ```
 
-
-
 ```{r}
 ###### WRITE to disk for statistical analysis
 # ht.perc01 %>% write_csv("./output/exported_data/asp_ht_perc1_20200309.csv")
@@ -7291,9 +7324,13 @@ asp.tally.dbh.tidy %>%
   
 ```
 
-*Increase in aspen regeneration above the baseline level of 13 percent to at least 45 percent of winter range stands (presence of stems less than 2 cm dbh reaching 1.5–2.5 m tall).
+\*Increase in aspen regeneration above the baseline level of 13 percent
+to at least 45 percent of winter range stands (presence of stems less
+than 2 cm dbh reaching 1.5--2.5 m tall).
 
-*Progressive shift in the distribution of stem sizes toward the desired future condition of 75 percent small-diameter stems, 20 percent medium-diameter stems, and 5 percent large-diameter stems.
+\*Progressive shift in the distribution of stem sizes toward the desired
+future condition of 75 percent small-diameter stems, 20 percent
+medium-diameter stems, and 5 percent large-diameter stems.
 
 ```{r}
 
@@ -7359,7 +7396,6 @@ asp_inDFC_summary2 %>%
 
 ```
 
-
 ```{r, echo = FALSE}
 # Percent of aspen monitoring sites on elk winter range and Kawuneeche Valley of Rocky Mountain National Park, Colorado, that had a recruiting sapling cohort (at least 400 stems per hectare of height between 1.5 and 2.5 meters) at baseline sampling and in 2013. Entire winter range numbers are weighted by the percent area in each location.
 # 
@@ -7371,9 +7407,6 @@ asp_inDFC_summary2 %>%
 # 
 
 ```
-
-
-
 
 ```{r, echo=FALSE}
 
@@ -7392,8 +7425,6 @@ asp_inDFC_summary2 %>%
 # >aspen sapling table 5.sas 
 ```
 
-
-
 ```{r, echo=FALSE, eval=FALSE}
 #
 # in/out DFC 
@@ -7401,14 +7432,15 @@ asp_inDFC_summary2 %>%
 ```
 
 ### Range-wide weighted summaries
+
 ```{r, echo=FALSE, eval=FALSE}
 
 # calculating the weighting factors
 
 ```
 
-
 ## Aspen plot - animal signs
+
 ```{r}
 
 ## distinct animal species codes
@@ -7516,9 +7548,8 @@ asp.sign.summary.b %>%
 ### Bark scarring
 ```
 
-
-
 ## Upland line intercept
+
 ```{r, eval=TRUE}
 ## Data munging
 # Data import
@@ -7651,8 +7682,6 @@ upl.spp.cover <- upl.ht.sel %>%
 
 ```
 
-
-
 ```{r}
 ### All shrub species: site type
 ## boxplot
@@ -7715,7 +7744,6 @@ upl.allspp.cover %>%
 
 ```
 
-
 ```{r}
 
 upl.spp.cover %>% 
@@ -7772,7 +7800,6 @@ wbasin.sel <- wbasin %>%
   
 
 ```
-
 
 ```{r}
 # exp lu
@@ -7859,7 +7886,6 @@ wb.evmp18.willows.rt <- wb.evmp18.willows %>%
 
 ```
 
-
 ```{r, cache=TRUE}
 library(rstanarm)
 library(emmeans)
@@ -7932,12 +7958,12 @@ gg.emm.wb.ht
 # post1
 ```
 
-# Session info  
+# Session info
+
 R version 4.0.3 (2020-10-10)\
 Platform: x86_64-w64-mingw32/x64 (64-bit)\
-Running under: Windows 10 x64 (build 19041)
-__Updated:__ `r format(Sys.time(), '%Y %B %d')`
-
+Running under: Windows 10 x64 (build 19041) **Updated:**
+`r format(Sys.time(), '%Y %B %d')`
 
 ```{r, echo=FALSE}
 subset(data.frame(sessioninfo::package_info()), attached==TRUE, c(package, loadedversion)) %>% 
@@ -7946,83 +7972,155 @@ subset(data.frame(sessioninfo::package_info()), attached==TRUE, c(package, loade
 
 ```
 
-# Appendix 1. Data notes from E. Ertl  
-The following are notes from E. Ertl recorded in an describing EVMP vegetation data collection, as recorded in 2018.  
+# Notes on raw data from E. Ertl
 
-## Aspen
+The following are notes from E. Ertl recorded in an describing EVMP
+vegetation data collection, as recorded in 2018.
 
-* Plots lost: AC41 (plot was washed away in the 2013 flood)
+**Aspen**
 
-* Plots added: AC68 to replace AC41
+-   Plots lost: AC41 (plot was washed away in the 2013 flood)
 
-* Plots that had been treated with fuels management work that has not been noted before: ANC5, ANC7, ANC8, ANC19 (I think?) these areas were thinned of most large trees opening up the canopy substantially and the area was also pile burned; none of the plots appeared to be directly in the pile burn scars but a few came very close; these treatments could alter data in the future (working on getting a GIS layer for this)
+-   Plots added: AC68 to replace AC41
 
-* Formatted 2015 – 2018 data. 2015-2017 data only consisted of burn plot sampling; no burn plot data collected in 2014
+-   Plots that had been treated with fuels management work that has not
+    been noted before: ANC5, ANC7, ANC8, ANC19 (I think?) these areas
+    were thinned of most large trees opening up the canopy substantially
+    and the area was also pile burned; none of the plots appeared to be
+    directly in the pile burn scars but a few came very close; these
+    treatments could alter data in the future (working on getting a GIS
+    layer for this)
 
-## Upland
+-   Formatted 2015 -- 2018 data. 2015-2017 data only consisted of burn
+    plot sampling; no burn plot data collected in 2014
 
-* Plots lost: UC09 (this plot was most likely lost in the 2013 flood), UC14 & UC24 (plots were lost to waterline construction that occurred from 2015-2018)
+**Upland**
 
-* Plots added: UC37, UC38, UC39 to replace the three plots that were lost
+-   Plots lost: UC09 (this plot was most likely lost in the 2013 flood),
+    UC14 & UC24 (plots were lost to waterline construction that occurred
+    from 2015-2018)
 
-* Plots have been treated by prescribed fire in the past; Prescribed fire occurred from 9/17 – 10/2 of 2008; First round of data collected for upland sites occurred in 2007 (working on getting recent GIS layers to account for any other treatments)
+-   Plots added: UC37, UC38, UC39 to replace the three plots that were
+    lost
 
-* Prescribed burning is planned for this coming October 2018 as well, which will potentially burn several upland plots in the Beaver Meadows area
+-   Plots have been treated by prescribed fire in the past; Prescribed
+    fire occurred from 9/17 -- 10/2 of 2008; First round of data
+    collected for upland sites occurred in 2007 (working on getting
+    recent GIS layers to account for any other treatments)
 
-* Formatted 2018 shrub data
+-   Prescribed burning is planned for this coming October 2018 as well,
+    which will potentially burn several upland plots in the Beaver
+    Meadows area
 
-## Willow
+-   Formatted 2018 shrub data
 
-* Plots lost: WK03; this plot hasn’t been found since 2012 and we looked several times in 2018
+**Willow**
 
-* Plots added: WK09 to replace WK03 (updated measurement schedule in the protocol), WK10 added late season after talking with Linda Z. – she suggested there be 4 fenced plots in the KV to make the data collected from this area more robust. We weren’t aware of this when we installed WK09, so there will be nine total west side plots (4 fenced and 5 unfenced).
+-   Plots lost: WK03; this plot hasn't been found since 2012 and we
+    looked several times in 2018
 
-* Removed the microplot stem counts from the macroplot sampling in the protocol per Linda Z. early summer
+-   Plots added: WK09 to replace WK03 (updated measurement schedule in
+    the protocol), WK10 added late season after talking with Linda Z. --
+    she suggested there be 4 fenced plots in the KV to make the data
+    collected from this area more robust. We weren't aware of this when
+    we installed WK09, so there will be nine total west side plots (4
+    fenced and 5 unfenced).
 
-* Formatted 2015 – 2018 cumulative willow data
-	2015-2017 data only consisted of burn plot sampling; there is no burn data for 2014
-	In 2015 it appears they were only measuring willow in the macroplots, not all shrubs like they should have been.
+-   Removed the microplot stem counts from the macroplot sampling in the
+    protocol per Linda Z. early summer
 
-* Fixed unit and rounding issues in data.	In 2016 the crew measured additional burned sites that are not on the burn survey list (WC32, WC34, WC78, WC84, and WC85). For some plots they only measured willow instead of measuring all shrubs. Fixed unit and rounding issues in data.
+-   Formatted 2015 -- 2018 cumulative willow data  2015-2017 data only
+    consisted of burn plot sampling; there is no burn data for 2014  In
+    2015 it appears they were only measuring willow in the macroplots,
+    not all shrubs like they should have been.
 
-* There is only west side data for 2016 and 2017; Nick B. said they weren’t aware that west side plots were supposed to be measured every year back in 2014/2015. Burn survey and west side data are currently combined by year measured
+-   Fixed unit and rounding issues in data. In 2016 the crew measured
+    additional burned sites that are not on the burn survey list (WC32,
+    WC34, WC78, WC84, and WC85). For some plots they only measured
+    willow instead of measuring all shrubs. Fixed unit and rounding
+    issues in data.
 
-* Formatted 2015 – 2018 offtake data (2014 was already added and analyzed in the 2013 review)
-	2015 offtake notes: Crew didn’t sample WC9, WC78, WC79 (plots are in fences) and sampled extra plots that are not on the protocol list for offtake including WC34, WC35, WC52, WC54, WC56, WK6, WK7, and WK8 (none of these are in fences)
-
-* 2016 offtake notes: Crew didn’t sample WC79 (fenced), WC85 (fenced), WK3 (lost), WNC30 (couldn’t find plot) and sampled extra plots that are not on the protocol list for offtake including WC34, WC35, WC37 (fenced), WC50 (fenced), WC57, WC69, WC70, WC71, WC76 (fenced), WC81, WC82, WC83, WC86 (fenced)
+-   There is only west side data for 2016 and 2017; Nick B. said they
+    weren't aware that west side plots were supposed to be measured
+    every year back in 2014/2015. Burn survey and west side data are
+    currently combined by year measured
 
-*	2017 offtake notes: Crew didn’t sample WC76 (fenced), WC85 (fenced), WNC30 (couldn’t find plot), WK3 (lost), WK6 (river probably too high to access) and no extra plots were sampled
+-   Formatted 2015 -- 2018 offtake data (2014 was already added and
+    analyzed in the 2013 review)  2015 offtake notes: Crew didn't
+    sample WC9, WC78, WC79 (plots are in fences) and sampled extra plots
+    that are not on the protocol list for offtake including WC34, WC35,
+    WC52, WC54, WC56, WK6, WK7, and WK8 (none of these are in fences) 
 
-*	2018 offtake notes: Crew didn’t sample WC33 (removed 2014), WC76 (fenced), WC77 (fenced), WK3 (lost and removed from list in 2018, replaced with WK9 at end of season), WK6 (river too high to access plot)  
-* There were discrepancies between the protocol and the willow master database on what sites to sample for offtake (added by C. Piper). Linda and I updated this schedule in the protocol for future years because the old schedule included plots that were no longer there and plots that have since been fenced.
+-   2016 offtake notes: Crew didn't sample WC79 (fenced), WC85 (fenced),
+    WK3 (lost), WNC30 (couldn't find plot) and sampled extra plots that
+    are not on the protocol list for offtake including WC34, WC35, WC37
+    (fenced), WC50 (fenced), WC57, WC69, WC70, WC71, WC76 (fenced),
+    WC81, WC82, WC83, WC86 (fenced)
 
-* Burn Surveys 2015-2019 – spoke with Linda Z. and she doesn’t think these need to be measured again in 2019 unless the data is showing something interesting.
+-   2017 offtake notes: Crew didn't sample WC76 (fenced), WC85 (fenced),
+    WNC30 (couldn't find plot), WK3 (lost), WK6 (river probably too high
+    to access) and no extra plots were sampled
 
-* Willow stake restoration sites – have these been cross referenced with willow monitoring sites? Were willow stakes planted in some plots? I did find notes that there were willow stakes being measured in WC76 over the years, which would need to be analyzed separately I’m assuming.
+-   2018 offtake notes: Crew didn't sample WC33 (removed 2014), WC76
+    (fenced), WC77 (fenced), WK3 (lost and removed from list in 2018,
+    replaced with WK9 at end of season), WK6 (river too high to access
+    plot)\
 
-## Other notes
+-   There were discrepancies between the protocol and the willow master
+    database on what sites to sample for offtake (added by C. Piper).
+    Linda and I updated this schedule in the protocol for future years
+    because the old schedule included plots that were no longer there
+    and plots that have since been fenced.
 
-* Kept all of Linda’s original data for the last 5-year review under EVMP’s “analysis” folder
+-   Burn Surveys 2015-2019 -- spoke with Linda Z. and she doesn't think
+    these need to be measured again in 2019 unless the data is showing
+    something interesting.
 
-* Created new (2018) versions of data for 10-year review analysis but did not delete out any data from previous years where plots were lost this year; also kept old components in the data (i.e. willow shoot measurements, microplot stem counts)
+-   Willow stake restoration sites -- have these been cross referenced
+    with willow monitoring sites? Were willow stakes planted in some
+    plots? I did find notes that there were willow stakes being measured
+    in WC76 over the years, which would need to be analyzed separately
+    I'm assuming.
 
-* All formatted data for 2018 can be found under EVMPVegetationAnalysis10 Year Review
+**Other notes**
 
-* Blank datasheets have been updated for 2018
+-   Kept all of Linda's original data for the last 5-year review under
+    EVMP's "analysis" folder
 
-* Protocols are currently being updated for 2018 and master databases have been updated for 2018. 
+-   Created new (2018) versions of data for 10-year review analysis but
+    did not delete out any data from previous years where plots were
+    lost this year; also kept old components in the data (i.e. willow
+    shoot measurements, microplot stem counts)
 
-* Added a “Fuels Treatment Post Establishment” and “Treatment Year” column that could be queried by type (i.e. prescribed fire, mechanical treatments, etc.) 
-
-* Created new shapefiles for all veg plots; trying to find shapefiles for treatment areas in the park and will put them in the EVMP_Veg_Data_2018 geodatabase
-	Located under EVMPVegetationGISEVMP_Veg_Data_2018.gdb OR ShapefilesMaster_Veg_Sites_Shp2018
+-   All formatted data for 2018 can be found under
+    EVMPVegetationAnalysis10 Year Review
 
-* Created new veg maps. Located under EVMPVegetationLogisticsMapsEVMP vegetation plot maps2018 Veg Site MapsPlot Maps
+-   Blank datasheets have been updated for 2018
 
-* Wild Basin Willow Data – I created a folder with all of the data collected at Wild Basin this fall. It is located under EVMPVegetationAnnual RecordsFY18Wild Basin – Willow Data
-* Uploaded all 4 iPads with new electronic datasheets for willow and upland, photo points and plot diagrams from 2018, willow ID keys, updated protocol from 2018, and new vegetation site maps.
+-   Protocols are currently being updated for 2018 and master databases
+    have been updated for 2018.
 
+-   Added a "Fuels Treatment Post Establishment" and "Treatment Year"
+    column that could be queried by type (i.e. prescribed fire,
+    mechanical treatments, etc.) 
+
+-   Created new shapefiles for all veg plots; trying to find shapefiles
+    for treatment areas in the park and will put them in the
+    EVMP_Veg_Data_2018 geodatabase  Located under
+    EVMPVegetationGISEVMP_Veg_Data_2018.gdb OR
+    ShapefilesMaster_Veg_Sites_Shp2018
+
+-   Created new veg maps. Located under
+    EVMPVegetationLogisticsMapsEVMP vegetation plot maps2018 Veg
+    Site MapsPlot Maps
+
+-   Wild Basin Willow Data -- I created a folder with all of the data
+    collected at Wild Basin this fall. It is located under
+    EVMPVegetationAnnual RecordsFY18Wild Basin -- Willow Data
+
+-   Uploaded all 4 iPads with new electronic datasheets for willow and
+    upland, photo points and plot diagrams from 2018, willow ID keys,
+    updated protocol from 2018, and new vegetation site maps.
 
 ```{r, echo=FALSE, eval=FALSE}
 # Species lists
@@ -8078,18 +8176,9 @@ spp.all <- spp.all %>%
 
 ```
 
-```{r. echo=FALSE, eval=FALSE}
-# **References**  
-# 
-# Johnson, T. L., L. C. Zeigenfuss, N. Thompson, and J. A. Mack. 2016. The role of science through a century of elk and habitat management at Rocky Mountain National Park. Park Science 32(2):70–72
-# 
-# U.S. Department of the Interior, 2007, Elk and vegetation management plan, Rocky Mountain National Park, Colorado: Washington D.C., National Park Service, unpaged, accessed online May 6, 2013 at http://www.nps.gov/romo/parkmgmt/elkveg_mgmt_plan_feis.htm.
-# 
-# U.S. Department of the Interior, 2008, Record of decision, Final environmental impact statement, Elk and vegetation management plan, Rocky Mountain National Park, Colorado: Washington D.C., National Park Service, 21 p., accessed online May 6, 2013 at www.nps.gov/romo/parkmgmt/upload/rod_evmp_signed_2-15-08.pdf.
-# 
-# Zeigenfuss, L., Johnson, T., and Wiebe, Z., 2011, Monitoring plan for vegetation responses to elk management in Rocky Mountain National Park: U.S. Geological Survey Open-File Report 2011–1013, 85 p.
-# 
-# Zeigenfuss, L.C., and T.L. Johnson, 2015, Monitoring of vegetation response to elk population and habitat management in Rocky Mountain National Park, 2008–14: U.S. Geological Survey Open-File Report 2015–1216, 44 p., http://dx.doi.org/10.3133/ofr20151216.
+```{r, echo=FALSE, eval=FALSE}
+# **References**   #  # Johnson, T. L., L. C. Zeigenfuss, N. Thompson, and J. A. Mack. 2016. The role of science through a century of elk and habitat management at Rocky Mountain National Park. Park Science 32(2):70–72 #  # U.S. Department of the Interior, 2007, Elk and vegetation management plan, Rocky Mountain National Park, Colorado: Washington D.C., National Park Service, unpaged, accessed online May 6, 2013 at http://www.nps.gov/romo/parkmgmt/elkveg_mgmt_plan_feis.htm. #  # U.S. Department of the Interior, 2008, Record of decision, Final environmental impact statement, Elk and vegetation management plan, Rocky Mountain National Park, Colorado: Washington D.C., National Park Service, 21 p., accessed online May 6, 2013 at www.nps.gov/romo/parkmgmt/upload/rod_evmp_signed_2-15-08.pdf. #  # Zeigenfuss, L., Johnson, T., and Wiebe, Z., 2011, Monitoring plan for vegetation responses to elk management in Rocky Mountain National Park: U.S. Geological Survey Open-File Report 2011–1013, 85 p. #  # Zeigenfuss, L.C., and T.L. Johnson, 2015, Monitoring of vegetation response to elk population and habitat management in Rocky Mountain National Park, 2008–14: U.S. Geological Survey Open-File Report 2015–1216, 44 p., http://dx.doi.org/10.3133/ofr20151216.
+
 ```
 
-
+# References
