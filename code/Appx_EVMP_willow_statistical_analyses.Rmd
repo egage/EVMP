@@ -148,12 +148,11 @@ This document contains code for running statistical analyses of of Elk
 Vegetation Management Plan (EVMP) data collected through the 2018
 sampling season. Analyses are limited to macroplot data from plots
 established in riparian areas in areas of the elk winter range and
-Kawuneeche Valley (i.e., "willow" plots, see Zeigenfuss et al. 2011) and
-is provided as a supplement to the NPS NRR Report "Monitoring of
+Kawuneeche Valley (i.e., "willow" plots, see Zeigenfuss et al. 2011). Analyses are provided as a supplement to the NPS NRR Report "Monitoring of
 Vegetation Response to Elk Population and Habitat Management in Rocky
 Mountain National Park - Analysis of Elk Vegetation Management Plan
 monitoring Data: 2008--2018". For information on sampling and the
-broader analysis and interpretation of the results, refer to this
+broader analysis and interpretation of the results, refer to the project
 report, past analyses [@zeigenfuss2015], and the original EVMP
 monitoring plan [@zeigenfuss2011].
 
@@ -178,9 +177,8 @@ winter range plots (WNC). For willow height, models were fit using
 weekly informative priors and a gamma distribution with the "stan_lmer"
 function in the "rstanarm" package [@goodrich2020][@brilleman2018].
 
-For continuous proportions such as plant cover (i.e, those not derived
-from count data), a common approach to modeling is to transform data
-then use ordinary linear models, however this creates problems for
+For continuous proportions such as plant cover, a common approach to modeling is to transform data
+then use ordinary linear models, but this creates problems for
 interpretation and inference [@douma2019]. Techniques relying on
 transformations make estimates on the transformed scale, requiring
 back‐transformation for reporting and interpretation. However, the

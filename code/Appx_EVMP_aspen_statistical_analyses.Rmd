@@ -138,7 +138,7 @@ desc.post1 <- function(model){
 
 # Introduction
 
-This document contains code for running statistical analyses of of Elk
+This document contains code for running statistical analyses of Elk
 Vegetation Management Plan (EVMP) data collected through the 2018
 sampling season. Analyses are limited to data from plots established in
 aspen communities in areas of the elk winter range (core and noncore
@@ -172,16 +172,9 @@ winter range plots (WNC) with plots treated as random factors using the
 'stan_glmer' function in the rstanrm package
 [@goodrich2020][@brilleman2018]. Bayesian estimation was performed via
 MCMC adding independent weakly informed priors specific to the data type
-being modeled for regression coefficients Lemoine (2019) for difference
-response variable types (e.g., aspen stem count). Continuous response
-variables (e.g., willow height) were fit with a Gamma distribution,
-which restricts possible responses to positive real numbers. Count data
-like aspen stem counts were modeled as poisson processes, while
+being modeled. Count data like aspen stem counts were modeled as poisson processes, while
 proportion data (e.g., cover) were modeled using a beta distribution
-(Ferrari and Cribari-Neto 2004) that constrains values from 0 to 1. For
-willow height, models were fit using weekly informative priors and a
-gamma distribution with the "stan_lmer" function in the "rstanarm"
-package [@goodrich2020][@brilleman2018].
+(Ferrari and Cribari-Neto 2004), which constrains values from 0 to 1.
 
 The Probability of Direction (PD) was used to represent certainty
 associated with the most probable direction (positive or negative) of
