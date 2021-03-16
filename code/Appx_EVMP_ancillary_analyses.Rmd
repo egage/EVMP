@@ -462,12 +462,18 @@ Platform: x86_64-w64-mingw32/x64 (64-bit)
 Running under: Windows 10 x64 (build 19041)  
 Run date: `r format(Sys.time(), '%Y %B %d')`  
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 subset(data.frame(sessioninfo::package_info()), attached==TRUE, c(package, loadedversion)) %>% 
   gt() %>% 
   tab_header(title = "Attached packages and versions")
 
 ```
 
+```{r}
+report::report_table(sessionInfo()) %>% 
+  as_tibble() %>% 
+  gt() %>% 
+  tab_header(title="Package Information")
+```
 
 

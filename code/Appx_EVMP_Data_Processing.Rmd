@@ -3071,20 +3071,7 @@ will.ht.mean.sf %>%
   geom_hline(yintercept=0, color = "black", size=1, alpha = 0.25) +
   ylim(-75,175) +
   theme_minimal() +
-  facet_wrap(~range_type) +
-  labs(x = "", y = "Height difference (cm)", caption = "mean willow height, all willow spp, 2018-BL")
-
-
-will.ht.mean.sf %>%
-  as_tibble() %>% 
-  filter(!is.na(burned)) %>% 
-  filter(range_type != "Kawuneeche Valley") %>%
-  ggplot(aes(burned, difBL18)) +
-  geom_boxplot(outlier.shape = NA, fill = "grey70") +
-  geom_hline(yintercept=0, color = "black", size=1, alpha = 0.25) +
-  ylim(-75,175) +
-  theme_minimal() +
-  facet_wrap(~range_type) +
+  facet_grid(fenced~range_type) +
   labs(x = "", y = "Height difference (cm)", caption = "mean willow height, all willow spp, 2018-BL")
 
 ggsave("./output/figures_exported/revised_WC_WNC_HtMeanDiff18BL_TCxburned_dfc.png", width = 5.5, height = 3.75, dpi = 300)
@@ -3400,6 +3387,7 @@ lz.bl13.wil %>%
   distinct(sheet) %>% 
   gt() %>% 
   tab_header(title = "Distinct sheets", subtitle = "Baseline Data from Linda/ROMO_elk_vegetation_monitoring_data_willow2013 update.xls")
+
 ```
 
 ```{r}
@@ -3455,7 +3443,9 @@ lz.bl13.twig2008.clean <- lz.bl13.twig2008.clean %>%
   na.omit
 
 ```
-
+**Species-specific regressions of mass as a function of:**  
+twig length  
+twig length + location 
 ```{r}
 # lz.bl13.twig2008.clean %>%  
 #   visdat::vis_dat()
@@ -3466,14 +3456,27 @@ lz.bl13.twig2008.clean %>%
   geom_smooth(aes(color = location),method = "lm", se = FALSE) +
   scale_color_viridis(discrete = TRUE, option = 'A') +
   theme_minimal() +
+  labs(x = "Shoot weight (g)", y = "Shoot length (cm)", caption = "BL 2013 data lz.bl13.twig2008.clean. Pooled willow species")
+```
+
+```{r}
+lz.bl13.twig2008.clean %>% 
+  ggplot(aes(shoot_weight_g,shoot_length_cm)) +
+  geom_point(aes(color=location)) +
+  geom_smooth(aes(color = location),method = "lm", se = FALSE) +
+  scale_color_viridis(discrete = TRUE, option = 'A') +
+  theme_minimal() +
+  facet_wrap(~species_code) +
   labs(x = "Shoot weight (g)", y = "Shoot length (cm)", caption = "BL 2013 data lz.bl13.twig2008.clean")
 ```
 
+ 
 ```{r, echo=FALSE, eval=FALSE}
 ## regressions
 models.twigs <- tibble::tribble(
   ~model_name,    ~ formula,
-  "wt_length", shoot_weight_g ~ shoot_length_cm)
+  "wt~length", shoot_weight_g ~ shoot_length_cm,
+  "wt~length+loc", shoot_weight_g ~ shoot_length_cm + location)
 
 lz.bl13.twig2008.clean %>% 
   nest_by(species_code) %>% 
@@ -3483,28 +3486,6 @@ lz.bl13.twig2008.clean %>%
   summarise(broom::glance(model)) %>% 
   gt() %>% 
   tab_header(title = "Species-specific length ~ mass")
-
-
-# iris %>% 
-#   nest_by(Species) %>% 
-#   left_join(models, by = character()) %>% 
-#   rowwise(Species, model_name) %>% 
-#   mutate(model = list(lm(formula, data = data))) %>% 
-#   summarise(broom::glance(model))
-
-## example
-# models <- tibble::tribble(
-#   ~model_name,    ~ formula,
-#   "length-width", Sepal.Length ~ Petal.Width + Petal.Length,
-#   "interaction",  Sepal.Length ~ Petal.Width * Petal.Length
-# )
-# 
-# iris %>% 
-#   nest_by(Species) %>% 
-#   left_join(models, by = character()) %>% 
-#   rowwise(Species, model_name) %>% 
-#   mutate(model = list(lm(formula, data = data))) %>% 
-#   summarise(broom::glance(model))
 
 ```
 
@@ -4180,10 +4161,6 @@ offt.cln <- offt.cln %>%
 ```
 
 ```{r}
-
-```
-
-```{r}
 # offt.cln %>% 
 #   mutate(time_class = case_when(yr == 2008 ~ "BL",
 #                               yr == 2009 ~ "BL", 
@@ -4223,12 +4200,6 @@ offt.cln %>%
   facet_wrap(~yr)
            
 
-```
-
-```{r, eval=FALSE}
-offt.percbrowsed %>% 
-  filter(is.na(fenced)) %>% 
-  View()
 ```
 
 ```{r}
@@ -8000,9 +7971,14 @@ Running under: Windows 10 x64 (build 19041) **Updated:**
 `r format(Sys.time(), '%Y %B %d')`
 
 ```{r, echo=FALSE}
-subset(data.frame(sessioninfo::package_info()), attached==TRUE, c(package, loadedversion)) %>% 
+# subset(data.frame(sessioninfo::package_info()), attached==TRUE, c(package, loadedversion)) %>% 
+#   gt() %>% 
+#   tab_header(title = "Attached packages and versions")
+
+report::report_table(sessionInfo()) %>% 
+  as_tibble() %>% 
   gt() %>% 
-  tab_header(title = "Attached packages and versions")
+  tab_header(title="Package Information")
 
 ```
 
