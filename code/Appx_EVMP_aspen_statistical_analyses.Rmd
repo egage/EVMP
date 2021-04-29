@@ -240,6 +240,42 @@ asp.ak <- ht_perc1 %>%
 
 # Results
 
+
+```{r}
+# purrr plots
+ht_perc1  %>% 
+  group_nest(range_type) %>%
+  # mutate(tbls = map(.x = data, .f = gt)) %>% 
+  mutate(plots = map2(.y = range_type, .x = data, ~{ggplot(data = .x) +
+                              geom_boxplot(aes(y = stem_den_ac, x = time_class), fill="Gray80") +
+                              labs(title = paste0("Range type: ", .y), x = "", y = "Stem density (stems/acre)") +
+                              theme_minimal()})) %>% 
+  pull(plots)
+
+```
+
+```{r, eval=FALSE}
+## working..
+# do not run
+summary.fun <- function(data, var){
+  summarytools::descr(data$var) %>% 
+  tb() %>% 
+  mutate(across(where(is.numeric), round, 1))
+}
+
+summary.fun(ht_perc1,stem_den_ac)
+ht_perc1  %>% 
+  group_nest(range_type) %>% 
+  mutate(summary = map(.x=data, descr(stem_den_ac) %>% tb()))
+  mutate(plots = map2(.y = range_type, .x = data, ~{ggplot(data = .x) +
+                              geom_boxplot(aes(y = stem_den_ac, x = time_class), fill="Gray80") +
+                              # ggtitle(paste0("Willow cover, site: ", .y)) +
+                              labs(title = paste0("Range type: ", .y), x = "", y = "Stem density (stems/acre)") +
+                              theme_minimal()}))
+```
+
+
+
 ```{r, eval=FALSE}
 ### Traditional AOV
 aov_model_asp_htperc <- aov(stemDen.ha ~ RANGE_TYPE*timeClass + Error(SITE_ID/(RANGE_TYPE*timeClass)), data = ht_perc1)

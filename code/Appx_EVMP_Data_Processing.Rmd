@@ -35,18 +35,13 @@ suppressPackageStartupMessages(library(janitor))
 suppressPackageStartupMessages(library(readxl))
 suppressPackageStartupMessages(library(mapview))
 suppressPackageStartupMessages(library(viridis))
-suppressPackageStartupMessages(library(ggstance))
 suppressPackageStartupMessages(library(readxl))
 suppressPackageStartupMessages(library(DT))
 suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(skimr)) 
 suppressPackageStartupMessages(library(dataMaid))
 library(lubridate)
-library(mapview)
-library(vtree)
 library(bayestestR)
-library(gt)
-library(ggmap)
 library(gt)
 library(gtsummary)
 library(labelled)
@@ -55,6 +50,7 @@ library(ggrepel)
 library(ggtext)
 library(patchwork)
 
+mapviewOptions(fgb = FALSE)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE}
@@ -280,6 +276,18 @@ site.info.clean <- site.info.clean %>%
   mutate(FENCED = case_when(is.na(FENCED) ~ "N", 
                             TRUE ~ as.character(FENCED)))
 ```
+
+```{r}
+## lookup of removed plots
+lu.removed.plot <- site.info.all %>%
+  filter(!is.na(REMOVED)) %>% 
+  distinct(SITE_ID) %>% 
+  rename(sid = SITE_ID) %>% 
+  mutate(SITE_ID = str_remove(sid,"-R")) %>% 
+  distinct(SITE_ID)
+
+```
+
 
 ```{r}
 ## read in the file with the manually attributed valley type field (this was not fully attributed in the provided data)
@@ -1007,9 +1015,20 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
 
 ```
 
+```{r}
+### !!! 
+# Remove plots on the "removed" list in the site info through anti-join
+# lu.removed.plot
+# csv.all.lc.li.df
+
+# remove all the removed plots identified in the site info tab if raw files
+csv.all.lc.mcro.df <- anti_join(csv.all.lc.mcro.df, lu.removed.plot, by="SITE_ID")
+```
+
 ```{r write_macroplot2disk, eval=FALSE}
 ## write this to disk
 write_csv(csv.all.lc.mcro.df, "./data/EVMP_derived/macroplot_derived.csv")
+
 ```
 
 ## Willow plots: line intercept data
@@ -1065,6 +1084,16 @@ csv.all.lc.li.df <- csv.all.lc.li.df %>%
   mutate(zCond2 = paste0(SITE_TYPE,"-",zCond)) ## these are the classes used in teh weighting scheme in Zeigenfuss 2015
 
 ```
+
+
+```{r}
+# lu.removed.plot
+# csv.all.lc.li.df
+
+# remove all the removed plots identified in the site info tab if raw files
+csv.all.lc.li.df <- anti_join(csv.all.lc.li.df, lu.removed.plot, by="SITE_ID")
+```
+
 
 ```{r write_li_to_disk, eval = FALSE}
 write_csv(csv.all.lc.li.df, "./data/EVMP_derived/line_intercept_willow_cleaned.csv")
@@ -1719,8 +1748,7 @@ csv.all.lc.li.df %>%
   ggplot(aes(x = yr, y = MAX_HEIGHT_CM)) +
   # geom_smooth(aes(color = FENCED), se = FALSE) +
   geom_smooth(aes(color = FENCED, lty = FENCED), method = "lm", se = FALSE) +
-  # geom_point(aes(color = FENCED, shape = FENCED)) +
-  geom_jitter(aes(color = FENCED, shape = FENCED)) +
+ geom_jitter(aes(color = FENCED, shape = FENCED)) +
   scale_shape_manual(values = c(21,24)) + 
   scale_color_manual(values = c("blue", "black")) +
   theme_minimal() +
@@ -1780,12 +1808,16 @@ csv.all.lc.mcro %>%
 
 ```
 
-### Canopy cover
+```{r}
+# lu.removed.plot
+# csv.all.lc.mcro.df
 
+# remove all the removed plots
+csv.all.lc.mcro.df <- anti_join(csv.all.lc.mcro.df, lu.removed.plot, by="SITE_ID")
+```
+
+### Canopy cover  
 ```{r, eval=TRUE}
-## 
-# Canopy diameter measurements from macroplots. Calculated as the mean of CANOPY_DIA_1_CM + CANOPY_DIA_2_CM. 
-
 ## average the canopy
 csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>% 
   mutate(CANOPY_DIA_CM_avg = (CANOPY_DIA_1_CM + CANOPY_DIA_2_CM)/2)
@@ -1798,7 +1830,6 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
 
 # quick check
 # csv.all.lc.mcro.df %>% tabyl(FENCED)
-# csv.all.lc.mcro.df %>% tabyl(BURNED)
 
 # lots of burned categories. Some don't make sense (e.g., "N Y"). Collapsing to Burned/Unburned
 
@@ -1815,11 +1846,22 @@ csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
                             TRUE ~ BURNED)) %>% 
   mutate(DATE = ymd(DATE))
 
-
 ## add a species group attribute -- willow/non-willow
 csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
   mutate(spp_group = case_when(str_detect(SPECIES_CODE, "^SA") ~ "willow",
                                TRUE ~ "non-willow"))
+
+```
+
+```{r}
+# Add condition classes from Zeigenfuss 2015 zcond lu
+csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>%
+  mutate(zCond = case_when(BURNED == "Burned" & FENCED == "Unfenced" ~ "BG",
+                           BURNED == "Burned" & FENCED == "Fenced" ~ "BF",
+                           BURNED == "Unburned" & FENCED == "Unfenced" ~ "UG",
+                           BURNED == "Unburned" & FENCED == "Fenced" ~ "UF"
+                           )) %>%
+  mutate(zCond2 = paste0(SITE_TYPE,"-",zCond)) ## these are the classes used in the weighting scheme in Zeigenfuss 2015
 
 ```
 
@@ -1882,7 +1924,7 @@ canopy.willow.allspp <- canopy.all.spp %>%
 
 ```
 
-```{r}
+```{r, echo=FALSE, eval=FALSE}
 
 ## sum by species and calculate cover
 # canopy.all.spp.sum <- canopy.all.spp %>%
@@ -1915,9 +1957,6 @@ canopy.willow.allspp <- canopy.all.spp %>%
 ```
 
 ```{r}
-
-# canopy.all.spp %>% 
-#   tabyl(timeClass, BURNED)
 
 canopy.all.willow.sum <- canopy.all.spp %>%
   filter(str_detect(SPECIES_CODE, "^SA")) %>%
@@ -1956,6 +1995,11 @@ canopy.willow.allspp %>%
 ## write to csv
 # canopy.all.willow.sum %>%
 #   write_csv("./output/exported_data/willow_cover_20200725.csv")
+
+
+# lu.removed.plot
+# remove all the removed plots identified in the site info tab if raw files
+canopy.all.willow.sum <- anti_join(canopy.all.willow.sum, lu.removed.plot, by="SITE_ID")
 
 canopy.all.willow.sum %>%
   write_csv("./output/exported_data/willow_macroplot_cover_BLto2018.csv") # re-exported 2/22/21
@@ -2018,6 +2062,50 @@ canopy.all.willow.sum %>%
   gt()
 
 ```
+
+
+```{r}
+# purrr plots
+tmp1 <- canopy.all.willow.sum  %>% 
+  group_nest(SITE_TYPE) %>% 
+  mutate(plots = map2(.y = SITE_TYPE, .x = data, ~{ggplot(data = .x) +
+                              geom_boxplot(aes(y = cover.allwillow, x = timeClass), fill="Gray80") +
+                              # ggtitle(paste0("Willow cover, site: ", .y)) +
+                              labs(title = paste0("Site type: ", .y), x = "", y = "Willow cover (%)") +
+                              theme_minimal()}))
+
+tmp1 %>% 
+  pull(plots)
+
+```
+
+```{r}
+# purrr plots
+canopy.all.willow.sum  %>% 
+  group_nest(LOCATION) %>% 
+  mutate(plots = map2(.y = LOCATION, .x = data, ~{ggplot(data = .x) +
+                              geom_boxplot(aes(y = cover.allwillow, x = timeClass), fill="Gray80") +
+                              # ggtitle(paste0("Willow cover, site: ", .y)) +
+                              labs(title = paste0("Location: ", .y), x = "", y = "Willow cover (%)") +
+                              theme_minimal()})) %>% 
+  pull(plots)
+```
+
+```{r}
+# purrr plots
+tmp2 <- canopy.all.willow.sum  %>% 
+  group_nest(LOCATION) %>%
+  mutate(tbls = map(.x = data, .f = gt)) %>% 
+  mutate(plots = map2(.y = LOCATION, .x = data, ~{ggplot(data = .x) +
+                              geom_boxplot(aes(y = cover.allwillow, x = timeClass), fill="Gray80") +
+                              # ggtitle(paste0("Willow cover, site: ", .y)) +
+                              labs(title = paste0("Location: ", .y), x = "", y = "Willow cover (%)") +
+                              theme_minimal()}))
+tmp2 %>% 
+  pull(plots)
+
+```
+
 
 ```{r}
 wc.cov.pl1 <- canopy.all.willow.sum %>% 
@@ -2355,7 +2443,7 @@ cov.willow.sf %>%
   mapview(zcol= "cover2018")
 ```
 
-#### Cover thresholds
+#### Management thresholds
 
 **Cover thresholds: winter range, TC**
 
@@ -2442,6 +2530,7 @@ canopy.all.willow.sum %>%
   tab_header(title = "WC+WNC - cover threshold of 31%")
 ```
 
+
 ```{r}
 canopy.all.willow.sum %>%
   clean_names() %>% 
@@ -2497,13 +2586,7 @@ ggsave("./output/figures_exported/WCxWNC_willow_percentPlotCovThresh_dfc.png", w
 
 ```
 
-### Range-wide weighted summaries
-
-```{r, echo=FALSE, eval=FALSE}
-
-# calculating the weighting factors
-
-```
+#### Range-wide weighted summaries
 
 ```{r}
 ## add condition classes per Zeigenfuss SAS code
@@ -2524,31 +2607,65 @@ ggsave("./output/figures_exported/WCxWNC_willow_percentPlotCovThresh_dfc.png", w
 	# if year=2013 and cond='UF' then areawt=0.117;
 	# if site_type='WNC' then areawt=0.129;
 
-## I can not find in the SAS code where the areawt values are calculated
+## I can not find in the SAS code where the areawt values are calculated; just applying those in SAS code
 
+## table 8 Zeigenfuss 2015. timeClass x fenced x site type
+lz.wt.willow.tb8 <- tribble(
+  ~timeClass, ~site_typeXfenced, ~areawt, ~SITE_TYPE,
+  "2013", "WC-Fenced", 0.202, "WC", 
+  "2013", "WC-Unfenced", 0.669, "WC",
+  "2013", "WNC-Unfenced", 0.129, "WNC",
+  "2018", "WC-Fenced", 0.202, "WC", 
+  "2018", "WC-Unfenced", 0.669, "WC",
+  "2018", "WNC-Unfenced", 0.129, "WNC",
+  # "BL", "WC-Fenced", 0.871, "WC",
+  "BL", "WC-Fenced", 0.202, "WC",
+  "BL", "WC-Unfenced", 0.669, "WC",
+  "BL", "WNC-Unfenced", 0.129, "WNC"
+)
 
-# create a tibble from the area wts in teh SAS code above
-lz.wt.willow <- tribble(
+## Summarized to WC and WNC by timeClass
+lz.wt.willow.tb8_sitetype <- lz.wt.willow.tb8 %>% 
+  group_by(timeClass,SITE_TYPE) %>% 
+  summarise(areawt = sum(areawt)) %>% 
+  ungroup()
+
+# lz.wt.willow.tb8_sitetype %>% 
+#   gt()
+
+## table 9 in Zeigenfuss 2015. Burning, fencing, site type
+# create a tibble from the area wts in the SAS code above
+lz.wt.willow.tbl9 <- tribble(
   ~timeClass, ~zCond, ~areawt_lz, ~SITE_TYPE,
   "2013", "BF", 0.085, "WC", 
   "2013", "BG", 0.45, "WC",
   "2013", "UG", 0.219, "WC",
   "2013", "UF", 0.117, "WC",
   "2013", "UG", 0.129, "WNC",
-  "BL", "UG", 0.871, "WNC"
+  "2018", "BF", 0.085, "WC", 
+  "2018", "BG", 0.45, "WC",
+  "2018", "UG", 0.219, "WC",
+  "2018", "UF", 0.117, "WC",
+  "2018", "UG", 0.129, "WNC",
+  "BL", "UG", 0.871,"WC",
+  "BL", "UG", 0.129,"WNC"
 )
 
-lz.wt.willow <- lz.wt.willow %>% 
+lz.wt.willow.tbl9 <- lz.wt.willow.tbl9 %>% 
   mutate(zCond2 = paste0(SITE_TYPE,"-",zCond)) %>% 
-  select(-timeClass)
+  mutate(zCond2_tc = paste0(SITE_TYPE,"-",zCond,"-",timeClass)) %>% 
+  select(zCond2_tc,areawt_lz)
 
-lz.wt.willow %>% 
-  gt()
+lz.wt.willow.tbl9 %>%
+  rename(Category=zCond2_tc, Weight = areawt_lz) %>% 
+  gt() %>% 
+  tab_header(title = "Area weights used in Zeigenfuss 2015 Table 9")
+
 ```
 
 ```{r, echo=FALSE, eval=FALSE}
-# not clear how area wts are calculated i noriginal SAS code
-# the following is based on proportional plot count
+# not clear how area wts are calculated in original SAS code
+# the following is based on proportional plot count, but they don't match the weights used in Zeigenfuss 2105 SAS code, so these are not used. They're retained for reference.
 ## calculate the weights by time class, SITE_TYPE and zCond
 wts <- canopy.all.willow.sum %>% 
   filter(SITE_TYPE != "WK") %>% 
@@ -2604,55 +2721,138 @@ wts.2 %>%
 ```
 
 ```{r}
-# unweighted
-wt.cov <- canopy.all.willow.sum %>% 
-  filter(SITE_TYPE != "WK") %>% 
-  group_by(timeClass, SITE_TYPE, BURNED, FENCED, zCond2) %>%
-  summarise(n = n(), mean = mean(cover.allwillow, na.rm=TRUE), sd = sd(cover.allwillow, na.rm=TRUE)) %>%
+#### Table 8 in Zeigenfuss 2015 - update for willow cover variable 
+# unweighted table 8. Inludes burned sites
+tbl8.cov <- canopy.all.willow.sum %>%
+  # filter(BURNED == "Unburned") %>% 
+  filter(SITE_TYPE != "WK") %>%
+  mutate(fenceClass_tc = paste0(SITE_TYPE,"-",FENCED,"-",timeClass)) %>%
+  mutate(site_typeXfenced = paste0(SITE_TYPE,"-", FENCED)) %>% 
+  # mutate(fenceClass_tc = paste0(SITE_TYPE,"-",FENCED,"-",timeClass)) %>%
+  group_by(timeClass, SITE_TYPE, FENCED, site_typeXfenced) %>%
+  summarise(n = n(), mean.cov = mean(cover.allwillow, na.rm=TRUE), sd.cov = sd(cover.allwillow, na.rm=TRUE)) %>%
   ungroup() %>% 
+  mutate(se = mean.cov/sqrt(n)) %>% 
+  mutate(across(where(is.numeric),round,1)) %>%
+  arrange(timeClass)
+
+##
+tbl8.cov <- left_join(tbl8.cov, lz.wt.willow.tb8) %>% 
+  mutate(mean.cov.wt = areawt*mean.cov, se.cov.wt = areawt*se) 
+
+## RANGE wide estimate tbl8.cov
+tbl8.cov.rangewide <- tbl8.cov %>% 
+  group_by(timeClass) %>% 
+  summarise(mean.cov = sum(mean.cov.wt, na.rm=TRUE), se = sum(se.cov.wt, na.rm=TRUE)) %>%
+  mutate(across(where(is.numeric),round,0)) %>% 
+  mutate(mean_se = paste0(mean.cov,"(+/-",se,")")) %>% 
+  mutate(site_typeXfenced = "Entire winter range (weighted avg)")
+
+### table 8 
+tbl8.cov %>% 
+  mutate(mean_se = paste0(mean.cov,"(+/-",se,")")) %>% 
+  bind_rows(.,tbl8.cov.rangewide) %>% 
+  select(timeClass, SITE_TYPE, FENCED, site_typeXfenced, mean_se) %>% 
+  pivot_wider(names_from = timeClass,
+              # names_glue = "{timeClass}_test_{FENCED}",
+              values_from = mean_se) %>%
+  select(-c(FENCED, SITE_TYPE)) %>% 
+  relocate('Winter range zone' = site_typeXfenced, "Baseline" = "BL",'2013','2018') %>% 
+  gt() %>% 
+  tab_header(title = "Willow cover (percent)")
+
+```
+
+```{r, eval=FALSE, echo=FALSE}
+## want to check against plot list for removed plots
+canopy.all.willow.sum %>%
+  filter(SITE_TYPE != "WK") %>% 
+  distinct(SITE_ID)
+```
+
+```{r}
+### range wide (bottomline of table)
+lz.wt.willow.tb8_sitetype
+
+# unweighted table 9
+wt.cov.rangewide <- canopy.all.willow.sum %>%
+  filter(SITE_TYPE != "WK") %>%
+  group_by(timeClass, SITE_TYPE) %>%
+  summarise(n = n(), mean.cov = mean(cover.allwillow, na.rm=TRUE), sd.cov = sd(cover.allwillow, na.rm=TRUE)) %>%
+  ungroup() %>% 
+  mutate(se.cov = mean.cov/sqrt(n))
+
+wt.cov.rangewide <- wt.cov.rangewide %>% 
+  left_join(.,lz.wt.willow.tb8_sitetype) %>% 
+  mutate(mean.cov.wt = areawt*mean.cov, se.cov.wt = areawt*se.cov) %>% 
+  group_by(timeClass) %>% 
+  summarise(mean.cov.wt = sum(mean.cov.wt),se.cov.wt = sum(se.cov.wt)) %>% 
+  ungroup() %>%
+  mutate(timeClass= as_factor(timeClass)) %>% 
+  mutate(timeClass = fct_relevel(timeClass, "BL", before="2013")) %>% 
+  arrange(timeClass)
+
+wt.cov.rangewide %>% 
+  mutate(across(where(is.numeric), round, 1)) %>% 
+  gt() %>% 
+  tab_header(title="Entire winter range (weighted average")
+# comp to bl:20(2); 2013:24(3); na in zeigenfuss 2015
+```
+
+```{r}
+# unweighted table 9
+wt.cov <- canopy.all.willow.sum %>%
+  filter(SITE_TYPE != "WK") %>%
+  mutate(zCond2_tc = paste0(SITE_TYPE,"-",zCond,"-",timeClass)) %>% 
+  group_by(timeClass, SITE_TYPE, BURNED, FENCED, zCond2,zCond2_tc) %>%
+  summarise(n = n(), mean.cov = mean(cover.allwillow, na.rm=TRUE), sd.cov = sd(cover.allwillow, na.rm=TRUE)) %>%
+  ungroup() %>% 
+  mutate(se = mean.cov/sqrt(n)) %>% 
   arrange(timeClass, zCond2)
+```
 
-# join in weigts from 2015 SAS code
-wt.cov <- left_join(wt.cov,lz.wt.willow) 
+```{r}
+### zcond2
+# join in weights from 2015 SAS code
+wt.cov.zcond2 <- left_join(wt.cov, lz.wt.willow.tbl9, by="zCond2_tc") %>% 
+  mutate(mean.cov.wt = areawt_lz*mean.cov, se.wt = areawt_lz*se)
 
-## weight
-wt.cov <- wt.cov %>% 
-  filter(timeClass %in% c("BL","2013","2018")) %>% 
-  mutate(mean.wt = areawt_lz*mean) 
+## check sum of weights = 1
+temp1 <- wt.cov.zcond2 %>% 
+  mutate(timeClass = fct_drop(timeClass)) %>% 
+  mutate(timeClass = fct_rev(timeClass)) %>% 
+  group_by(timeClass,SITE_TYPE) %>% 
+  summarise(sum.wt.cov = sum(mean.cov.wt, na.rm=TRUE), sum.wt.wt = sum(areawt_lz, na.rm=TRUE)) %>% 
+  ungroup() 
 
-wt.cov %>% 
+temp1
+
+temp1 %>% 
+  group_by(timeClass) %>% 
+  summarise(wt.cov = sum((sum.wt.cov*sum.wt.wt)))
+
+```
+
+```{r, eval=FALSE}
+wt.cov.zcond2 %>% 
   mutate(timeClass = fct_drop(timeClass)) %>% 
   mutate(timeClass = fct_rev(timeClass)) %>%
   select(timeClass, zCond2, mean.wt) %>% 
   pivot_wider(names_from = timeClass, values_from = c(mean.wt)) %>% 
   clean_names() %>% 
-  datatable()
-
-wt.cov %>% 
-  arrange(zCond2) %>% 
-  datatable()
-
-
-canopy.all.willow.sum %>%
-  filter(SITE_ID == "WC52")
-
-  
-```
-
-```{r}
-wt.cov %>% 
-  mutate(timeClass = fct_drop(timeClass)) %>% 
-  mutate(timeClass = fct_rev(timeClass))
-```
-
-```{r, eval=FALSE, echo=FALSE}
-canopy.all.willow.sum %>% 
- filter(timeClass == "BL" & zCond2 == "WC-BG") %>% 
   gt()
 
-site.info.willow %>% 
-  datatable()
+wt.cov.zcond2 %>% 
+  mutate(timeClass = fct_drop(timeClass)) %>% 
+  mutate(timeClass = fct_rev(timeClass)) %>%
+  select(timeClass, zCond2, mean, mean.wt) %>% 
+  pivot_wider(names_from = timeClass, values_from = c(mean.wt)) %>% 
+  clean_names() %>% 
+  gt()
 
+wt.cov.zcond2 %>% 
+  arrange(zCond2) %>% 
+  datatable()
 ```
 
 ```{r}
@@ -2680,6 +2880,9 @@ canopy.all.willow.sum <- canopy.all.willow.sum %>%
 
 ### Height
 
+#### All shrubs species
+
+**Summary statistics: WC and WNC plots**
 ```{r}
 # All shrub species
 # all winter range combined (-WK)
@@ -2687,12 +2890,12 @@ ht.WCWNC.allShrub.plotsummary <- csv.all.lc.mcro.df %>%
   mutate(timeClass = fct_rev(timeClass)) %>% 
   filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>% 
   filter(SITE_TYPE == "WC" |SITE_TYPE == "WNC") %>% 
-  # filter(str_detect(SPECIES_CODE, "^SA")) %>%
   select(timeClass, SITE_ID, PLANT_HT_CM) %>% 
   group_by(timeClass,SITE_ID) %>% 
   summarise(PLANT_HT_CM_mean = mean(PLANT_HT_CM, na.rm=TRUE), PLANT_HT_CM_max = max(PLANT_HT_CM),PLANT_HT_CM_median = median(PLANT_HT_CM)) %>%
   ungroup()
 
+## median
 ht.WCWNC.allShrub.plotsummary %>% 
   group_by(timeClass) %>% 
   summarytools::descr(var = PLANT_HT_CM_median, round.digits = 1) %>% 
@@ -2700,130 +2903,204 @@ ht.WCWNC.allShrub.plotsummary %>%
   select(-c(variable, se.skewness, kurtosis, pct.valid,cv, skewness)) %>% 
   rename(n = n.valid, 'Time class' = timeClass) %>%   
   gt() %>% 
-  tab_header(title = "Willow height (median per plot, macroplot), all shrub spp") %>% 
+  tab_header(title = "Shrub height (macroplot median, all shrub species)") %>% 
   fmt_number(
     columns = 2:11,
     decimals = 1,
     suffixing = TRUE
-  ) 
+  ) # %>% gtsave("./output/tables/Mcplot_allshrubHT_median_WCandWNC_TC.rtf")
 
-# gtsave("./output/tables/Mcplot_allshrubHT_WCandWNC_TC.rtf")
+## macroplot mean -- all shrubs
+ht.WCWNC.allShrub.plotsummary %>% 
+  group_by(timeClass) %>% 
+  summarytools::descr(var = PLANT_HT_CM_mean, round.digits = 1) %>% 
+  summarytools::tb() %>% 
+  select(-c(variable, se.skewness, kurtosis, pct.valid,cv, skewness)) %>% 
+  rename(n = n.valid, 'Time class' = timeClass) %>%   
+  gt() %>% 
+  tab_header(title = "Shrub height (macroplot mean, all shrub species)") %>% 
+  fmt_number(
+    columns = 2:11,
+    decimals = 1,
+    suffixing = TRUE
+  )  # %>% gtsave("./output/tables/Mcplot_allshrubHT_mean_WCandWNC_TC.rtf")
+
+## macroplot max ht -- all shrubs
+ht.WCWNC.allShrub.plotsummary %>% 
+  group_by(timeClass) %>% 
+  summarytools::descr(var = PLANT_HT_CM_max, round.digits = 1) %>% 
+  summarytools::tb() %>% 
+  select(-c(variable, se.skewness, kurtosis, pct.valid,cv, skewness)) %>% 
+  rename(n = n.valid, 'Time class' = timeClass) %>%   
+  gt() %>% 
+  tab_header(title = "Shrub height (macroplot max, all shrub species)") %>% 
+  fmt_number(
+    columns = 2:11,
+    decimals = 1,
+    suffixing = TRUE
+  ) #  %>% gtsave("./output/tables/Mcplot_allshrubHT_max_WCandWNC_TC.rtf")
+
+
 ```
 
+
 ```{r}
+## add in fencing
 # all winter range combined (-WK)
-ht.WCWNC.allShrub.fenced.plotsummary <- csv.all.lc.mcro.df %>% 
+ht.WCWNC.allShrub.fence.plotsummary <- csv.all.lc.mcro.df %>% 
   mutate(timeClass = fct_rev(timeClass)) %>% 
   filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>% 
   filter(SITE_TYPE == "WC" |SITE_TYPE == "WNC") %>% 
-  # filter(str_detect(SPECIES_CODE, "^SA")) %>%
-  select(timeClass, SITE_ID, PLANT_HT_CM, FENCED) %>% 
+  select(timeClass, SITE_ID, FENCED, PLANT_HT_CM) %>% 
   group_by(timeClass,SITE_ID, FENCED) %>% 
   summarise(PLANT_HT_CM_mean = mean(PLANT_HT_CM, na.rm=TRUE), PLANT_HT_CM_max = max(PLANT_HT_CM),PLANT_HT_CM_median = median(PLANT_HT_CM)) %>%
   ungroup()
-  
-
-ht.WCWNC.allShrub.fenced.plotsummary %>% 
-  group_by(timeClass, FENCED) %>% 
-  summarytools::descr(var = PLANT_HT_CM_median, round.digits = 1) %>% 
-  summarytools::tb() %>% 
-  select(-c(variable, se.skewness, kurtosis, pct.valid,cv, skewness)) %>% 
-  rename(n = n.valid, 'Time class' = timeClass, Fenced = FENCED) %>%   
-  gt() %>% 
-  tab_header(title = "Willow height (median per plot, macroplot), all shrub spp, WC WNC") %>% 
-  fmt_number(
-    columns = 4:11,
-    decimals = 1,
-    suffixing = TRUE
-  ) # %>% 
-  # gtsave("./output/tables/Mcplot_allshrubHT_WCandWNC_TC_fenced.rtf")
 
 ```
 
 ```{r}
-# all winter range combined (-WK): Fenced
-csv.all.lc.mcro.df %>% 
-  mutate(timeClass = fct_rev(timeClass)) %>% 
-  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>% 
-  filter(SITE_TYPE == "WC" |SITE_TYPE == "WNC") %>% 
-  # filter(str_detect(SPECIES_CODE, "^SA")) %>%
+ht.WCWNC.allShrub.fence.plotsummary.tidy <- ht.WCWNC.allShrub.fence.plotsummary %>%
+  pivot_longer(
+    cols = starts_with("PLANT"),
+    names_to = "htvar",
+    values_to = "value"
+  )
+
+ht.WCWNC.allShrub.fence.plotsummary.tidy %>% 
+  mutate(htvar = case_when(htvar == "PLANT_HT_CM_max" ~ "max",
+                           htvar == "PLANT_HT_CM_mean" ~ "mean",
+                           htvar == "PLANT_HT_CM_median" ~ "median"
+                           )) %>% 
+  # ggplot(aes(htvar, value)) +
+  ggplot(aes(value)) +
+  geom_density(aes(color=htvar, lty = htvar), size=1) +
+  scale_colour_brewer(palette = "Dark2") +
+  # geom_boxplot() +
+  # facet_wrap(~FENCED) +
+  facet_grid(FENCED~timeClass) +
+  theme_minimal() +
+  coord_flip() +
+  labs(title = "Comparison of shrub height plot level metrics", subtitle="Combined WC & WNC plots, all shrub species", x = "Willow height (cm)", color="",lty = "")
+
+# Mean all winter range combined (-WK): Fenced
+ht.WCWNC.allShrub.fence.plotsummary %>% 
   group_by(timeClass, FENCED) %>% 
-  summarytools::descr(var = PLANT_HT_CM, round.digits = 1) %>% 
+  summarytools::descr(var = PLANT_HT_CM_mean, round.digits = 1) %>% 
   summarytools::tb() %>% 
   select(-c(variable, se.skewness, kurtosis, pct.valid,cv, skewness)) %>% 
-  rename(n = n.valid) %>%   
+  rename(n = n.valid, 'Time class' = timeClass) %>%   
+  mutate(across(where(is.numeric),round,1)) %>% 
   gt() %>% 
-  tab_header(title = "Willow height (macroplot)") %>% 
-  fmt_number(
-    columns = 3:11,
-    decimals = 1,
-    suffixing = TRUE
-  ) # %>% 
-  # gtsave("./output/tables/Mcplot_HT_WCandWNC_TC_fenced.rtf")
+  tab_header(title = "Shrub height (macroplot mean, all shrub species)") #  %>% gtsave("./output/tables/Mcplot_allshrubHT_fencing_mean_WCandWNC_TC.rtf")
+
+# Mean all winter range combined (-WK): Fenced
+ht.WCWNC.allShrub.fence.plotsummary %>% 
+  group_by(timeClass, FENCED) %>% 
+  summarytools::descr(var = PLANT_HT_CM_max, round.digits = 1) %>% 
+  summarytools::tb() %>% 
+  select(-c(variable, se.skewness, kurtosis, pct.valid,cv, skewness)) %>% 
+  rename(n = n.valid, 'Time class' = timeClass) %>%   
+  mutate(across(where(is.numeric),round,1)) %>% 
+  gt() %>% 
+  tab_header(title = "Shrub height (macroplot max, all shrub species)")
+
 ```
 
+#### All willows
 ```{r}
-### gt summary table
 # all winter range combined (-WK)
 ## just willow species
+
+## calculate the mean, max, and median willow height by plot id
+## grouped by timeClass and SITE_ID
 ht.WCWNC.willow.plotsummary <- csv.all.lc.mcro.df %>% 
   mutate(timeClass = fct_rev(timeClass)) %>% 
   filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>% 
   filter(SITE_TYPE == "WC" |SITE_TYPE == "WNC") %>% 
   filter(str_detect(SPECIES_CODE, "^SA")) %>%
-  select(timeClass, SITE_ID, PLANT_HT_CM) %>% 
-  group_by(timeClass,SITE_ID) %>% 
+  select(timeClass, SITE_ID, PLANT_HT_CM, SITE_TYPE,FENCED,zCond, zCond2) %>% 
+  group_by(timeClass,SITE_ID,SITE_TYPE,FENCED, zCond, zCond2) %>% 
   summarise(PLANT_HT_CM_mean = mean(PLANT_HT_CM, na.rm=TRUE), PLANT_HT_CM_median = median(PLANT_HT_CM), PLANT_HT_CM_max = max(PLANT_HT_CM)) %>%
   ungroup()
-  
 
+```
+
+```{r}
+
+## summary table: mean ht
+ht.WCWNC.willow.plotsummary %>% 
+  group_by(timeClass) %>% 
+  summarytools::descr(var = PLANT_HT_CM_mean, round.digits = 1) %>% 
+  summarytools::tb() %>% 
+  select(-c(variable, se.skewness, kurtosis, pct.valid,cv, skewness)) %>% 
+  rename(n = n.valid, 'Time class' = timeClass) %>%   
+  mutate(across(where(is.numeric),round,1)) %>% 
+  gt() %>% 
+  tab_header(title = "Mean plot willow height", subtitle = "All willows, WC & WNC macroplots") #%>%
+  # gtsave("./output/tables/Mcplot_mean_HT_all_willow_WCandWNC_TC.rtf")
+
+
+## summary table: max ht
+ht.WCWNC.willow.plotsummary %>% 
+  group_by(timeClass) %>% 
+  summarytools::descr(var = PLANT_HT_CM_max, round.digits = 1) %>% 
+  summarytools::tb() %>% 
+  select(-c(variable, se.skewness, kurtosis, pct.valid,cv, skewness)) %>% 
+  rename(n = n.valid, 'Time class' = timeClass) %>%   
+  mutate(across(where(is.numeric),round,1)) %>% 
+  gt() %>% 
+  tab_header(title = "Max plot willow height", subtitle = "All willows, WC & WNC macroplots") #%>%
+  #gtsave("./output/tables/Mcplot_max_HT_all_willow_WCandWNC_TC.rtf")
+
+## summary table: median ht
 ht.WCWNC.willow.plotsummary %>% 
   group_by(timeClass) %>% 
   summarytools::descr(var = PLANT_HT_CM_median, round.digits = 1) %>% 
   summarytools::tb() %>% 
   select(-c(variable, se.skewness, kurtosis, pct.valid,cv, skewness)) %>% 
   rename(n = n.valid, 'Time class' = timeClass) %>%   
+  mutate(across(where(is.numeric),round,1)) %>% 
   gt() %>% 
-  tab_header(title = "Willow height (all willow, macroplot)") %>% 
-  fmt_number(
-    columns = 2:11,
-    decimals = 1,
-    suffixing = TRUE
-  ) # %>% 
-  # gtsave("./output/tables/Mcplot_HT_all_willow_WCandWNC_TC.rtf")
+  tab_header(title = "Median plot willow height", subtitle = "All willows, WC & WNC macroplots") #%>%
+  # gtsave("./output/tables/Mcplot_median_HT_all_willow_WCandWNC_TC.rtf")
 ```
 
 ```{r}
-### gt summary table
-# all winter range combined (-WK)
-ht.WCWNC.willow.fenced.plotsummary <- csv.all.lc.mcro.df %>% 
-  mutate(timeClass = fct_rev(timeClass)) %>% 
-  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>% 
-  filter(SITE_TYPE == "WC" |SITE_TYPE == "WNC") %>% 
-  filter(str_detect(SPECIES_CODE, "^SA")) %>%
-  select(timeClass, SITE_ID, PLANT_HT_CM, FENCED) %>% 
-  group_by(timeClass,SITE_ID, FENCED) %>% 
-  summarise(PLANT_HT_CM_mean = mean(PLANT_HT_CM, na.rm=TRUE), PLANT_HT_CM_max = max(PLANT_HT_CM),PLANT_HT_CM_median = median(PLANT_HT_CM, na.rm=TRUE),) %>%
-  ungroup()
-  
-
-ht.WCWNC.willow.fenced.plotsummary %>% 
+## table:
+ht.WCWNC.willow.plotsummary %>% 
   group_by(timeClass, FENCED) %>% 
-  summarytools::descr(var = PLANT_HT_CM_median, round.digits = 1) %>% 
+  summarytools::descr(var = PLANT_HT_CM_mean, round.digits = 1) %>% 
   summarytools::tb() %>% 
   select(-c(variable, se.skewness, kurtosis, pct.valid,cv, skewness)) %>% 
   rename(n = n.valid, 'Time class' = timeClass) %>%   
+  mutate(across(where(is.numeric),round,1)) %>% 
   gt() %>% 
-  tab_header(title = "Willow height (all willow, macroplot)") %>% 
-  fmt_number(
-    columns = 4:11,
-    decimals = 1,
-    suffixing = TRUE
-  ) # %>% 
-  # gtsave("./output/tables/Mcplot_HT_all_willow_WCandWNC_TC_FENCED_median.rtf")
+  tab_header(title = "Mean plot willow height", subtitle = "All willows, WC & WNC macroplots")
 
 ```
 
+```{r}
+## table adding in location and fencing
+
+ht.WCWNC.willow.plotsummary %>% 
+  group_by(timeClass, SITE_TYPE, FENCED) %>% 
+  summarytools::descr(var = PLANT_HT_CM_mean, stats = "common") %>% 
+  summarytools::tb() %>% 
+  rename(n = n.valid, 'Time class' = timeClass) %>%   
+  mutate(across(where(is.numeric),round,1)) %>% 
+  mutate(variable = paste0("plot mean")) %>% 
+  clean_names() %>% 
+  gt() %>%
+  tab_header(title = "Mean plot willow height", subtitle = "All willows, WC & WNC macroplots") 
+
+```
+
+```{r}
+# ht.WCWNC.willow.plotsummary
+```
+
+
+**Mean height by willow species**
 ```{r}
 
 csv.all.lc.mcro.df %>% 
@@ -2846,39 +3123,14 @@ csv.all.lc.mcro.df %>%
 
 ```
 
-```{r}
-csv.all.lc.mcro.df %>% 
-  filter(str_detect(SPECIES_CODE, "^SA")) %>% 
-  filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SABO" & SPECIES_CODE !="SAER") %>%
-  filter(SITE_TYPE == "WC") %>%
-  # filter(SITE_TYPE != "WNC") %>% 
-  mutate(yr = as.character(yr)) %>%
- filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
-  group_by(yr,SPECIES_CODE, FENCED) %>% 
-  skimr::skim(PLANT_HT_CM) %>% 
-  select(yr, contains("skim"),SPECIES_CODE, contains("c.m"), contains("c.s"), FENCED) %>%
-  select(-skim_type) %>% 
-  ggplot(aes(yr, SPECIES_CODE)) +
-  geom_tile(aes(fill = numeric.mean)) +
-  geom_text(aes(label = round(numeric.mean,1)), color = "white") +
-  scale_fill_viridis() +
-  theme_minimal() +
-  labs(x = "Year", y = "Species", fill = "mean", title = "Mean Height - Core Range", subtitle = "Fenced/unfenced") +
-  facet_wrap(~FENCED)
-
-```
-
-```{r}
-#### Count of Observations by Species 
-csv.all.lc.mcro.df %>% 
-  group_by(SPECIES_CODE) %>%
-  tally() %>% 
-  arrange(desc(n)) %>% 
-  datatable(rownames = FALSE, caption = "Count of observations by shrub species.")
-
-```
-
 ```{r, eval=FALSE}
+
+# lu.removed.plot
+# csv.all.lc.li.df
+
+# # remove all the removed plots identified in the site info tab if raw files
+# csv.all.lc.mcro.df <- anti_join(csv.all.lc.mcro.df, lu.removed.plot, by="SITE_ID")
+
 ## write_csv
 csv.all.lc.mcro.df %>%
   write_csv("./output/exported_data/willow_mcro.csv")
@@ -2942,6 +3194,7 @@ nonwillowshrub.mcro.all %>%
 
 ```
 
+
 ```{r}
 # ### Mean ht in plots, willow species only
 # join cover for spatial export
@@ -2967,9 +3220,28 @@ will.ht.mean.sf <- left_join(will.ht.mean, clean_names(site.info.clean.sf)) %>%
 
 ```
 
-```{r}
+**Mean willow height - Baseline**
+```{r, eval=TRUE}
 will.ht.mean.sf %>% 
-  filter(!is.na(htmean2018)) %>% 
+  filter(!is.na(htmeanBL)) %>%
+  mutate(across(where(is.numeric), round, 2)) %>% 
+  mapview(zcol = "htmeanBL")
+```
+
+**Mean willow height - 2013**
+```{r, eval=TRUE}
+will.ht.mean.sf %>% 
+  filter(!is.na(htmean2013)) %>%
+  mutate(across(where(is.numeric), round, 2)) %>% 
+  mapview(zcol = "htmean2013")
+```
+
+**Mean willow height - 2018**
+```{r, eval=TRUE}
+will.ht.mean.sf %>% 
+  filter(range_type != "Kawuneeche Valley") %>% 
+  filter(!is.na(htmean2018)) %>%
+  mutate(across(where(is.numeric), round, 2)) %>% 
   mapview(zcol = "htmean2018")
 ```
 
@@ -3225,7 +3497,9 @@ willow.mcro.all %>%
 
 ```
 
-### Thresholds: count of plots above 1.1 m
+#### Management thresholds 
+
+**Count of plots above 1.1 m**
 
 ```{r}
 ## thresholds
@@ -3316,6 +3590,266 @@ willow.mcro.all %>%
   tab_header(title = "WC+WNC: fenced burned")
 ```
 
+#### Range-wide
+
+```{r}
+
+
+## table 8 Zeigenfuss 2015. timeClass x fenced x site type
+lz.wt.willow.tb8 %>% 
+  gt() %>% 
+  tab_header(title = "Area weights used in Zeigenfuss 2015")
+
+lz.wt.willow.tb8_sitetype %>% 
+  gt() %>% 
+  tab_header(title = "Area weights used in Zeigenfuss 2015")
+
+lz.wt.willow.tbl9 %>%
+  rename(Category=zCond2_tc, Weight = areawt_lz) %>% 
+  gt() %>% 
+  tab_header(title = "Area weights used in Zeigenfuss 2015")
+
+```
+
+```{r}
+ht.WCWNC.willow.plotsummary <- ht.WCWNC.willow.plotsummary %>%
+  mutate(timeClass = fct_drop(timeClass)) %>% 
+  mutate(across(where(is.numeric), round, 2))
+
+## join in the weights
+ht.WCWNC.willow.plotsummary <- ht.WCWNC.willow.plotsummary %>% 
+  left_join(., lz.wt.willow.tb8_sitetype) 
+
+# willow.mcro.all %>%
+#   filter(!is.na(plant_ht_cm))
+
+ht.WCWNC.willow.plotsummary %>% 
+  left_join(.,lz.wt.willow.tb8) 
+
+```
+
+
+
+```{r}
+#### Table 8 - mean height
+ht.WCWNC.willow.plotsummary %>% 
+  left_join(.,lz.wt.willow.tb8) %>% 
+  tabyl(zCond2)
+
+tbl8.ht <- ht.WCWNC.willow.plotsummary %>%
+  mutate(fenceClass_tc = paste0(SITE_TYPE,"-",FENCED,"-",timeClass)) %>%
+  mutate(site_typeXfenced = paste0(SITE_TYPE,"-", FENCED)) %>% 
+  # mutate(fenceClass_tc = paste0(SITE_TYPE,"-",FENCED,"-",timeClass)) %>%
+  group_by(timeClass, SITE_TYPE, FENCED, site_typeXfenced) %>%
+  summarise(n = n(), mean.ht = mean(PLANT_HT_CM_mean, na.rm=TRUE), sd.ht = sd(PLANT_HT_CM_mean, na.rm=TRUE)) %>%
+  ungroup() %>% 
+  mutate(se = mean.ht/sqrt(n)) %>% 
+  mutate(across(where(is.numeric),round,1)) %>%
+  arrange(timeClass)
+
+
+lz.wt.willow.tb8
+##
+tbl8.ht <- left_join(tbl8.ht, lz.wt.willow.tb8) %>% 
+  mutate(mean.ht.wt = areawt*mean.ht, se.ht.wt = areawt*se) 
+
+## RANGE wide estimate tbl8.cov
+tbl8.ht.rangewide <- tbl8.ht %>% 
+  group_by(timeClass) %>% 
+  summarise(mean.ht = sum(mean.ht.wt, na.rm=TRUE), se = sum(se.ht.wt, na.rm=TRUE)) %>%
+  mutate(across(where(is.numeric),round,0)) %>% 
+  mutate(mean_se = paste0(mean.ht,"(+/-",se,")")) %>% 
+  mutate(site_typeXfenced = "Entire winter range (weighted avg)")
+
+### table 8 
+tbl8.ht %>% 
+  mutate(mean_se = paste0(mean.ht,"(+/-",se,")")) %>% 
+  bind_rows(.,tbl8.ht.rangewide) %>% 
+  select(timeClass, SITE_TYPE, FENCED, site_typeXfenced, mean_se) %>% 
+  pivot_wider(names_from = timeClass,
+              # names_glue = "{timeClass}_test_{FENCED}",
+              values_from = mean_se) %>%
+  select(-c(FENCED, SITE_TYPE)) %>% 
+  relocate('Winter range zone' = site_typeXfenced, "Baseline" = "BL",'2013','2018') %>% 
+  gt() %>% 
+  tab_header(title = "Willow height (cm)")
+
+```
+
+```{r}
+### range wide (bottomline of table)
+lz.wt.willow.tb8_sitetype
+
+# unweighted table 9
+wt.ht.rangewide <- ht.WCWNC.willow.plotsummary %>%
+  group_by(timeClass, SITE_TYPE) %>%
+  summarise(n = n(), mean.ht = mean(PLANT_HT_CM_mean, na.rm=TRUE), sd.ht = sd(PLANT_HT_CM_mean, na.rm=TRUE)) %>%
+  ungroup() %>% 
+  mutate(se = mean.ht/sqrt(n)) %>% 
+  left_join(.,lz.wt.willow.tb8_sitetype) %>% 
+  mutate(mean.ht.wt = areawt*mean.ht, se.ht.wt = areawt*se) %>% 
+  group_by(timeClass) %>% 
+  summarise(mean.ht.wt = sum(mean.ht.wt),se.ht.wt = sum(se.ht.wt)) %>% 
+  ungroup() %>%
+  mutate(timeClass= as_factor(timeClass)) %>% 
+  mutate(timeClass = fct_relevel(timeClass, "BL", before="2013")) %>% 
+  arrange(timeClass)
+
+wt.ht.rangewide %>% 
+  mutate(across(where(is.numeric), round, 1)) %>% 
+  gt() %>% 
+  tab_header(title="Entire winter range (weighted average")
+# comp to bl:20(2); 2013:24(3); na in zeigenfuss 2015
+```
+
+```{r}
+# unweighted table 9
+wt.ht.mean <- ht.WCWNC.willow.plotsummary %>%
+  mutate(zCond2_tc = paste0(SITE_TYPE,"-",zCond,"-",timeClass)) %>% 
+  group_by(timeClass, SITE_TYPE, zCond2,zCond2_tc) %>%
+  summarise(n = n(), mean.ht = mean(PLANT_HT_CM_mean, na.rm=TRUE), sd.ht = sd(PLANT_HT_CM_mean, na.rm=TRUE)) %>%
+  ungroup() %>% 
+  mutate(se = mean.ht/sqrt(n)) %>% 
+  arrange(timeClass, zCond2)
+
+```
+
+```{r}
+### zcond2
+# join in weights from 2015 SAS code
+wt.ht.zcond2 <- left_join(wt.ht.mean, lz.wt.willow.tbl9, by="zCond2_tc") %>% 
+  mutate(mean.ht.wt = areawt_lz*mean.ht, se.wt = areawt_lz*se)
+
+## check sum of weights = 1
+temp1 <- wt.ht.zcond2 %>% 
+  mutate(timeClass = fct_drop(timeClass)) %>% 
+  mutate(timeClass = fct_rev(timeClass)) %>% 
+  group_by(timeClass,SITE_TYPE) %>% 
+  summarise(sum.wt.ht = sum(mean.ht.wt, na.rm=TRUE), sum.wt.wt = sum(areawt_lz, na.rm=TRUE)) %>% 
+  ungroup() 
+
+temp1
+
+temp1 %>% 
+  group_by(timeClass) %>% 
+  summarise(wt.ht = sum((sum.wt.ht*sum.wt.wt)))
+
+```
+
+```{r, eval=FALSE}
+wt.ht.zcond2 %>% 
+  mutate(timeClass = fct_drop(timeClass)) %>% 
+  mutate(timeClass = fct_rev(timeClass)) %>%
+  select(timeClass, zCond2, mean.ht.wt) %>% 
+  pivot_wider(names_from = timeClass, values_from = c(mean.ht.wt)) %>% 
+  clean_names() %>% 
+  gt()
+
+```
+
+
+```{r}
+#### Table 8 - maximum height  
+ht.WCWNC.willow.plotsummary %>% 
+  left_join(.,lz.wt.willow.tb8) %>% 
+  tabyl(zCond2)
+
+tbl8.ht.max <- ht.WCWNC.willow.plotsummary %>%
+  mutate(fenceClass_tc = paste0(SITE_TYPE,"-",FENCED,"-",timeClass)) %>%
+  mutate(site_typeXfenced = paste0(SITE_TYPE,"-", FENCED)) %>% 
+  group_by(timeClass, SITE_TYPE, FENCED, site_typeXfenced) %>%
+  summarise(n = n(), mean.ht = mean(PLANT_HT_CM_max, na.rm=TRUE), sd.ht = sd(PLANT_HT_CM_max, na.rm=TRUE)) %>%
+  ungroup() %>% 
+  mutate(se = mean.ht/sqrt(n)) %>% 
+  mutate(across(where(is.numeric),round,1)) %>%
+  arrange(timeClass)
+
+##
+tbl8.ht.max <- left_join(tbl8.ht.max, lz.wt.willow.tb8) %>% 
+  mutate(mean.ht.wt = areawt*mean.ht, se.ht.wt = areawt*se) 
+
+## RANGE wide estimate tbl8.cov
+tbl8.ht.max.rangewide <- tbl8.ht.max %>% 
+  group_by(timeClass) %>% 
+  summarise(mean.ht = sum(mean.ht.wt, na.rm=TRUE), se = sum(se.ht.wt, na.rm=TRUE)) %>%
+  mutate(across(where(is.numeric),round,0)) %>% 
+  mutate(mean_se = paste0(mean.ht,"(+/-",se,")")) 
+
+### table 8 
+tbl8.ht.max %>% 
+  mutate(mean_se = paste0(mean.ht,"(+/-",se,")")) %>% 
+  bind_rows(.,tbl8.ht.max.rangewide) %>% 
+  select(timeClass, SITE_TYPE, FENCED, site_typeXfenced, mean_se) %>% 
+  pivot_wider(names_from = timeClass,
+              # names_glue = "{timeClass}_test_{FENCED}",
+              values_from = mean_se) %>%
+  select(-c(FENCED, SITE_TYPE)) %>% 
+  relocate('Winter range zone' = site_typeXfenced, "Baseline" = "BL",'2013','2018') %>% 
+  gt() %>% 
+  tab_header(title = "Maximum willow height (cm)")
+
+```
+
+```{r}
+### range wide (bottomline of table)
+lz.wt.willow.tb8_sitetype
+
+# unweighted table 9
+wt.ht.max.rangewide <- ht.WCWNC.willow.plotsummary %>%
+  group_by(timeClass, SITE_TYPE) %>%
+  summarise(n = n(), mean.ht = mean(PLANT_HT_CM_max, na.rm=TRUE), sd.ht = sd(PLANT_HT_CM_max, na.rm=TRUE)) %>%
+  ungroup() %>% 
+  mutate(se = mean.ht/sqrt(n)) %>% 
+  left_join(.,lz.wt.willow.tb8_sitetype) %>% 
+  mutate(mean.ht.wt = areawt*mean.ht, se.ht.wt = areawt*se) %>% 
+  group_by(timeClass) %>% 
+  summarise(mean.ht.wt = sum(mean.ht.wt),se.ht.wt = sum(se.ht.wt)) %>% 
+  ungroup() %>%
+  mutate(timeClass= as_factor(timeClass)) %>% 
+  mutate(timeClass = fct_relevel(timeClass, "BL", before="2013")) %>% 
+  arrange(timeClass)
+
+wt.ht.max.rangewide %>% 
+  mutate(across(where(is.numeric), round, 1)) %>% 
+  gt() %>% 
+  tab_header(title="Entire winter range (weighted average")
+# comp to bl:20(2); 2013:24(3); na in zeigenfuss 2015
+```
+
+```{r}
+# unweighted table 9
+wt.ht.mean <- ht.WCWNC.willow.plotsummary %>%
+  mutate(zCond2_tc = paste0(SITE_TYPE,"-",zCond,"-",timeClass)) %>% 
+  group_by(timeClass, SITE_TYPE, zCond2,zCond2_tc) %>%
+  summarise(n = n(), mean.ht = mean(PLANT_HT_CM_mean, na.rm=TRUE), sd.ht = sd(PLANT_HT_CM_mean, na.rm=TRUE)) %>%
+  ungroup() %>% 
+  mutate(se = mean.ht/sqrt(n)) %>% 
+  arrange(timeClass, zCond2)
+
+```
+
+```{r}
+### zcond2
+# join in weights from 2015 SAS code
+wt.ht.zcond2 <- left_join(wt.ht.mean, lz.wt.willow.tbl9, by="zCond2_tc") %>% 
+  mutate(mean.ht.wt = areawt_lz*mean.ht, se.wt = areawt_lz*se)
+
+## check sum of weights = 1
+temp1 <- wt.ht.zcond2 %>% 
+  mutate(timeClass = fct_drop(timeClass)) %>% 
+  mutate(timeClass = fct_rev(timeClass)) %>% 
+  group_by(timeClass,SITE_TYPE) %>% 
+  summarise(sum.wt.ht = sum(mean.ht.wt, na.rm=TRUE), sum.wt.wt = sum(areawt_lz, na.rm=TRUE)) %>% 
+  ungroup() 
+
+temp1
+
+temp1 %>% 
+  group_by(timeClass) %>% 
+  summarise(wt.ht = sum((sum.wt.ht*sum.wt.wt)))
+
+```
+
 ### Offtake
 
 **DD2**
@@ -3395,13 +3929,15 @@ lz.bl13.wil %>%
 lz.bl13.offt.spr <- lz.bl13.wil %>%
   filter(str_detect(sheet,pattern = "RMNP_spring")) %>% 
   unnest(cols = c(data)) %>% 
-  clean_names()
+  clean_names() %>% 
+  distinct()
 
 ### BL-2013 fall offtake   
 lz.bl13.offt.fall <- lz.bl13.wil %>%
   filter(str_detect(sheet,pattern = "RMNP_fall")) %>% 
   unnest(cols = c(data)) %>% 
-  clean_names()
+  clean_names() %>% 
+  distinct()
 
 ### BL-2013: "twig 2008"   
 lz.bl13.twig2008 <- lz.bl13.wil %>%
@@ -3460,7 +3996,8 @@ lz.bl13.twig2008.clean %>%
 ```
 
 ```{r}
-lz.bl13.twig2008.clean %>% 
+lz.bl13.twig2008.clean %>%
+  filter(!is.na(species_code)) %>% 
   ggplot(aes(shoot_weight_g,shoot_length_cm)) +
   geom_point(aes(color=location)) +
   geom_smooth(aes(color = location),method = "lm", se = FALSE) +
@@ -3470,8 +4007,7 @@ lz.bl13.twig2008.clean %>%
   labs(x = "Shoot weight (g)", y = "Shoot length (cm)", caption = "BL 2013 data lz.bl13.twig2008.clean")
 ```
 
- 
-```{r, echo=FALSE, eval=FALSE}
+```{r, eval=TRUE}
 ## regressions
 models.twigs <- tibble::tribble(
   ~model_name,    ~ formula,
@@ -3488,7 +4024,7 @@ lz.bl13.twig2008.clean %>%
   tab_header(title = "Species-specific length ~ mass")
 
 ```
-
+# uuup
 ```{r}
 #### BL clean
 lz.bl.fall <- lz.bl13.offt.fall %>%
@@ -4297,31 +4833,29 @@ offt.percbrowsed %>%
   labs(x = "% leader use", y = "", color = "") +
   scale_x_continuous(labels=scales::percent,limits = c(0,1))
 
-# ggsave("./output/figures_exported/desnity_percleaderuse_wnc_20200602.png", width = 4.5, height = 3.75, dpi = 300)
+# ggsave("./output/figures_exported/density_percleaderuse_wnc.png", width = 4.5, height = 3.75, dpi = 300)
 
 ```
 
+# following no sense
 ```{r}
 ### summary by site
 offt.percbrowsed.summary <- offt.percbrowsed %>% 
   group_by(yr, site_id) %>% 
-  summarytools::descr(var = percent_bu_per_stem, round.digits = 1) %>% 
-  summarytools::tb()
+  summarytools::descr(var = percent_bu_per_stem, stats = "common") %>% 
+  summarytools::tb() %>% 
+  mutate(across(where(is.numeric), round, 1))
 
-## make plot based
-offt.percbrowsed.summary <- offt.percbrowsed %>% 
-  group_by(yr, site_type) %>% 
-  summarytools::descr(var = percent_bu_per_stem, round.digits = 1) %>% 
-  summarytools::tb()
+# make plot based
+offt.percbrowsed.summary <- offt.percbrowsed %>%
+  group_by(yr, site_type) %>%
+  summarytools::descr(var = percent_bu_per_stem, stats = "common") %>%
+  summarytools::tb() %>%
+  mutate(across(where(is.numeric), round, 1))
 
 offt.percbrowsed.summary %>% 
   gt() %>% 
-  tab_header(title = "Willow Offtake (% leader use)") %>% 
-  fmt_number(
-    columns = 4:18,
-    decimals = 1,
-    suffixing = TRUE
-  )
+  tab_header(title = "Willow Offtake (% leader use)") 
 
 ```
 
@@ -4330,7 +4864,6 @@ offt.percbrowsed.summary %>%
 offt.percbrowsed.summary %>%
   ggplot(aes(yr, med)) +
   geom_col(fill = 'grey60') +
-  geom_errorbar(aes(ymin = med - mad, ymax = med + mad)) +
   facet_wrap(~site_type) +
   theme_minimal()
 
@@ -5396,7 +5929,7 @@ asp.tally.dbh.tidy %>%
 
 ```
 
-### Burned plots through time
+### Burned plots
 
 ```{r}
 ## add just burned plots
@@ -5539,7 +6072,7 @@ dbh.perc <- asp.tally.dbh.tidy %>%
 
 ```
 
-### Aspen DBH: Core winter range
+#### Core winter range
 
 ```{r}
 ## prep for revised stacked order barplot 2021-02-09
@@ -5575,8 +6108,7 @@ dbh.joined <- dbh.joined %>%
 # stacked sorted boxplot
 ## create color gradient 
 # colorspace::sequential_hcl(4, "Teal")
-# colorspace::sequential_hcl(4, "Greens")
-# colorspace::sequential_hcl(4, "YlGnBu")
+
 dbhclass.gradient <- c("#26185F", "#0095AF", "#9ADCBB", "#FCFFDD", "grey50")
 
 # ACx F  
@@ -5740,7 +6272,7 @@ dbh.perc3 %>%
 
 ```
 
-### Aspen DBH: Non-core winter range
+#### Non-core winter range
 
 *DBH classes: Non-fenced plots*
 
@@ -5858,7 +6390,7 @@ dbh.perc.anc %>%
 
 ```
 
-### Aspen DBH: Kawuneeche Valley
+#### Kawuneeche Valley
 
 ```{r}
 ### revised plots 2021-02-09
@@ -5925,7 +6457,7 @@ dbh.perc.kv %>%
 
 ```
 
-### Proportion of plots with regeneration above threshold
+#### Proportion of plots with regeneration above threshold
 
 ```{r}
 asp.tally.dbh.tidy %>%

@@ -1656,9 +1656,14 @@ Running under: Windows 10 x64 (build 19041)
 Run date: `r format(Sys.time(), '%Y %B %d')`  
 
 ```{r, echo=FALSE}
-subset(data.frame(sessioninfo::package_info()), attached==TRUE, c(package, loadedversion)) %>% 
+# subset(data.frame(sessioninfo::package_info()), attached==TRUE, c(package, loadedversion)) %>% 
+#   gt() %>% 
+#   tab_header(title = "Attached packages and versions")
+
+report::report_table(sessionInfo()) %>% 
+  as_tibble() %>% 
   gt() %>% 
-  tab_header(title = "Attached packages and versions")
+  tab_header(title="Package Information")
 
 ```
 
