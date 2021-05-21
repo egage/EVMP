@@ -4024,7 +4024,7 @@ lz.bl13.twig2008.clean %>%
   tab_header(title = "Species-specific length ~ mass")
 
 ```
-# uuup
+
 ```{r}
 #### BL clean
 lz.bl.fall <- lz.bl13.offt.fall %>%
@@ -4837,8 +4837,8 @@ offt.percbrowsed %>%
 
 ```
 
-# following no sense
-```{r}
+
+```{r, eval=FALSE}
 ### summary by site
 offt.percbrowsed.summary <- offt.percbrowsed %>% 
   group_by(yr, site_id) %>% 
@@ -4859,7 +4859,7 @@ offt.percbrowsed.summary %>%
 
 ```
 
-```{r}
+```{r, eval=FALSE}
 
 offt.percbrowsed.summary %>%
   ggplot(aes(yr, med)) +
