@@ -375,53 +375,54 @@ gt.siteinfo <- site.info.clean %>%
   gt::gt() %>%
   tab_header(title = md("**Valid EVMP plots from 'site_info' worksheet**"))
 
-gt.siteinfo <- gt.siteinfo %>%
-  tab_style(
-    style = list(
-      cell_fill(color = "lightcyan"),
-      cell_text(weight = "bold")
-      ),
-    locations = cells_data(
-      columns = vars(FENCED),
-      rows = FENCED == "Y")
-  ) %>%
-  tab_style(
-    style = list(
-      cell_fill(color = "ivory")),
-    locations = cells_data(
-      columns = vars(FENCED),
-      rows = FENCED == "N")
-  )
-
-## add color for pType
-gt.siteinfo %>%
-    tab_style(
-    style = list(
-      cell_fill(color = "lightgreen"),
-      cell_text(weight = "bold")
-      ),
-    locations = cells_data(
-      columns = vars(pType),
-      rows = pType == "willow")
-  ) %>%
-  tab_style(
-    style = list(
-      cell_fill(color = "ivory2"),
-      cell_text(weight = "bold")
-    ),
-    locations = cells_data(
-      columns = vars(pType),
-      rows = pType == "aspen")
-  ) %>%
-  tab_style(
-    style = list(
-      cell_fill(color = "pink"),
-      cell_text(weight = "bold")
-      ),
-    locations = cells_data(
-      columns = vars(pType),
-      rows = pType == "upland")
-  )
+# cells_data issue after package update
+# gt.siteinfo <- gt.siteinfo %>%
+#   tab_style(
+#     style = list(
+#       cell_fill(color = "lightcyan"),
+#       cell_text(weight = "bold")
+#       ),
+#     locations = cells_data(
+#       columns = vars(FENCED),
+#       rows = FENCED == "Y")
+#   ) %>%
+#   tab_style(
+#     style = list(
+#       cell_fill(color = "ivory")),
+#     locations = cells_data(
+#       columns = vars(FENCED),
+#       rows = FENCED == "N")
+#   )
+# 
+# ## add color for pType
+# gt.siteinfo %>%
+#     tab_style(
+#     style = list(
+#       cell_fill(color = "lightgreen"),
+#       cell_text(weight = "bold")
+#       ),
+#     locations = cells_data(
+#       columns = vars(pType),
+#       rows = pType == "willow")
+#   ) %>%
+#   tab_style(
+#     style = list(
+#       cell_fill(color = "ivory2"),
+#       cell_text(weight = "bold")
+#     ),
+#     locations = cells_data(
+#       columns = vars(pType),
+#       rows = pType == "aspen")
+#   ) %>%
+#   tab_style(
+#     style = list(
+#       cell_fill(color = "pink"),
+#       cell_text(weight = "bold")
+#       ),
+#     locations = cells_data(
+#       columns = vars(pType),
+#       rows = pType == "upland")
+#   )
 
 ```
 
@@ -8319,6 +8320,7 @@ upl.li %>%
 ```
 
 ## Wild Basin Comparisons
+
 
 ```{r}
 wbasin <- read_csv("./data/wild_basin/Wild Basin willow data survey 2018.csv")
