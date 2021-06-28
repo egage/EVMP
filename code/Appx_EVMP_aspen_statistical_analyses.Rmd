@@ -225,6 +225,9 @@ ht_perc1 <- ht_perc1 %>%
 
 # ht_perc1 %>% 
 #   distinct(site_type)
+
+asp.acanc <- ht_perc1 %>% 
+  filter(site_type == "AC" | site_type == "ANC") 
   
 asp.ac <- ht_perc1 %>% 
   filter(site_type == "AC") 
@@ -240,16 +243,17 @@ asp.ak <- ht_perc1 %>%
 
 # Results
 
-
+# good copy below
 ```{r}
 # purrr plots
 ht_perc1  %>% 
   group_nest(range_type) %>%
   # mutate(tbls = map(.x = data, .f = gt)) %>% 
   mutate(plots = map2(.y = range_type, .x = data, ~{ggplot(data = .x) +
-                              geom_boxplot(aes(y = stem_den_ac, x = time_class), fill="Gray80") +
-                              labs(title = paste0("Range type: ", .y), x = "", y = "Stem density (stems/acre)") +
-                              theme_minimal()})) %>% 
+      geom_boxplot(aes(y = stem_den_ac, x = time_class), fill="Gray80") +
+      geom_jitter(aes(y = stem_den_ac, x = time_class), fill="blue", alpha=0.25) +
+      labs(title = paste0("Range type: ", .y), x = "", y = "Stem density (stems/acre)") +
+      theme_minimal()})) %>% 
   pull(plots)
 
 ```
@@ -283,6 +287,169 @@ aov_model_asp_htperc <- aov(stemDen.ha ~ RANGE_TYPE*timeClass + Error(SITE_ID/(R
 aov_model_asp_htperc <- aov(stemDen.ha ~ RANGE_TYPE*timeClass + Error(1/SITE_ID), data = ht_perc1)
 
 ```
+
+# DOWN
+## Aspen Stem Count - Combined Winter Range (AC+ANC)
+
+### Modeling and Posterior Description
+
+```{r, eval=FALSE}
+#### Main Factors Only
+## Not run. Used in model comparisons, but model w/ interaction selected
+asp.acanc <- asp.acanc %>%
+  mutate(stem_den_ha = stem_den_ha + 0.0000001)
+
+## poisson
+stmod_stally1.acanc <- stan_glmer(stem_tally ~ time_class + fenced + (1 | site_id), data = asp.acanc,
+                      family=poisson,
+                      iter = 8000,
+                      seed = 1234
+                      )
+prior_summary(stmod_stally1.acanc)
+pp_check(stmod_stally1.acanc)
+```
+
+```{r}
+#### main factors + interactions:
+stmod_stally2.acanc <- stan_glmer(stem_tally ~ time_class * fenced + (1 | site_id), data = asp.acanc,
+                      family= poisson,
+                      iter = 8000,
+                      seed = 1234
+                      )
+
+```
+
+**Prior summary**: stem_tally ~ time_class * fenced + (1 | site_id)  
+```{r}
+prior_summary(stmod_stally2.acanc)
+```
+
+```{r}
+## model summary
+fun.model.summary(stmod_stally2.acanc)
+```
+
+```{r}
+# extract posteriors
+posteriors.acanc.stcnt <- insight::get_parameters(stmod_stally2.acanc)
+
+# tidy
+posteriors.acanc.stcnt.tidy <- posteriors.acanc.stcnt %>%
+  pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
+
+```
+
+### Effect Existence and Significance Testing
+```{r}
+fun.sexit.gt(stmod_stally2.acanc)
+
+fun.sexit.gt(stmod_stally2.acanc) %>%
+ tab_header(title = "Aspen Count Posterior Description", subtitle = "Core Winter Range") %>%
+  gt::gtsave(filename = "./output/tables/aspen_stem_count/xpostdesc_stemcnt_TCxF_ac.rtf")
+
+```
+
+
+```{r, echo=FALSE, eval=FALSE}
+### Model posterior parameters to table
+fun.desc.post1.gt.rope(stmod_stally2.acanc) %>% 
+  tab_header(title = "Aspen Count Posterior Description", subtitle = "Core Winter Range")
+
+## save as RTF
+fun.desc.post1.gt.rope(stmod_stally2.acanc) %>%
+ tab_header(title = "Aspen Count Posterior Description", subtitle = "Core Winter Range") %>%
+  gt::gtsave(filename = "./output/tables/aspen_stem_count/postdesc_stemcnt_TCxF_ac.rtf")
+
+```
+
+```{r}
+# library(ggridges)
+posteriors.acanc.stcnt.tidy %>% 
+  ggplot() +
+  geom_density(aes(fill = parameter, x = values, color = parameter), alpha = .12) +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  theme_minimal() +
+  labs(caption = "ACANC")
+
+# save plots
+ggsave("./output/figures_exported/aspen_stem_count/postden_stemcnt_acanc.png", dpi = 300, width = 4.75, height = 3.75)
+ggsave("./output/figures_exported/aspen_stem_count/postden_stemcnt_acanc.pdf", width = 4.75, height = 3.75)
+```
+
+#### Probability of Direction
+```{r}
+# Visualize the pd
+#### PD - AC
+p_direction(stmod_stally2.acanc) %>% 
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Aspen stem count, all winter range")
+
+# save plots
+ggsave("./output/figures_exported/aspen_stem_count/pd_stemcnt_acanc.png", dpi = 300, width = 4.75, height = 3.75)
+ggsave("./output/figures_exported/aspen_stem_count/pd_stemcnt_acanc.pdf", width = 4.75, height = 3.75)
+
+```
+
+#### Region of Practical Equivalence (ROPE)
+```{r}
+rope.stemcnt.ac <- rope(stmod_stally2.acanc, ci=0.9) %>% 
+  gt() %>%
+  tab_header(title = "Percent in ROPE") %>% 
+  fmt_number(
+    columns = 5,
+    decimals = 1,
+    suffixing = TRUE
+  ) 
+
+rope.stemcnt.ac %>% 
+  gt::gtsave(filename = "./output/tables/aspen_stem_count/rope_stemcnt_acanc.rtf")
+
+```
+
+### Contrasts
+```{r}
+#### Contrasts
+# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE).
+
+# library(emmeans)
+emmeans(stmod_stally2.acanc, ~ time_class | fenced) %>% 
+  pairs(reverse = TRUE) %>% 
+  # plot(type = "response") +
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  # labs(title= "Core winter range", caption = "Point estimate displayed: median 
+# HPD interval probability: 0.95, Results on log scale", x = "Estimate", y = "Contrast")
+  labs(subtitle = "Point estimate displayed: median HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "All Winter Range, Aspen Stem Count, Results are given on the log scale")
+
+
+# ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_acanc.pdf", width = 4.5, height = 3.55) # save plot
+# ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_acanc.png", width = 4.5, height = 3.55) # save plot
+
+# table of contrasts. Results are given on the log (not the response) scale.
+emmeans(stmod_stally2.acanc, ~ time_class | fenced) %>% 
+  pairs(reverse = TRUE) %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the log (not the response) scale.")
+
+# table of contrasts. Results are given on the response scale.
+emmeans(stmod_stally2.acanc, ~ time_class | fenced) %>% 
+  pairs(reverse = TRUE, type="response") %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the response scale.")
+
+# EMM summaries with type = "response", the tests and confidence intervals are done before back-transforming. The ratios estimated here are actually ratios of geometric means. In general, a model with a log response is in fact a model for relative effects of any of its linear predictors, and this back-transformation to ratios goes hand-in-hand with that.
+
+```
+
+# >up
+
 
 ## Aspen Stem Count - Core Winter Range (AC)
 
