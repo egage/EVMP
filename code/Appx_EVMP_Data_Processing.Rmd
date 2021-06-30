@@ -107,6 +107,48 @@ ggTile_yr_season_site <- function(df){
 
 ```
 
+```{r}
+# custom gradients
+dbhclass.gradient5 <- c("#26185F", "#0095AF", "#9ADCBB", "#FCFFDD", "grey50")
+
+colfunc1<-colorRampPalette(c("#26185F","#0095AF","#9ADCBB", "#FCFFDD"))
+colfunc2<-colorRampPalette(c("#0095AF","#9ADCBB", "#FCFFDD"))
+# plot(rep(1,50),col=(colfunc1(50)), pch=19,cex=2)
+# plot(rep(1,5),col=(colfunc1(5)), pch=19,cex=2)
+# plot(rep(1,3),col=(colfunc2(3)), pch=19,cex=2)
+pal.5a <- colfunc1(5) #%>% 
+  # toString()
+pal.7a <- colfunc1(7)
+
+# toString(pal.5a)
+# colfunc<-colorRampPalette(c("red","yellow","springgreen","royalblue"))
+# plot(rep(1,50),col=(colfunc(50)), pch=19,cex=2)
+
+# scrap
+# df <- data.frame(
+#   x = runif(100),
+#   y = runif(100),
+#   z1 = rnorm(100),
+#   z2 = abs(rnorm(100))
+# )
+# 
+# df_na <- data.frame(
+#   value = seq(1, 20),
+#   x = runif(20),
+#   y = runif(20),
+#   z1 = c(rep(NA, 10), rnorm(10))
+# )
+# 
+# ggplot(df, aes(x, y)) +
+#   geom_point(aes(colour = z1)) +
+#   scale_colour_gradientn(colours = terrain.colors(10))
+# 
+# ggplot(df, aes(x, y)) +
+#   geom_point(aes(colour = z1)) +
+#   scale_colour_gradientn(colours = colfunc1(5))
+
+```
+
 # Introduction
 
 This document contains code for combining, cleaning, and exploring raw
@@ -611,26 +653,14 @@ pl.hm1 <- site.info.clean.sf %>%
   ggplot(aes(FENCED, valley_full)) +
   geom_tile(aes(fill = n), color= 'white') +
   geom_text(aes(label=n), size=6, color = 'white') +
+  geom_text(aes(label=n), size=6, color = 'grey', alpha=.75) +
   theme_minimal() +
-  scale_fill_viridis() +
+  scale_fill_gradientn(colours = colfunc1(5)) +
+  # scale_fill_viridis() +
   facet_wrap(~pType) +
   labs(x="Fenced", y = "", title = "Count of EVMP sampling sites")
 
-# ggsave(plot = pl.hm1, filename = "./output/figures_exported/descriptive_background/cnt_plot_valley_x_fenced.png", width = 5, height = 4, dpi = 300)
-
-# pl.hm2 <- site.info.clean.sf %>%
-#   filter(!is.na(FENCED)) %>% 
-#   group_by(FENCED,pType) %>% 
-#   tally() %>% 
-#   ungroup() %>%
-#   ggplot(aes(FENCED, pType)) +
-#   geom_tile(aes(fill = n), color= 'white') +
-#   geom_text(aes(label=n), size=6, color = 'white') +
-#   theme_minimal() +
-#   scale_fill_viridis() +
-#   labs(x="Fenced", y = "", title = "Count of EVMP sampling sites", subtitle = "By plot type and fenced status")
-
-# ggsave(plot = pl.hm2, filename = "./output/figures_exported/descriptive_background/cnt_ptype_x_fenced.png", width = 5, height = 4, dpi = 300)
+ggsave(plot = pl.hm1, filename = "./output/figures_exported/descriptive_background/cnt_plot_valley_x_fenced.png", width = 5, height = 4, dpi = 300)
 
 pl.hm1
 # pl.hm2
@@ -1345,8 +1375,10 @@ csv.wil.lc.li.df %>%
   filter(SPECIES_CODE != "SAXX") %>% 
   ggplot(aes(timeClass, SPECIES_CODE)) +
   geom_tile(aes(fill=mean.max.ht),color = 'white') +
-  scale_fill_viridis(option = "A") +
+  # scale_fill_viridis(option = "A") +
+  scale_fill_gradientn(colours = colfunc1(5)) +
   geom_text(aes(label=mean.max.ht), color = 'white', size = 3.75) +
+  geom_text(aes(label=mean.max.ht), color = 'grey', size = 3.75, alpha=0.7) +
   theme_minimal() +
   labs(title = "Maximum shrub height", subtitle = "Mean of shrub height pooled by fenced status", x = "Year", y = "Species", fill = "cm") +
   facet_grid(SITE_TYPE~FENCED)
@@ -1369,12 +1401,11 @@ csv.all.lc.li.df %>%
   filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR"& SPECIES_CODE !="SAER") %>%
   filter(str_detect(SPECIES_CODE, "^SA")) %>%
   ggplot() +
-  ggridges::geom_density_ridges(aes(x = MAX_HEIGHT_CM, y =  yr, fill = SITE_TYPE), alpha = 0.45, ) +
-  viridis::scale_fill_viridis(discrete = TRUE, option = "D") +
+  ggridges::geom_density_ridges(aes(x = MAX_HEIGHT_CM, y =  yr), alpha = 0.45, ) +
+  # viridis::scale_fill_viridis(discrete = TRUE, option = "D") +
   theme_minimal() +
   facet_wrap(~SITE_TYPE, ncol = 1) +
-  labs(x = "Max height (cm)", y = "Year", caption = "SAMO") +
-  coord_flip()
+  labs(x = "Max height (cm)", y = "Year", caption = "SAMO")
 
 ```
 
@@ -1387,16 +1418,11 @@ csv.all.lc.li.df %>%
   # filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR"& SPECIES_CODE !="SAER") %>%
   # filter(str_detect(SPECIES_CODE, "^SA")) %>%
   ggplot() +
-  # geom_point(aes(x = yr, y = MAX_HEIGHT_CM)) +
-  geom_boxplot(aes(x = yr, y = MAX_HEIGHT_CM)) +
-  # ggridges::geom_density_ridges(aes(x = MAX_HEIGHT_CM, y =  yr, fill = SITE_TYPE), alpha = 0.45, ) +
-  viridis::scale_fill_viridis(discrete = TRUE, option = "D") +
+  geom_boxplot(aes(x = yr, y = MAX_HEIGHT_CM), fill = "grey90") +
   theme_minimal() +
   facet_grid(SITE_TYPE ~ SPECIES_CODE) +
   # facet_wrap(~SITE_TYPE, ncol = 1) +
-  labs(y = "Max height (cm)", x = "Year", caption = "SAMO") #+
-  # coord_flip()
-
+  labs(y = "Max height (cm)", x = "Year", caption = "SAMO")
 
 ```
 
@@ -1417,51 +1443,32 @@ csv.all.lc.li.df %>%
 
 ```
 
-*Salix planifolia*
+*Salix gereyiana*
 
 ```{r}
-## another species: SAPL
+## another species: SAGE
 csv.all.lc.li.df %>%
   filter(yr !=2009 & yr != 2015 & yr !=2017) %>%
-  # filter(yr == 2018) %>%
-  # distinct(SPECIES_CODE)
   filter(SITE_TYPE == "WC") %>%
-  # filter(SITE_TYPE != "WK") %>% # leave out KW
-  # filter(SPECIES_CODE == "SAPL") %>%
-  filter(SPECIES_CODE == "SAMO" | SPECIES_CODE == "SAGE") %>%
+  filter(SPECIES_CODE == "SAGE") %>%
   filter(!is.na(MAX_HEIGHT_CM)) %>%
   filter(str_detect(SPECIES_CODE, "^SA")) %>% 
   filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR"& SPECIES_CODE !="SAER") %>%
   filter(str_detect(SPECIES_CODE, "^SA")) %>%
   ggplot() +
   ggridges::geom_density_ridges(aes(x = MAX_HEIGHT_CM, y =  yr, fill = FENCED), alpha = 0.45, ) +
-  viridis::scale_fill_viridis(discrete = TRUE, option = "D") +
+  scale_fill_manual(values = colfunc1(2)) +
+  # viridis::scale_fill_viridis(discrete = TRUE, option = "D") +
   theme_minimal() +
   # facet_wrap(~SITE_TYPE, ncol = 1) +
   facet_grid(SPECIES_CODE~SITE_TYPE) +
   labs(x = "Max height (cm)", y = "Year", caption = "Line intercept data")
 
-
 ```
 
 ```{r, eval=FALSE, fig.height=9, fig.width=8}
 
-csv.all.lc.li.df %>% 
-  filter(!is.na(MAX_HEIGHT_CM)) %>%
-  filter(str_detect(SPECIES_CODE, "^SA")) %>% 
-  filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER") %>%
-  group_by(yr, SPECIES_CODE) %>% 
-  summarise_if(is.numeric, median, na.rm = TRUE) %>% 
-  ungroup() %>% 
-  mutate(yr = as.character(yr)) %>% 
-  mutate(yr = as.numeric(yr)) %>%
-  ggplot(aes(x = yr, y = MAX_HEIGHT_CM)) +
-  geom_point(aes(color = SPECIES_CODE))  +
-  geom_line(aes(color = SPECIES_CODE))# +
-  # geom_smooth(aes(color = SPECIES_CODE))
-
 ### Max shrub height
-
 csv.all.lc.li.df %>% 
   filter(!is.na(MAX_HEIGHT_CM)) %>%
   filter(str_detect(SPECIES_CODE, "^SA")) %>% 
@@ -1471,12 +1478,12 @@ csv.all.lc.li.df %>%
   # summarise(mean.max.ht = mean(MAX_HEIGHT_CM,na.rm=TRUE)) %>% 
   ggplot(aes(yr, MAX_HEIGHT_CM)) +
   geom_boxplot(aes(fill=SITE_TYPE), color = 'black') +
-  scale_fill_viridis(discrete = TRUE) +
+  scale_fill_manual(values = colfunc2(3)) +
+  # scale_fill_viridis(discrete = TRUE) +
   # theme_minimal() +
   theme_minimal() +
   labs(title = "Maximum shrub height by year, species and Site Type", x = "Year", y = "Species")+
-  facet_wrap(~SPECIES_CODE, ncol = 3)# %>%
-  # facet_grid(SPECIES_CODE~yr, scales = "free_x")
+  facet_wrap(~SPECIES_CODE, ncol = 3)
 
 ```
 
@@ -1492,6 +1499,8 @@ csv.all.lc.li.df %>%
   filter(SITE_TYPE == "WC") %>% 
   ggplot(aes(yr, MAX_HEIGHT_CM)) +
   geom_boxplot(aes(fill=FENCED), color = 'black') +
+  scale_fill_manual(values=c("grey90","grey50")) +
+  # scale_fill_manual(values = colfunc2(2)) +
   # scale_fill_viridis(discrete = TRUE) +
   # theme_minimal() +
   theme_minimal() +
@@ -1513,12 +1522,15 @@ csv.all.lc.li.df %>%
   geom_boxplot(aes(fill=FENCED), color = 'black', outlier.shape = NA) +
   theme_minimal() +
   ylim(0, 350) +
-  scale_fill_manual(values = c("ivory2","lightblue")) +
-  labs(x = "", y = "Max height (cm)", fill = "", title = "Core Winter Range Plots: All Willow Species", caption = "Line intercept data")
+  # scale_fill_manual(pal.5a) +
+  # scale_fill_manual(values = c("ivory2","lightblue")) +
+  scale_fill_manual(values = c("grey90","grey50")) +
+  labs(x = "", y = "Max height (cm)", fill = "", title = "Core Winter Range Plots: All Willow Species", caption = "Line intercept data, WC")
   
-# ggsave("./output/figures/WC_all_willow_boxplot01.png", width = 6, height = 4.5, dpi= 300)
+ggsave("./output/figures/wc_all_willow_boxplot01.png", width = 6, height = 4.5, dpi= 300)
 
 ```
+
 
 ```{r, eval=TRUE}
 ## salix monitcola
@@ -1532,10 +1544,9 @@ csv.all.lc.li.df %>%
   filter(SITE_TYPE == "WC") %>% 
   ggplot(aes(yr, MAX_HEIGHT_CM)) +
   geom_boxplot(aes(fill=FENCED), color = 'black', outlier.shape = NA) +
-  scale_fill_viridis(discrete = TRUE) +
   theme_minimal() +
   ylim(0,320) +
-  scale_fill_manual(values = c("ivory2","lightgreen")) +
+  scale_fill_manual(values = c("grey90","grey50")) +
   labs(x = "Year", y = "Max height (cm)", fill = "Fenced") +
   labs(x = "Year", y = "Max height (cm)", fill = "", title = "Core Winter Range Plots: SAMO only", caption = "Line intercept data")
   # labs(title = "Salix monticola maximum shrub height by year, fencing", x = "Year", y = "Species")
@@ -1551,22 +1562,16 @@ csv.all.lc.li.df %>%
   filter(pType == "willow") %>% 
   filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
   filter(!is.na(MAX_HEIGHT_CM)) %>%
-  # filter(str_detect(SPECIES_CODE, "^SA")) %>% 
-  # filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER") %>%
-  # filter(SPECIES_CODE !="SAXX") %>% 
-  # filter(SPECIES_CODE =="SAMO") %>% 
-  # distinct(SPECIES_CODE)
   filter(SITE_TYPE == "WC") %>% 
   ggplot(aes(yr, MAX_HEIGHT_CM)) +
   geom_boxplot(aes(fill=FENCED), color = 'black', outlier.shape = NA) +
-  scale_fill_viridis(discrete = TRUE) +
+  # scale_fill_viridis(discrete = TRUE) +
   # theme_minimal() +
   theme_minimal() +
   ylim(0,320) +
-  scale_fill_manual(values = c("ivory2","slategray")) +
+  scale_fill_manual(values = c("grey90","grey50")) +
   # labs(x = "Year", y = "Max height (cm)", fill = "Fenced?") +
   labs(x = "Year", y = "Max height (cm)", fill = "", title = "Core Winter Range Plots: All Shrub Species", caption = "Line intercept data")
-  # labs(title = "Salix monticola maximum shrub height by year, fencing", x = "Year", y = "Species")
 
 # ggsave("./output/figures/WC_willLI_allShrubSpp_bxplt01.png", width = 6, height = 4.5, dpi= 300)
 
@@ -1695,8 +1700,8 @@ csv.all.lc.li.df %>%
   # geom_smooth(aes(color = FENCED), se = FALSE) +
   geom_smooth(aes(color = FENCED), method = "lm", se = FALSE) +
   geom_jitter(aes(color = FENCED, shape = FENCED)) +
-  scale_shape_manual(values = c(21,24)) + 
   scale_color_manual(values = c("blue", "black")) +
+  scale_shape_manual(values = c(21,24)) +
   theme_minimal() +
   # scale_fill_manual(values = c("ivory2","lightblue")) +
   labs(title = "Core winter range sites: maximum shrub height by year, fencing", x = "Year", color = "", shape = "", y = "Height (cm)", caption = "SAMO,SAPL, SAGE, SABE,SADR,SAPE,SAER")  +
@@ -1741,13 +1746,10 @@ csv.all.lc.li.df %>%
   filter(SPECIES_CODE != "SAXX") %>%
   filter(yr == 2008 | yr == 2009 | yr == 2013 | yr == 2018) %>%
   filter(FENCED == "Unfenced" | FENCED == "Fenced") %>% 
-  # filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SAER") %>%
   filter(SITE_TYPE == "WC") %>%
   mutate(yr = as.character(yr)) %>% 
   mutate(yr = anytime::anytime(yr)) %>% 
-  # mutate(yr = as.integer(yr)) %>% 
   ggplot(aes(x = yr, y = MAX_HEIGHT_CM)) +
-  # geom_smooth(aes(color = FENCED), se = FALSE) +
   geom_smooth(aes(color = FENCED, lty = FENCED), method = "lm", se = FALSE) +
  geom_jitter(aes(color = FENCED, shape = FENCED)) +
   scale_shape_manual(values = c(21,24)) + 
@@ -1875,15 +1877,15 @@ csv.all.lc.mcro.df %>%
   tabyl(timeClass, BURNED) %>% 
   gt()
 
-# moving forward treating them as the second scenario for now...
+# moving forward treating them as the second scenario...
 ```
 
 ```{r}
 #### Calculate cover
 # prep the percent cover. As character in the raw data. Assume NA 0
 csv.all.lc.mcro.df <- csv.all.lc.mcro.df %>% 
-  mutate(PERCENT_PLANT_IN_PLOT = as.numeric(PERCENT_PLANT_IN_PLOT)) %>% 
-  mutate(PERCENT_PLANT_IN_PLOT = replace_na(data = PERCENT_PLANT_IN_PLOT, replace = 0))
+  mutate(PERCENT_PLANT_IN_PLOT = replace_na(data = PERCENT_PLANT_IN_PLOT, replace = 0)) %>% 
+  mutate(PERCENT_PLANT_IN_PLOT = as.numeric(PERCENT_PLANT_IN_PLOT))
 
   # mutate(PERCENT_PLANT_IN_PLOT = case_when(is.na(PERCENT_PLANT_IN_PLOT) ~ 1,
   #        TRUE ~ PERCENT_PLANT_IN_PLOT)) %>% # note: opposite assumption with what to do with NA
@@ -2003,7 +2005,7 @@ canopy.willow.allspp %>%
 canopy.all.willow.sum <- anti_join(canopy.all.willow.sum, lu.removed.plot, by="SITE_ID")
 
 canopy.all.willow.sum %>%
-  write_csv("./output/exported_data/willow_macroplot_cover_BLto2018.csv") # re-exported 2/22/21
+  write_csv("./output/exported_data/willow_macroplot_cover_BLto2018.csv") # re-exported 6/28/21
 
 ```
 
@@ -2054,12 +2056,14 @@ canopy.all.willow.sum %>%
   summarise(mean.will.cov = mean(cover.allwillow, na.rm = TRUE), 
             sd.will.cov  = sd(cover.allwillow, na.rm = TRUE), 
             med.will.cov = median(cover.allwillow, na.rm = TRUE)) %>% 
+  mutate(across(where(is.double), round, 2)) %>% 
   gt()
 
 canopy.all.willow.sum %>% 
   filter(SITE_TYPE == "WC" | SITE_TYPE == "WNC") %>%
   group_by(SITE_TYPE, timeClass) %>% 
   summarise(mean.will.cov = mean(cover.allwillow, na.rm = TRUE), sd.will.cov  = sd(cover.allwillow, na.rm = TRUE), med.will.cov = median(cover.allwillow, na.rm = TRUE), n.obs = n()) %>% 
+  mutate(across(where(is.double), round, 2)) %>% 
   gt()
 
 ```
@@ -2096,14 +2100,22 @@ canopy.all.willow.sum  %>%
 # purrr plots
 tmp2 <- canopy.all.willow.sum  %>% 
   group_nest(LOCATION) %>%
-  mutate(tbls = map(.x = data, .f = gt)) %>% 
+  mutate(tbls = map(.x = data, .f = datatable)) %>% 
   mutate(plots = map2(.y = LOCATION, .x = data, ~{ggplot(data = .x) +
-                              geom_boxplot(aes(y = cover.allwillow, x = timeClass), fill="Gray80") +
+                              geom_boxplot(aes(y = cover.allwillow, x = timeClass), fill="Gray40") +
                               # ggtitle(paste0("Willow cover, site: ", .y)) +
-                              labs(title = paste0("Location: ", .y), x = "", y = "Willow cover (%)") +
+                              geom_hline(aes(yintercept = 31), color = "red", lty = "dashed", size = 1) +
+      labs(title = paste0("Location: ", .y), x = "", y = "Willow cover (%)") +
                               theme_minimal()}))
 tmp2 %>% 
   pull(plots)
+
+
+```
+
+```{r, eval=FALSE}
+tmp2 %>% 
+  pull(tbls)
 
 ```
 
@@ -2119,7 +2131,7 @@ wc.cov.pl1 <- canopy.all.willow.sum %>%
   labs(x = "", y = "% cover", caption = "All elk range - Combined WC and WNC plots") +
   theme_minimal()
 
-wc.cov.pl1
+# wc.cov.pl1
 # ggsave("./output/figures_exported/All_winter_range_willow_cov_boxplot.png", width = 3.75, height = 3.75)
 
 wc.cov.pl2 <- canopy.all.willow.sum %>% 
@@ -2132,12 +2144,12 @@ wc.cov.pl2 <- canopy.all.willow.sum %>%
   geom_hline(aes(yintercept = 31), color = "red", lty = "dashed", size = 1) +
   labs(fill = "", x = "", y = "% cover", caption = "All elk range - Combined WC and WNC plots") +
   theme_minimal()
-wc.cov.pl2
+# wc.cov.pl2
 # ggsave("./output/figures_exported/All_winter_range_willow_cov_boxplot_b.png", width = 4.5, height = 3.75)
 
 cowplot::plot_grid(wc.cov.pl1, wc.cov.pl2, labels = "AUTO",rel_widths = c(1, 2))
 
-# ggsave("./output/figures_exported/All_winter_range_willow_cov_boxplot_2panel_revised.png", width = 6.5, height = 3.75)
+ggsave("./output/figures_exported/All_winter_range_willow_cov_boxplot_2panel_revised.png", width = 6.5, height = 3.75)
 ```
 
 ```{r}
@@ -2248,10 +2260,18 @@ canopy.all.willow.sum %>%
   tb() %>% 
   mutate_if(is.numeric, round,1) %>% 
   select(-c(variable,pct.valid)) %>% 
-  datatable()
+  # datatable()
+  datatable(.,extensions = 'Buttons', 
+            options = list(scrollX=TRUE, lengthMenu = c(5,10,15),
+                           paging = TRUE, searching = TRUE,
+                           fixedColumns = TRUE, autoWidth = TRUE,
+                           ordering = TRUE, dom = 'tB',
+                           buttons = c('copy', 'csv')))
+
+
 
 ```
-
+# check up
 ```{r}
 ## burned and fenced: separated by range type 
 ##### summary tables for cover

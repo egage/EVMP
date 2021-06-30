@@ -44,6 +44,19 @@ library(ggcorrplot)
 
 ```
 
+```{r}
+# custom gradients
+dbhclass.gradient5 <- c("#26185F", "#0095AF", "#9ADCBB", "#FCFFDD", "grey50")
+
+colfunc1<-colorRampPalette(c("#26185F","#0095AF","#9ADCBB", "#FCFFDD"))
+colfunc2<-colorRampPalette(c("#0095AF","#9ADCBB", "#FCFFDD"))
+# plot(rep(1,50),col=(colfunc1(50)), pch=19,cex=2)
+# plot(rep(1,5),col=(colfunc1(5)), pch=19,cex=2)
+pal.5a <- colfunc1(5)
+pal.7a <- colfunc1(7)
+
+```
+
 # Introduction  
 This document contains code for running ancillary analyses of Elk
 Vegetation Management Plan (EVMP) data collected through the 2018
