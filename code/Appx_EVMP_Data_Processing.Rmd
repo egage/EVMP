@@ -3596,7 +3596,7 @@ willow.mcro.all %>%
   tab_header(title = "WC+WNC: fenced burned")
 ```
 
-#### Range-wide
+#### Range-wide summary
 
 ```{r}
 

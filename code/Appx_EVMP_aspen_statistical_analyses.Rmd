@@ -138,17 +138,30 @@ desc.post1 <- function(model){
 ```
 
 ```{r}
-# custom gradients
+# custom gradients and palettes
 dbhclass.gradient5 <- c("#26185F", "#0095AF", "#9ADCBB", "#FCFFDD", "grey50")
 
 colfunc1<-colorRampPalette(c("#26185F","#0095AF","#9ADCBB", "#FCFFDD"))
 colfunc2<-colorRampPalette(c("#0095AF","#9ADCBB", "#FCFFDD"))
+colfunc3_RdBu <- colorRampPalette(c("#EF8A62", "#FDDBC7", "#D1E5F0", "#67A9CF"))
+
 # plot(rep(1,50),col=(colfunc1(50)), pch=19,cex=2)
 # plot(rep(1,5),col=(colfunc1(5)), pch=19,cex=2)
 pal.5a <- colfunc1(5)
 pal.7a <- colfunc1(7)
 
+# palette3 <- RColorBrewer::brewer.pal(6,"RdBu")
+# RColorBrewer::display.brewer.pal(6,"RdBu")
 ```
+
+<details><summary>Click here</summary>
+Some text
+
+```{r code}
+# even code
+print("Hello world!")
+```
+</details>
 
 # Introduction
 
@@ -234,11 +247,20 @@ dbh_perc1 <- dbh_perc1 %>%
   mutate(RANGE_TYPE = fct_relevel(RANGE_TYPE, "core winter range","non-core winter range","Kawuneeche Valley"))  
 
 ```
-
+# here factor conversions...
 ```{r}
 ht_perc1 <- ht_perc1 %>% 
   clean_names() %>% 
   rename(htclass2 = h_tclass2)
+
+# convert 'fenced' to factor
+ht_perc1 <- ht_perc1 %>%
+  mutate(fenced = as_factor(fenced)) 
+
+ht_perc1 %>% 
+  glimpse()
+
+levels(ht_perc1$fenced)
 
 dbh_perc1 <- dbh_perc1 %>% 
   clean_names()
@@ -338,10 +360,7 @@ asp.lg.ak <- ht_perc1 %>%
 
 # Results
 
-# below
-
 ## Aspen Density, Comparison of Sapling Classes
-
 ```{r, ech=FALSE, eval=FALSE}
 
 ht_perc1 %>%
@@ -398,7 +417,7 @@ posteriors.acanc.stcnt.sm.tidy <- posteriors.acanc.stcnt.sm %>%
 ```
 
 ```{r}
-color_scheme_set("darkgray")
+color_scheme_set("teal")
 mcmc_areas(posteriors.acanc.stcnt.sm,
            prob = 0.9) +
   ggtitle("Posterior distributions",
@@ -516,10 +535,529 @@ emmeans(stmod_stally2.acanc.sm, ~ time_class | fenced) %>%
 ```
 
 ## Aspen Density, Short Saplings (<=1.5 m) - Core Winter Range (AC)
+```{r}
+asp.sm.ac <- asp.sm.ac %>%
+  mutate(stem_den_ha = stem_den_ha + 0.0000001) 
+```
+
+### Modeling and Posterior Description  
+```{r}
+#### main factors + interactions:
+stmod_stally2.ac.sm <- stan_glmer(stem_tally ~ time_class * fenced + (1 | site_id), data = asp.sm.ac,
+                      family= poisson,
+                      iter = 5000,
+                      seed = 1234
+                      )
+
+```
+
+**Prior summary**: stem_tally ~ time_class * fenced + (1 | site_id)  
+```{r}
+prior_summary(stmod_stally2.ac.sm)
+```
+
+```{r}
+## model summary
+fun.model.summary(stmod_stally2.ac.sm)
+```
+
+```{r}
+# extract posteriors
+posteriors.ac.stcnt.sm <- insight::get_parameters(stmod_stally2.ac.sm)
+
+# tidy
+posteriors.ac.stcnt.sm.tidy <- posteriors.ac.stcnt.sm %>%
+  pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
+
+```
+
+```{r}
+color_scheme_set("teal")
+mcmc_areas(posteriors.ac.stcnt.sm,
+           prob = 0.9) +
+  ggtitle("Posterior distributions",
+                      "with medians and 90% credible intervals")
+```
+
+### Effect Existence and Significance Testing
+```{r}
+fun.sexit.gt(stmod_stally2.ac.sm)
+
+fun.sexit.gt(stmod_stally2.ac.sm) %>%
+ tab_header(title = "Aspen Count Posterior Description", subtitle = "Small Saplings, Core Winter Range") %>%
+  gt::gtsave(filename = "./output/tables/aspen_stem_count/xpostdesc_stemcnt_TCxF_ac_smsap.rtf")
+
+```
+
+
+```{r, echo=FALSE, eval=FALSE}
+### Model posterior parameters to table
+fun.desc.post1.gt.rope(stmod_stally2.ac.sm) %>% 
+  tab_header(title = "Aspen Count Posterior Description", subtitle = "Small Saplings, Core Winter Range")
+
+## save as RTF
+fun.desc.post1.gt.rope(stmod_stally2.ac.sm) %>%
+ tab_header(title = "Aspen Count Posterior Description", subtitle = "Small Saplings, Core Winter Range") %>%
+  gt::gtsave(filename = "./output/tables/aspen_stem_count/postdesc_stemcnt_TCxF_ac_smsap.rtf")
+
+```
+
+```{r}
+# library(ggridges)
+posteriors.ac.stcnt.sm.tidy %>% 
+  ggplot() +
+  geom_density(aes(fill = parameter, x = values, color = parameter), alpha = .12) +
+  # scale_fill_manual(values = colfunc2(ncol(posteriors.ac.stcnt.sm.tidy))) +
+  # scale_fill_brewer(palette = "Set1") +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  theme_minimal()
+
+# save plots
+ggsave("./output/figures_exported/aspen_stem_count/postden_stemcnt_ac_smsap.png", dpi = 300, width = 4.75, height = 3.75)
+ggsave("./output/figures_exported/aspen_stem_count/postden_stemcnt_ac_smsap.pdf", width = 4.75, height = 3.75)
+```
+
+#### Probability of Direction
+```{r}
+# Visualize the pd
+#### PD - AC
+p_direction(stmod_stally2.ac.sm) %>% 
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Aspen stem count, Small Saplings, Core Winter Range")
+
+# save plots
+ggsave("./output/figures_exported/aspen_stem_count/pd_stemcnt_ac_smsap.png", dpi = 300, width = 4.75, height = 3.75)
+ggsave("./output/figures_exported/aspen_stem_count/pd_stemcnt_ac_smsap.pdf", width = 4.75, height = 3.75)
+
+```
+
+#### Region of Practical Equivalence (ROPE)
+```{r}
+rope.stemcnt.ac.sm <- rope(stmod_stally2.ac.sm, ci=0.9) %>% 
+  gt() %>%
+  tab_header(title = "Percent in ROPE") %>% 
+  fmt_number(
+    columns = 5,
+    decimals = 1,
+    suffixing = TRUE
+  ) 
+
+rope.stemcnt.ac.sm %>% 
+  gt::gtsave(filename = "./output/tables/aspen_stem_count/rope_stemcnt_ac_smap.rtf")
+
+```
+
+### Contrasts
+```{r}
+#### Contrasts
+# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE).
+
+# library(emmeans)
+emmeans(stmod_stally2.ac.sm, ~ time_class | fenced) %>% 
+  pairs(reverse = FALSE) %>% 
+  # plot(type = "response") +
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  # labs(title= "Core winter range", caption = "Point estimate displayed: median 
+# HPD interval probability: 0.95, Results on log scale", x = "Estimate", y = "Contrast")
+  labs(subtitle = "Point estimate displayed: median HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Aspen Stem Count, Small Saplings. Results are given on the log scale")
+
+
+ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_ac_smsap.pdf", width = 4.5, height = 3.55) # save plot
+ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_ac_smsap.png", width = 4.5, height = 3.55) # save plot
+
+# table of contrasts. Results are given on the log (not the response) scale.
+emmeans(stmod_stally2.ac.sm, ~ time_class | fenced) %>% 
+  pairs(reverse = FALSE) %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the log (not the response) scale.")
+
+# table of contrasts. Results are given on the response scale.
+emmeans(stmod_stally2.ac.sm, ~ time_class | fenced) %>% 
+  pairs(reverse = FALSE, type="response") %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the response scale.")
+
+# EMM summaries with type = "response", the tests and confidence intervals are done before back-transforming. The ratios estimated here are actually ratios of geometric means. In general, a model with a log response is in fact a model for relative effects of any of its linear predictors, and this back-transformation to ratios goes hand-in-hand with that.
+
+```
 
 ## Aspen Density, Short Saplings (<=1.5 m) - Noncore Winter Range (ANC)
 
+```{r}
+asp.sm.anc <- asp.sm.anc %>%
+  mutate(stem_den_ha = stem_den_ha + 0.0000001) 
+```
+
+### Modeling and Posterior Description  
+```{r}
+#### main factors + interactions:
+stmod_stally2.anc.sm <- stan_glmer(stem_tally ~ time_class + (1 | site_id), data = asp.sm.anc,
+                      family= poisson,
+                      iter = 5000,
+                      seed = 1234
+                      )
+
+```
+
+**Prior summary**: stem_tally ~ time_class * fenced + (1 | site_id)  
+```{r}
+prior_summary(stmod_stally2.anc.sm)
+```
+
+```{r}
+## model summary
+fun.model.summary(stmod_stally2.anc.sm)
+```
+
+```{r}
+# extract posteriors
+posteriors.anc.stcnt.sm <- insight::get_parameters(stmod_stally2.anc.sm)
+
+# tidy
+posteriors.anc.stcnt.sm.tidy <- posteriors.anc.stcnt.sm %>%
+  pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
+
+```
+
+```{r}
+color_scheme_set("teal")
+mcmc_areas(posteriors.anc.stcnt.sm,
+           prob = 0.9) +
+  ggtitle("Posterior distributions",
+                      "with medians and 90% credible intervals")
+```
+
+### Effect Existence and Significance Testing
+```{r}
+fun.sexit.gt(stmod_stally2.anc.sm)
+
+fun.sexit.gt(stmod_stally2.anc.sm) %>%
+ tab_header(title = "Aspen Count Posterior Description", subtitle = "Small Saplings, Noncore Winter Range") %>%
+  gt::gtsave(filename = "./output/tables/aspen_stem_count/xpostdesc_stemcnt_TCxF_anc_smsap.rtf")
+
+```
+
+
+```{r, echo=FALSE, eval=FALSE}
+### Model posterior parameters to table
+fun.desc.post1.gt.rope(stmod_stally2.anc.sm) %>% 
+  tab_header(title = "Aspen Count Posterior Description", subtitle = "Small Saplings, Noncore Winter Range")
+
+## save as RTF
+fun.desc.post1.gt.rope(stmod_stally2.anc.sm) %>%
+ tab_header(title = "Aspen Count Posterior Description", subtitle = "Small Saplings, Noncore Winter Range") %>%
+  gt::gtsave(filename = "./output/tables/aspen_stem_count/postdesc_stemcnt_TCxF_anc_smsap.rtf")
+
+```
+
+```{r}
+# library(ggridges)
+posteriors.anc.stcnt.sm.tidy %>% 
+  ggplot() +
+  geom_density(aes(fill = parameter, x = values, color = parameter), alpha = .12) +
+  scale_fill_manual(values = colfunc2(ncol(posteriors.anc.stcnt.sm.tidy))) +
+  scale_color_manual(values = colfunc2(ncol(posteriors.anc.stcnt.sm.tidy))) +
+  # scale_fill_brewer(palette = "Set1") +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  theme_minimal()
+
+# save plots
+ggsave("./output/figures_exported/aspen_stem_count/postden_stemcnt_anc_smsap.png", dpi = 300, width = 4.75, height = 3.75)
+ggsave("./output/figures_exported/aspen_stem_count/postden_stemcnt_anc_smsap.pdf", width = 4.75, height = 3.75)
+```
+
+#### Probability of Direction
+```{r}
+# Visualize the pd
+#### PD - anc
+p_direction(stmod_stally2.anc.sm) %>% 
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Aspen stem count, Small Saplings, Noncore Winter Range")
+
+# save plots
+ggsave("./output/figures_exported/aspen_stem_count/pd_stemcnt_anc_smsap.png", dpi = 300, width = 4.75, height = 3.75)
+ggsave("./output/figures_exported/aspen_stem_count/pd_stemcnt_anc_smsap.pdf", width = 4.75, height = 3.75)
+
+```
+
+#### Region of Practical Equivalence (ROPE)
+```{r}
+rope.stemcnt.anc.sm <- rope(stmod_stally2.anc.sm, ci=0.9) %>% 
+  gt() %>%
+  tab_header(title = "Percent in ROPE") %>% 
+  fmt_number(
+    columns = 5,
+    decimals = 1,
+    suffixing = TRUE
+  ) 
+
+rope.stemcnt.anc.sm %>% 
+  gt::gtsave(filename = "./output/tables/aspen_stem_count/rope_stemcnt_anc_smap.rtf")
+
+```
+
+### Contrasts
+```{r}
+#### Contrasts
+# EMMs for later fanctor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE).
+
+# library(emmeans)
+emmeans(stmod_stally2.anc.sm, ~ time_class) %>% 
+  pairs(reverse = FALSE) %>% 
+  # plot(type = "response") +
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  # labs(title= "Core winter range", caption = "Point estimate displayed: median 
+# HPD interval probability: 0.95, Results on log scale", x = "Estimate", y = "Contrast")
+  labs(subtitle = "Point estimate displayed: median HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Noncore Winter Range, Aspen Stem Count, Small Saplings. Results are given on the log scale")
+
+
+ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_anc_smsap.pdf", width = 4.5, height = 3.55) # save plot
+ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_anc_smsap.png", width = 4.5, height = 3.55) # save plot
+
+# table of contrasts. Results are given on the log (not the response) scale.
+emmeans(stmod_stally2.anc.sm, ~ time_class) %>% 
+  pairs(reverse = FALSE) %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the log (not the response) scale.")
+
+# table of contrasts. Results are given on the response scale.
+emmeans(stmod_stally2.anc.sm, ~ time_class) %>% 
+  pairs(reverse = FALSE, type="response") %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the response scale.")
+
+```
+
 ## Aspen Density, Short Saplings (<=1.5 m) - Kawuneeche Valley (AK)
+
+### Modeling and Posterior Description
+```{r}
+asp.sm.ak <- asp.sm.ak %>%
+  mutate(stem_den_ha = stem_den_ha + 0.0000001) 
+```
+
+
+```{r}
+#### main factors + interactions:
+stmod_stally2.ak.sm <- stan_glmer(stem_tally ~ time_class + (1 | site_id), data = asp.sm.ak,
+                      family= poisson,
+                      iter = 5000,
+                      seed = 1234
+                      )
+
+```
+
+**Prior summary**: stem_tally ~ time_class * fenced + (1 | site_id)  
+```{r}
+prior_summary(stmod_stally2.ak.sm)
+```
+
+```{r}
+## model summary
+fun.model.summary(stmod_stally2.ak.sm)
+```
+
+```{r}
+# extract posteriors
+posteriors.ak.stcnt.sm <- insight::get_parameters(stmod_stally2.ak.sm)
+
+# tidy
+posteriors.ak.stcnt.sm.tidy <- posteriors.ak.stcnt.sm %>%
+  pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
+
+```
+
+```{r}
+color_scheme_set("teal")
+# color_scheme_set("teal")
+
+mcmc_areas(posteriors.ak.stcnt.sm,
+           prob = 0.9) +
+  ggtitle("Posterior distributions",
+                      "with medians and 90% credible intervals") +
+  theme_minimal()
+
+```
+# here plots
+```{r}
+
+## rendered for print doc
+## turned off for Rmd appx
+# panel of ACNC AC ANC AK - small saplings
+glimpse(posteriors.acanc.stcnt.sm)
+posteriors.acanc.stcnt.sm %>% 
+  rename('2013' = time_class2013) %>%
+  rename('2018' = time_class2018) %>%
+  rename(Unfenced = fencedUnfenced) %>%
+  rename('2013:Unfenced' = `time_class2013:fencedUnfenced`) %>%
+  rename('2018:Unfenced' = `time_class2018:fencedUnfenced`) %>%
+  mcmc_areas(.,
+           prob = 0.9) +
+  ggtitle("All Winter Range") +
+  theme_minimal() +
+  geom_vline(aes(xintercept=0), lty="dashed")
+
+smsap.plot1 <- mcmc_areas(posteriors.acanc.stcnt.sm,
+           prob = 0.9) +
+  ggtitle("All Winter Range") +
+  theme_minimal() +
+  geom_vline(aes(xintercept=0), lty="dashed")
+
+smsap.plot2 <- mcmc_areas(posteriors.ac.stcnt.sm,
+           prob = 0.9) +
+  ggtitle("Core Winter Range") +
+  theme_minimal() +
+  geom_vline(aes(xintercept=0), lty="dashed")
+
+smsap.plot3 <- mcmc_areas(posteriors.anc.stcnt.sm,
+           prob = 0.9) +
+  ggtitle("Noncore Winter Range") +
+  theme_minimal() +
+  geom_vline(aes(xintercept=0), lty="dashed")
+
+smsap.plot4 <- mcmc_areas(posteriors.ak.stcnt.sm,
+           prob = 0.9) +
+  ggtitle("Kawuneeche Valley") +
+  theme_minimal() +
+  geom_vline(aes(xintercept=0), lty="dashed")
+
+# combine
+smsap.plot1 + smsap.plot2 + smsap.plot3 + smsap.plot4
+
+# save plots
+ggsave("./output/figures_exported/asp_small_sapling_panel_plot.png", dpi = 300, width = 8.75, height = 4.75)
+ggsave("./output/figures_exported/asp_small_sapling_panel_plot.pdf", width = 8.75, height = 4.75)
+```
+
+
+### Effect Existence and Significance Testing
+```{r}
+fun.sexit.gt(stmod_stally2.ak.sm)
+
+fun.sexit.gt(stmod_stally2.ak.sm) %>%
+ tab_header(title = "Aspen Count Posterior Description", subtitle = "Small Saplings, Kawuneeche Valley") %>%
+  gt::gtsave(filename = "./output/tables/aspen_stem_count/xpostdesc_stemcnt_TCxF_ak_smsap.rtf")
+
+```
+
+
+```{r, echo=FALSE, eval=FALSE}
+### Model posterior parameters to table
+fun.desc.post1.gt.rope(stmod_stally2.ak.sm) %>% 
+  tab_header(title = "Aspen Count Posterior Description", subtitle = "Small Saplings, Kawuneeche Valley")
+
+## save as RTF
+fun.desc.post1.gt.rope(stmod_stally2.ak.sm) %>%
+ tab_header(title = "Aspen Count Posterior Description", subtitle = "Small Saplings, Kawuneeche Valley") %>%
+  gt::gtsave(filename = "./output/tables/aspen_stem_count/postdesc_stemcnt_TCxF_ak_smsap.rtf")
+
+```
+
+```{r}
+# library(ggridges)
+posteriors.ak.stcnt.sm.tidy %>% 
+  ggplot() +
+  geom_density(aes(fill = parameter, x = values, color = parameter), alpha = .12) +
+  scale_fill_manual(values = colfunc2(ncol(posteriors.ak.stcnt.sm.tidy))) +
+  scale_color_manual(values = colfunc2(ncol(posteriors.ak.stcnt.sm.tidy))) +
+  # scale_fill_brewer(palette = "Set1") +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  theme_minimal()
+
+# save plots
+ggsave("./output/figures_exported/aspen_stem_count/postden_stemcnt_ak_smsap.png", dpi = 300, width = 4.75, height = 3.75)
+ggsave("./output/figures_exported/aspen_stem_count/postden_stemcnt_ak_smsap.pdf", width = 4.75, height = 3.75)
+```
+
+#### Probability of Direction
+```{r}
+# Visualize the pd
+#### PD - ak
+p_direction(stmod_stally2.ak.sm) %>% 
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Aspen stem count, Small Saplings, Kawuneeche Valley")
+
+# save plots
+ggsave("./output/figures_exported/aspen_stem_count/pd_stemcnt_ak_smsap.png", dpi = 300, width = 4.75, height = 3.75)
+ggsave("./output/figures_exported/aspen_stem_count/pd_stemcnt_ak_smsap.pdf", width = 4.75, height = 3.75)
+
+```
+
+#### Region of Practical Equivalence (ROPE)
+```{r}
+rope.stemcnt.ak.sm <- rope(stmod_stally2.ak.sm, ci=0.9) %>% 
+  gt() %>%
+  tab_header(title = "Percent in ROPE") %>% 
+  fmt_number(
+    columns = 5,
+    decimals = 1,
+    suffixing = TRUE
+  ) 
+
+rope.stemcnt.ak.sm %>% 
+  gt::gtsave(filename = "./output/tables/aspen_stem_count/rope_stemcnt_ak_smap.rtf")
+
+```
+
+### Contrasts
+```{r}
+#### Contrasts
+# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE).
+
+# library(emmeans)
+emmeans(stmod_stally2.ak.sm, ~ time_class) %>% 
+  pairs(reverse = FALSE) %>% 
+  # plot(type = "response") +
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  # labs(title= "Core winter range", caption = "Point estimate displayed: median 
+# HPD interval probability: 0.95, Results on log scale", x = "Estimate", y = "Contrast")
+  labs(subtitle = "Point estimate displayed: median HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Kawuneeche Valley, Aspen Stem Count, Small Saplings. Results are given on the log scale")
+
+
+ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_ak_smsap.pdf", width = 4.5, height = 3.55) # save plot
+ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_ak_smsap.png", width = 4.5, height = 3.55) # save plot
+
+# table of contrasts. Results are given on the log (not the response) scale.
+emmeans(stmod_stally2.ak.sm, ~ time_class) %>% 
+  pairs(reverse = FALSE) %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the log (not the response) scale.")
+
+# table of contrasts. Results are given on the response scale.
+emmeans(stmod_stally2.ak.sm, ~ time_class) %>% 
+  pairs(reverse = FALSE, type="response") %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the response scale.")
+
+```
+
+
+
+# down
 
 ## Aspen Density, Tall Saplings (1.5-2.5 m ht) - Combined Winter Range (AC+ANC)
 
@@ -565,7 +1103,7 @@ posteriors.acanc.stcnt.lg.tidy <- posteriors.acanc.stcnt.lg %>%
 ```
 
 ```{r}
-color_scheme_set("darkgray")
+color_scheme_set("teal")
 mcmc_areas(posteriors.acanc.stcnt.lg,
            prob = 0.9) +
   ggtitle("Posterior distributions",
@@ -757,7 +1295,7 @@ posteriors.acanc.stcnt.tidy <- posteriors.acanc.stcnt %>%
 
 ```{r}
 library("bayesplot")
-color_scheme_set("darkgray")
+color_scheme_set("teal")
 mcmc_areas(posteriors.acanc.stcnt,
            prob = 0.8) +
   ggtitle("Posterior distributions",
@@ -792,7 +1330,8 @@ fun.desc.post1.gt.rope(stmod_stally2.acanc) %>%
 posteriors.acanc.stcnt.tidy %>% 
   ggplot() +
   geom_density(aes(fill = parameter, x = values, color = parameter), alpha = .12) +
-  scale_fill_manual(values = color)
+  # scale_fill_manual(values = colfunc3_RdBu(4)) +
+  # scale_color_manual(values = colfunc3_RdBu(4)) +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   theme_minimal() +
   labs(caption = "ACANC")
@@ -959,7 +1498,7 @@ print(modcomp_ac, simplify = FALSE, digits = 3)
 
 ```{r}
 # library("bayesplot")
-color_scheme_set("darkgray")
+color_scheme_set("teal")
 mcmc_areas(stmod_stally2,
            prob = 0.8) +
   ggtitle("Posterior distributions",
@@ -1220,7 +1759,7 @@ ggsave("./output/figures_exported/aspen_stem_count/postden_stemcnt_anc.pdf", wid
 
 ```{r}
 # library("bayesplot")
-color_scheme_set("darkgray")
+color_scheme_set("teal")
 mcmc_areas(stmod_anc_stally1,
            prob = 0.8) +
   ggtitle("Posterior distributions",
@@ -1409,7 +1948,7 @@ ggsave("./output/figures_exported/aspen_stem_count/postden_stemcnt_ak.pdf", widt
 
 ```{r}
 # library("bayesplot")
-color_scheme_set("darkgray")
+color_scheme_set("teal")
 mcmc_areas(stmod_ak_stally1,
            prob = 0.8) +
   ggtitle("Posterior distributions",
