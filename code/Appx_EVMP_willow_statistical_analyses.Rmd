@@ -143,16 +143,21 @@ package_versions <- function(packages=NULL, base=FALSE, sort=FALSE) {
 ```
 
 ```{r}
-# custom gradients
+# custom gradients and palettes
 dbhclass.gradient5 <- c("#26185F", "#0095AF", "#9ADCBB", "#FCFFDD", "grey50")
 
 colfunc1<-colorRampPalette(c("#26185F","#0095AF","#9ADCBB", "#FCFFDD"))
 colfunc2<-colorRampPalette(c("#0095AF","#9ADCBB", "#FCFFDD"))
+colfunc3<-colorRampPalette(c("#0095AF","#9ADCBB"))
+colfunc3_RdBu <- colorRampPalette(c("#EF8A62", "#FDDBC7", "#D1E5F0", "#67A9CF"))
+
 # plot(rep(1,50),col=(colfunc1(50)), pch=19,cex=2)
 # plot(rep(1,5),col=(colfunc1(5)), pch=19,cex=2)
 pal.5a <- colfunc1(5)
 pal.7a <- colfunc1(7)
 
+# palette3 <- RColorBrewer::brewer.pal(6,"RdBu")
+# RColorBrewer::display.brewer.pal(6,"RdBu")
 ```
 
 # Introduction
@@ -368,7 +373,8 @@ pd.wc.wnc <- p_direction(wc.wnc.stmod_TCxF)
 plot(pd.wc.wnc) +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
-  labs(caption = "Willow height, Combined Core and Non-core Winter Range")
+  labs(caption = "Willow height, Combined Core and Non-core Winter Range") +
+  scale_fill_manual(values = colfunc3(2))
 
 # ggsave("./output/figures_exported/willow_height/pd_willowht_wcwnc.png", width = 6.75, height =3.75, dpi = 300)
 # ggsave("./output/figures_exported/willow_height/pd_willowht_wcwnc.png", width = 6.75, height =3.75)
@@ -613,7 +619,8 @@ pd.wc <- p_direction(stmod_ht2)
 plot(pd.wc) +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
-  labs(caption = "Willow height, core winter range")
+  labs(caption = "Willow height, core winter range") +
+  scale_fill_manual(values = colfunc3(2))
 
 # ggsave("./output/figures_exported/willow_height/pd_willowht_wc.png", width = 6.75, height =3.75, dpi = 300)
 # ggsave("./output/figures_exported/willow_height/pd_willowht_wc.pdf", width = 6.75, height =3.75)
@@ -800,7 +807,8 @@ p_direction(nc.stmod_ht1) %>%
   plot() +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
-  labs(caption = "Willow height, Noncore winter range")
+  labs(caption = "Willow height, Noncore winter range") +
+  scale_fill_manual(values = colfunc3(2))
 
 ggsave("./output/figures_exported/willow_height/pd_willowht_wnc.png", width = 6.75, height =3.75, dpi = 300)
 ggsave("./output/figures_exported/willow_height/pd_willowht_wnc.pdf", width = 6.75, height =3.75)
@@ -987,7 +995,8 @@ pdkv <- p_direction(stmod_ht_wk_TC)
 plot(pdkv) +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
-  labs(caption = "Willow height, KV")
+  labs(caption = "Willow height, KV") +
+  scale_fill_manual(values = colfunc3(2))
 
 ggsave("./output/figures_exported/willow_height/pd_willowht_wk.png", width = 6.75, height =3.75, dpi = 300)
 ggsave("./output/figures_exported/willow_height/pd_willowht_wk.pdf", width = 6.75, height =3.75)
@@ -1246,7 +1255,8 @@ p_direction(stmod_cov.wc.wnc) %>%
   plot() +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
-  labs(caption = "Willow cover, Core and noncore winter range")
+  labs(caption = "Willow cover, Core and noncore winter range") +
+  scale_fill_manual(values = colfunc3(2))
 
 ggsave("./output/figures_exported/willow_cover/pd_willowht_wcwnc.png", width = 6.75, height =3.75, dpi = 300)
 ggsave("./output/figures_exported/willow_cover/pd_willowht_wcwnc.pdf", width = 6.75, height =3.75)
@@ -1318,7 +1328,7 @@ ggsave("./output/figures_exported/willow_cover/mcmcarea_willowcov_TCxF_wcwnc.pdf
 
 ```
 
-### Burning
+### Effects of Burning
 
 ```{r, cache=TRUE, eval=TRUE}
 #### Fenced and burned
@@ -1444,7 +1454,8 @@ p_direction(stmod_cov.wc) %>%
   plot() +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
-  labs(caption = "Willow cover, Core and noncore winter range")
+  labs(caption = "Willow cover, Core and noncore winter range") +
+  scale_fill_manual(values = colfunc3(2))
 
 ggsave("./output/figures_exported/willow_cover/pd_willowht_wc.png", width = 6.75, height =3.75, dpi = 300)
 ggsave("./output/figures_exported/willow_cover/pd_willowht_wc.pdf", width = 6.75, height =3.75)
@@ -1593,7 +1604,8 @@ p_direction(stmod_cov.wnc) %>%
   plot() +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
-  labs(caption = "Willow cover, Nnoncore winter range")
+  labs(caption = "Willow cover, Nnoncore winter range") +
+  scale_fill_manual(values = colfunc3(2))
 
 ggsave("./output/figures_exported/willow_cover/pd_willowht_wnc.png", width = 6.75, height =3.75, dpi = 300)
 ggsave("./output/figures_exported/willow_cover/pd_willowht_wnc.pdf", width = 6.75, height =3.75)
