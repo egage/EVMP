@@ -7,6 +7,7 @@ output:
     theme: journal
     toc: yes
     toc_depth: 2
+    code_folding: hide
 editor_options: 
   markdown: 
     wrap: 72
@@ -72,6 +73,29 @@ fun.sexit.gt <- function(model){
 
 
 # describe posterior
+# fun.desc.post1.gt.rope <- function(model){
+#   describe_posterior(
+#   model,
+#   effects = "fixed",
+#   component = "all",
+#   ci_method = "hdi",
+#   ci=0.9,
+#   test = c("p_direction", "p_significance","rope"),
+#   #rope_range(c(-0.1,0.1)),
+#   rope_range("default"),
+#   rope_ci = 0.9,
+#   centrality = "median"
+# ) %>% 
+#     as_tibble() %>% 
+#     gt() %>% 
+#     tab_header(title = "Posterior description") %>% 
+#     fmt_number(
+#     columns = 2:14,
+#     decimals = 2,
+#     suffixing = TRUE
+#   )
+# }
+
 fun.desc.post1.gt.rope <- function(model){
   describe_posterior(
   model,
@@ -83,18 +107,12 @@ fun.desc.post1.gt.rope <- function(model){
   #rope_range(c(-0.1,0.1)),
   rope_range("default"),
   rope_ci = 0.9,
-  centrality = "median"
-) %>% 
-    as_tibble() %>% 
-    gt() %>% 
-    tab_header(title = "Posterior description") %>% 
-    fmt_number(
-    columns = 2:14,
-    decimals = 2,
-    suffixing = TRUE
-  )
+  centrality = "median") %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric), round, 1)) %>% 
+  gt() %>% 
+  tab_header(title = "Posterior description")
 }
-
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}
@@ -217,9 +235,6 @@ The Probability of Direction (PD) was used to represent certainty associated wit
 
 willow <- read_csv("./output/exported_data/willow_mcro.csv")
 
-willow <- willow %>% 
-  select(-c(contains("UTM"))) 
-
 ## create timeClass var
 willow.ht <- willow %>% 
   filter(!is.na(PLANT_HT_CM)) %>% 
@@ -227,9 +242,8 @@ willow.ht <- willow %>%
                               yr == 2009 ~ "BL", 
                               TRUE ~ as.character(yr))) 
 
-## filter to 5 yr sampling interval, chr to factor conversions
+## chr to factor conversions
 willow.ht <- willow.ht %>% 
-  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>%
   mutate(timeClass = as.factor(timeClass)) %>% 
   mutate(timeClass = fct_relevel(timeClass, "2018", "2013", "BL")) %>% 
   mutate(FENCED = as.factor(FENCED))
@@ -258,8 +272,11 @@ willow.ht <- willow.ht %>%
 
 ```{r}
 ## create separate df for WC, WNC, combined WC & WNC, and KV
+
+
 willow.ht.wc <- willow.ht %>% 
-  filter(site_type == "WC") 
+  filter(site_type == "WC") %>% 
+  filter(time_class == "BL" | time_class == "2013" | time_class == "2018")
 
 # non core
 willow.ht.nc <- willow.ht %>% 
@@ -285,23 +302,24 @@ willow.ht.wk <- willow %>%
 
 # Results
 
-## Willow Height - Combined Core and Noncore Winter Range Macroplot Data
+## Willow Height - Combined Winter Range Macroplot Data
 
-### Histograms of Willow Height
+**Histograms of Willow Height**
 
 ```{r}
 ## histogram
 willow.ht.wc.wnc %>% 
   ggplot() +
-  geom_histogram(aes(plant_ht_cm, fill = fenced), color = "black") +
-  viridis::scale_fill_viridis(discrete=TRUE) +
+  geom_histogram(aes(plant_ht_cm, fill = fenced), color = "grey50") +
+  # viridis::scale_fill_viridis(discrete=TRUE) +
+  scale_fill_manual(values = colfunc3(2)) +
   labs(x="Plant height (cm)", y = "Count", fill = "", caption = "Core and noncore winter range plots. Macroplot heights") +
   theme_minimal() +
   facet_wrap(~time_class) +
   coord_flip()
 
-# ggsave("./output/figures_exported/willow_height/hist_willowht_TC_wcwnc.png", dpi = 300, width = 6.75, height = 3.75)
-# ggsave("./output/figures_exported/willow_height/hist_willowht_TC_wcwnc.pdf", width = 6.75, height = 3.75)
+ggsave("./output/figures_exported/willow_height/hist_willowht_TC_wcwnc.png", dpi = 300, width = 6.75, height = 3.75)
+ggsave("./output/figures_exported/willow_height/hist_willowht_TC_wcwnc.pdf", width = 6.75, height = 3.75)
 
 ```
 
@@ -310,7 +328,7 @@ willow.ht.wc.wnc %>%
 ## run with gamma
 wc.wnc.stmod_TCxF <- stan_glmer(plant_ht_cm ~ time_class*fenced +  (1 | site_id), data = willow.ht.wc.wnc,
                       family=Gamma(link="log"),
-                      iter = 8000,
+                      iter = 5000,
                       )
 ```
 
@@ -324,8 +342,9 @@ prior_summary(wc.wnc.stmod_TCxF)
 #### PP check plot
 ppc.plot(wc.wnc.stmod_TCxF) +
   labs(caption = "WC+WNC: willow_ht~TCxF")
-# ggsave("./output/figures_exported/willow_height/ppc_willowht_wcwnc.png", dpi = 300, width = 4.75, height = 3.75)
-# ggsave("./output/figures_exported/willow_height/ppc_willowht_wcwnc.pdf", width = 4.75, height = 3.75)
+
+ggsave("./output/figures_exported/willow_height/ppc_willowht_wcwnc.png", dpi = 300, width = 4.75, height = 3.75)
+ggsave("./output/figures_exported/willow_height/ppc_willowht_wcwnc.pdf", width = 4.75, height = 3.75)
 ```
 
 ```{r}
@@ -338,12 +357,15 @@ posteriors.wc.wnc.ht.tidy <- posteriors.wc.wnc.ht %>%
 
 posteriors.wc.wnc.ht.tidy %>%
   ggplot() +
-  geom_density(aes(fill = parameter, x = values),color="grey", alpha = .25) +
-  scale_fill_viridis(discrete = TRUE) +
+  geom_density(aes(fill = parameter, x = values),color="grey50", alpha = .25) +
+  # scale_fill_viridis(discrete = TRUE) +
+  scale_fill_manual(values = colfunc2(ncol(posteriors.wc.wnc.ht.tidy))) +
+  # scale_color_manual(values = colfunc2(ncol(posteriors.wc.wnc.ht.tidy))) +
   theme_minimal()
+
 ```
 
-### Effect Existence and Significance Testing
+### Effect Description
 ```{r}
 # use function defined above
 fun.sexit.gt(wc.wnc.stmod_TCxF)
@@ -376,8 +398,8 @@ plot(pd.wc.wnc) +
   labs(caption = "Willow height, Combined Core and Non-core Winter Range") +
   scale_fill_manual(values = colfunc3(2))
 
-# ggsave("./output/figures_exported/willow_height/pd_willowht_wcwnc.png", width = 6.75, height =3.75, dpi = 300)
-# ggsave("./output/figures_exported/willow_height/pd_willowht_wcwnc.png", width = 6.75, height =3.75)
+ggsave("./output/figures_exported/willow_height/pd_willowht_wcwnc.png", width = 6.75, height =3.75, dpi = 300)
+ggsave("./output/figures_exported/willow_height/pd_willowht_wcwnc.png", width = 6.75, height =3.75)
 
 ```
 
@@ -401,16 +423,7 @@ rope.wcwnc.gt
 
 ### Contrasts
 
-EMM summaries with type = "response", the tests and confidence intervals
-are done before back-transforming. The ratios estimated are ratios of
-geometric means. A model with a log response is in fact a model for
-relative effects of any of its linear predictors, and this
-back-transformation to ratios goes hand-in-hand with that.
-
 ```{r, include=FALSE, echo=FALSE}
-# library(emmeans)
-# Note: EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE). Also, in multi-factor situations, you may specify by factor(s) to perform the comparisons separately at the levels of those factors.
-
 # Results are given on the log (not the response) scale.
 # main effects
 ## main effect: time class
@@ -426,10 +439,10 @@ HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Comb
 wc.wnc.emm.fenced <- emmeans(wc.wnc.stmod_TCxF, ~ fenced)
 wc.wnc.pairs.fenced <- pairs(wc.wnc.emm.fenced)
 
-plot(wc.wnc.pairs.fenced) +
-  theme_minimal() +
-  labs(subtitle = "Point estimate displayed: median 
-HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Core and Noncore Winter Range, Willow Height")
+# plot(wc.wnc.pairs.fenced) +
+#   theme_minimal() +
+#   labs(subtitle = "Point estimate displayed: median 
+# HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Core and Noncore Winter Range, Willow Height")
 
 ## the above is not used b/c sig of interactions
 ```
@@ -451,7 +464,6 @@ ggsave("./output/figures_exported/willow_height/emm_willowht_TCxF_wcwnc.pdf", wi
 ggsave("./output/figures_exported/willow_height/emm_willowht_TCxF_wcwnc.png", width = 4.5, height = 3.55) # save plot
 
 # table of contrasts
-# table of contrasts
 emmeans(wc.wnc.stmod_TCxF, ~ time_class | fenced) %>% 
   pairs(reverse = TRUE) %>% 
   as_tibble() %>% 
@@ -469,32 +481,33 @@ emmeans(wc.wnc.stmod_TCxF, ~ time_class | fenced) %>%
 
 ```
 
-### Central Posterior Interval Estimates
-
 ```{r}
+color_scheme_set("teal")
 
-bayesplot::mcmc_areas(posteriors.wc.wnc.ht,
-           pars = c("time_class2013", "time_class2018", "time_class2013:fencedFenced","time_class2018:fencedFenced"),
+plot.mcmcareas_ht.wcwnc <- mcmc_areas(posteriors.wc.wnc.ht,
            prob = 0.9) +
+  ggtitle("Combined Winter Range") +
   theme_minimal() +
-  labs(title = "Posterior distributions", subtitle = "with medians and 90% intervals", caption = "Willow height, WC&WNC")
+  theme(text = element_text(family = 'sans'))
 
-# ggsave("./output/figures_exported/willow_height/mcmcarea_willowht_TCxF_wcwnc.png", dpi = 300, width = 6.75, height = 3.75)
-# ggsave("./output/figures_exported/willow_height/mcmcarea_willowht_TCxF_wcwnc.pdf", width = 6.75, height = 3.75)
+plot.mcmcareas_ht.wcwnc
 
+ggsave("./output/figures_exported/willow_height/mcmcarea_willowht_TCxF_wcwnc.png", dpi = 300, width = 6.75, height = 3.75)
+ggsave("./output/figures_exported/willow_height/mcmcarea_willowht_TCxF_wcnc.pdf", width = 6.75, height = 3.75)
 ```
 
 ## Willow Height - Core Winter Range Macroplot Data
 
-### Histograms of Willow Height
+**Histograms of Willow Height**
 
 ```{r}
 willow.ht.wc %>% 
   mutate(time_class = fct_rev(time_class)) %>% 
   ggplot() +
   # geom_density(aes(plant_ht_cm, fill = fenced), color = "black") +
-  geom_histogram(aes(plant_ht_cm, fill = fenced), color = "black") +
-  viridis::scale_fill_viridis(discrete=TRUE) +
+  geom_histogram(aes(plant_ht_cm, fill = fenced), color = "grey50") +
+  # viridis::scale_fill_viridis(discrete=TRUE) +
+  scale_fill_manual(values = colfunc3(2)) +
   labs(x="Plant height (cm)", y = "Count", fill = "", caption = "Core winter range plots. Macroplot heights") +
   theme_minimal() +
   facet_wrap(~time_class) +
@@ -513,7 +526,7 @@ willow.ht.wc %>%
 # Previously run for comparisons but not otherwise reported
 stmod_ht.0 <- stan_glmer(plant_ht_cm ~ 1 + (1 | site_id), data = willow.ht.wc,
                       family=Gamma(link="log"),
-                      iter = 8000,
+                      iter = 5000,
                       seed = 1234
                       )
 
@@ -524,7 +537,7 @@ pp_check(stmod_ht.0)
 ## Run, but not used for reporting after model comparisons
 stmod_ht1 <- stan_glmer(plant_ht_cm ~ time_class + fenced + (1 | site_id), data = willow.ht.wc,
                       family=Gamma(link="log"),
-                      iter = 8000,
+                      iter = 5000,
                       seed = 1234
                       )
 
@@ -538,7 +551,7 @@ pp_check(stmod_ht1)
 # After model comparisons, this is the selected model reported
 stmod_ht2 <- stan_glmer(plant_ht_cm ~ time_class*fenced + (1 | site_id), data = willow.ht.wc,
                       family=Gamma(link="log"),
-                      iter = 8000,
+                      iter = 5000,
                       seed = 1234
                       )
 
@@ -578,10 +591,6 @@ ppc.plot(stmod_ht2) +
 fun.desc.post1.gt.rope(stmod_ht2) %>% 
   tab_header(title = "Core Winter Range", subtitle = "Willow Height Posterior Description")
 
-# Posterior: point estimates
-# point_estimate(stmod_ht2) %>%
-#   gt() %>% 
-#   tab_header(title = "Indices of centrality",subtitle = "plant_ht_cm ~ time_class*fenced + (1 | site_id)")# Get indices of centrality
 ```
 
 ```{r}
@@ -592,7 +601,7 @@ ppc.plot(stmod_ht2) +
 # ggsave("./output/figures_exported/willow_height/ppc_willowht_wc.pdf", width = 4.75, height = 3.75)
 ```
 
-### Effect Existence and Significance Testing
+### Effect Description
 ```{r}
 fun.sexit.gt(stmod_ht2)
 
@@ -705,7 +714,21 @@ emmeans(stmod_ht2, ~ time_class | fenced) %>%
 
 ```
 
-### Central Posterior Interval Estimates
+```{r}
+color_scheme_set("teal")
+
+plot.mcmcareas_ht.wc <- mcmc_areas(posteriors.wc.ht,
+           prob = 0.9) +
+  ggtitle("Combined Winter Range") +
+  theme_minimal() +
+  theme(text = element_text(family = 'sans'))
+
+plot.mcmcareas_ht.wc
+
+ggsave("./output/figures_exported/willow_height/mcmcarea_willowht_TCxF_wc.png", dpi = 300, width = 6.75, height = 3.75)
+ggsave("./output/figures_exported/willow_height/mcmcarea_willowht_TCxF_wc.pdf", width = 6.75, height = 3.75)
+```
+
 
 ```{r}
 
@@ -722,21 +745,22 @@ ggsave("./output/figures_exported/willow_height/mcmcarea_willowht_TCxF_wc.pdf", 
 
 ## Willow Height - Noncore Winter Range Macroplot Data
 
-### Histograms of Willow Height
+**Histograms of Willow Height**
 
 ```{r}
 ## histogram
 willow.ht.nc %>% 
   ggplot() +
-  geom_histogram(aes(plant_ht_cm, fill = fenced), color = "black") +
-  viridis::scale_fill_viridis(discrete=TRUE) +
+  geom_histogram(aes(plant_ht_cm, fill = fenced), color = "grey50") +
+  # viridis::scale_fill_viridis(discrete=TRUE) +
+  scale_fill_manual(values = colfunc3(1)) +
   labs(x="Plant height (cm)", y = "Count", fill = "", caption = "Core winter range plots. Macroplot heights") +
   theme_minimal() +
   facet_wrap(~time_class) +
   coord_flip()
 
-# ggsave("./output/figures_exported/willow_height/hist_willowht_TC_wnc.png", dpi = 300, width = 6.75, height = 3.75)
-# ggsave("./output/figures_exported/willow_height/hist_willowht_TC_wnc.pdf", width = 6.75, height = 3.75)
+ggsave("./output/figures_exported/willow_height/hist_willowht_TC_wnc.png", dpi = 300, width = 6.75, height = 3.75)
+ggsave("./output/figures_exported/willow_height/hist_willowht_TC_wnc.pdf", width = 6.75, height = 3.75)
 
 ```
 
@@ -747,7 +771,7 @@ willow.ht.nc %>%
 ## run with gamma
 nc.stmod_ht1 <- stan_glmer(plant_ht_cm ~ time_class +  (1 | site_id), data = willow.ht.nc,
                        family=Gamma(link="log"),
-                      iter = 8000,
+                      iter = 5000,
                       )
 posteriors.nc.ht <- insight::get_parameters(nc.stmod_ht1)
 ```
@@ -768,7 +792,7 @@ ppc.plot(nc.stmod_ht1) +
 
 ```
 
-### Effect Existence and Significance Testing  
+### Effect Description  
 ```{r}
 # use function defined above
 fun.sexit.gt(nc.stmod_ht1)
@@ -873,17 +897,32 @@ emmeans(nc.stmod_ht1, ~ time_class) %>%
 
 ```
 
-### Central Posterior Interval Estimates
+```{r}
+color_scheme_set("teal")
+# color_scheme_set("teal")
+
+plot.mcmcareas_ht.wnc <- mcmc_areas(posteriors.nc.ht,
+           prob = 0.9) +
+  ggtitle("Noncore Winter Range") +
+  theme_minimal() +
+  theme(text = element_text(family = 'sans'))
+
+plot.mcmcareas_ht.wnc
+
+ggsave("./output/figures_exported/willow_height/mcmcarea_willowht_TCxF_wnc.png", dpi = 300, width = 6.75, height = 3.75)
+ggsave("./output/figures_exported/willow_height/mcmcarea_willowht_TCxF_wnc.pdf", width = 6.75, height = 3.75)
+```
+
 
 ```{r}
-bayesplot::mcmc_areas(posteriors.nc.ht,
-           pars = c("time_class2013","time_class2018"),
-           prob = 0.9) +
-  theme_minimal() +
-  labs(title = "Posterior distributions", subtitle = "with medians and 90% intervals", caption = "Willow height, WNC")
-
-ggsave("./output/figures_exported/willow_height/mcmcarea_willowht_TC_wnc.png", dpi = 300, width = 6.75, height = 3.75)
-ggsave("./output/figures_exported/willow_height/mcmcarea_willowht_TC_wnc.pdf", width = 6.75, height = 3.75)
+# bayesplot::mcmc_areas(posteriors.nc.ht,
+#            pars = c("time_class2013","time_class2018"),
+#            prob = 0.9) +
+#   theme_minimal() +
+#   labs(title = "Posterior distributions", subtitle = "with medians and 90% intervals", caption = "Willow height, WNC")
+# 
+# ggsave("./output/figures_exported/willow_height/mcmcarea_willowht_TC_wnc.png", dpi = 300, width = 6.75, height = 3.75)
+# ggsave("./output/figures_exported/willow_height/mcmcarea_willowht_TC_wnc.pdf", width = 6.75, height = 3.75)
 
 ```
 
@@ -918,13 +957,14 @@ ggsave("./output/figures_exported/willow_height/emm_willowht_TC_wnc.png", width 
 
 ## Willow Height - Kawuneeche Valley Macroplot Data
 
-### Histograms of Willow Height
+**Histograms of Willow Height**
 
 ```{r}
 willow.ht.wk %>% 
   ggplot() +
-  geom_histogram(aes(plant_ht_cm, fill = fenced), color = "black") +
-  viridis::scale_fill_viridis(discrete=TRUE) +
+  geom_histogram(aes(plant_ht_cm, fill = fenced), color = "grey50") +
+  # viridis::scale_fill_viridis(discrete=TRUE) +
+  scale_fill_manual(values = colfunc3(1)) +
   labs(x="Plant height (cm)", y = "Count", fill = "", caption = "KV. Macroplot heights") +
   theme_minimal() +
   facet_wrap(~time_class) +
@@ -936,16 +976,31 @@ ggsave("./output/figures_exported/willow_height/hist_willowht_TC_WK.png", dpi = 
 
 ### Modeling and Posterior Description
 
+```{r}
+willow.ht.wk %>% 
+  distinct(yr)
+  # glimpse()
+```
+
+
 ```{r, cache=TRUE}
-#### TC only (no fencing or burned)
+#### TC only (no fenced)
 stmod_ht_wk_TC <- stan_glmer(plant_ht_cm ~ time_class + (1 | site_id), data = willow.ht.wk,
                       family=Gamma(link="log"),
-                      iter = 8000,
+                      iter = 5000,
+                      seed = 1234
+                      )
+# TC
+stmod_ht_wk_TC <- stan_glmer(plant_ht_cm ~ time_class * fenced + (1 | site_id), data = willow.ht.wk,
+                      family=Gamma(link="log"),
+                      iter = 5000,
                       seed = 1234
                       )
 
 ## extract posterior
 posteriors.wk.ht <- insight::get_parameters(stmod_ht_wk_TC)
+# posteriors.wk.ht.tc.f <- insight::get_parameters(stmod_ht_wk_TCxF)
+
 ```
 
 **Prior summary**: plant_ht_cm ~ time_class + (1 | site_id)  
@@ -963,7 +1018,7 @@ ggsave("./output/figures_exported/willow_height/ppc_willowht_wk.png", dpi = 300,
 ggsave("./output/figures_exported/willow_height/ppc_willowht_wk.pdf", width = 4.75, height = 3.75)
 ```
 
-### Effect Existence and Significance Testing
+### Effect Description
 ```{r}
 # use function defined above
 fun.sexit.gt(stmod_ht_wk_TC) 
@@ -1058,7 +1113,23 @@ emmeans(stmod_ht_wk_TC, ~ time_class) %>%
 # EMM summaries with type = "response", the tests and confidence intervals are done before back-transforming. The ratios estimated here are actually ratios of geometric means. In general, a model with a log response is in fact a model for relative effects of any of its linear predictors, and this back-transformation to ratios goes hand-in-hand with that.
 ```
 
-## Willow Cover - Combined Core and Noncore Winter Range Macroplot Data
+```{r}
+color_scheme_set("teal")
+# color_scheme_set("teal")
+
+plot.mcmcareas_ht.wk <- mcmc_areas(posteriors.wk.ht,
+           prob = 0.9) +
+  ggtitle("Kawuneeche Valley") +
+  theme_minimal() +
+  theme(text = element_text(family = 'sans'))
+
+plot.mcmcareas_ht.wk
+
+ggsave("./output/figures_exported/willow_height/mcmcarea_willowht_TC_wk.png", dpi = 300, width = 6.75, height = 3.75)
+ggsave("./output/figures_exported/willow_height/mcmcarea_willowht_TC_wk.pdf", width = 6.75, height = 3.75)
+```
+
+## Willow Cover - Combined Winter Range Macroplot Data
 ```{r}
 # read in data
 # canopy.all.willow.sum <- read_csv("./output/exported_data/willow_cover_20200725.csv") %>% 
@@ -1116,16 +1187,6 @@ cov.wnc <- canopy.all.willow.sum %>%
 
 ```
 
-```{r, echo=FALSE, eval=FALSE, fig.width=7, fig.height=7}
-## histograms
-canopy.all.willow.sum %>% 
-  ggplot(aes(cover_allwillow)) +
-  geom_histogram() +
-  facet_grid(time_class~site_type) +
-  theme_minimal()
-
-```
-
 ### Summary Tables
 
 ```{r}
@@ -1154,7 +1215,7 @@ cov.wc.wnc %>%
 ```{r, fig.width=7, fig.height=5}
 cov.wc.wnc %>% 
   ggplot(aes(cover_allwillow)) +
-  geom_histogram() +
+  geom_histogram(color="grey50") +
   facet_grid(time_class~site_type) +
   theme_minimal()
 
@@ -1178,7 +1239,7 @@ stmod_cov.wc.wnc <- stan_glmer(cover_allwillow ~ time_class * fenced + (1 | site
                       data = cov.wc.wnc,
                       family = mgcv::betar,
                       prior_aux = exponential(1),
-                      iter = 8000,
+                      iter = 5000,
                       seed = 1234)
 
 ```
@@ -1226,7 +1287,7 @@ ggsave("./output/figures_exported/willow_cover/ppc_willowcov_wcwnc.pdf", width =
 
 ```
 
-### Effect Existence and Significance Testing
+### Effect Description
 ```{r}
 fun.sexit.gt(stmod_cov.wc.wnc$stanfit)
 
@@ -1311,22 +1372,41 @@ emmeans(stmod_cov.wc.wnc, ~ time_class | fenced) %>%
 
 ```
 
-### Central Posterior Interval Estimates  
+
 ```{r}
 ## extract posterior
 posteriors.cov.wcwnc <- insight::get_parameters(stmod_cov.wc.wnc)
-# posteriors.cov.wcwnc %>% names()
-
-bayesplot::mcmc_areas(posteriors.cov.wcwnc,
-           pars = c("time_class2013", "time_class2018", "time_class2013:fencedFenced","time_class2018:fencedFenced"),
-           prob = 0.9) +
-  theme_minimal() +
-  labs(title = "Posterior distributions", subtitle = "with medians and 90% intervals", caption = "Willow height, WC & WNC")
-
-ggsave("./output/figures_exported/willow_cover/mcmcarea_willowcov_TCxF_wcwnc.png", dpi = 300, width = 6.75, height = 3.75)
-ggsave("./output/figures_exported/willow_cover/mcmcarea_willowcov_TCxF_wcwnc.pdf", width = 6.75, height = 3.75)
-
 ```
+
+
+```{r}
+color_scheme_set("teal")
+# color_scheme_set("teal")
+
+plot.mcmcareas_cov.wcwnc <- mcmc_areas(posteriors.cov.wcwnc,
+           prob = 0.9) +
+  ggtitle("Combined Winter Range") +
+  theme_minimal() +
+  theme(text = element_text(family = 'sans'))
+
+plot.mcmcareas_cov.wcwnc
+
+ggsave("./output/figures_exported/willow_height/mcmcarea_willowcov_TC_wcwnc.png", dpi = 300, width = 6.75, height = 3.75)
+ggsave("./output/figures_exported/willow_height/mcmcarea_willowcov_TC_wcwnc.pdf", width = 6.75, height = 3.75)
+```
+
+
+```{r}
+# bayesplot::mcmc_areas(posteriors.cov.wcwnc,
+#            pars = c("time_class2013", "time_class2018", "time_class2013:fencedFenced","time_class2018:fencedFenced"),
+#            prob = 0.9) +
+#   theme_minimal() +
+#   labs(title = "Posterior distributions", subtitle = "with medians and 90% intervals", caption = "Willow height, WC & WNC")
+# 
+# ggsave("./output/figures_exported/willow_cover/mcmcarea_willowcov_TCxF_wcwnc.png", dpi = 300, width = 6.75, height = 3.75)
+# ggsave("./output/figures_exported/willow_cover/mcmcarea_willowcov_TCxF_wcwnc.pdf", width = 6.75, height = 3.75)
+```
+
 
 ### Effects of Burning
 
@@ -1342,7 +1422,7 @@ stmod_cov.wc.wnc.TCxFxB <- stan_glmer(cover_allwillow ~ time_class * burned * fe
 
 ```
 
-**Prior summary**: plant_ht_cm ~ time_class + (1 | site_id)  
+**Prior summary** cover_allwillow ~ time_class * burned * fenced + (1 | site_id) 
 ```{r}
 prior_summary(stmod_cov.wc.wnc.TCxFxB)
 ```
@@ -1357,7 +1437,7 @@ ggsave("./output/figures_exported/wc_wnc_willowcover_ppc_TCxFxB.pdf", width = 4.
 
 ```
 
-### Effect Existence and Significance Testing
+### Effect Description
 ```{r}
 
 fun.sexit.gt(stmod_cov.wc.wnc.TCxFxB$stanfit)
@@ -1424,7 +1504,7 @@ ggsave("./output/figures_exported/willow_cover/ppc_willowcov_wc.png", dpi = 300,
 ggsave("./output/figures_exported/willow_cover/ppc_willowcov_wc.pdf", width = 4.75, height = 3.75)
 
 ```
-### Effect Existence and Significance Testing
+### Effect Description
 ```{r}
 
 fun.sexit.gt(stmod_cov.wc$stanfit)
@@ -1514,10 +1594,9 @@ emmeans(stmod_cov.wc, ~ time_class | fenced) %>%
 
 ## Willow Cover - Noncore Winter Range Macroplot Data
 
-### Summary Tables
 
 ```{r}
-#### summary tables: time class and burned
+#### summary tables: time class and fenced
 cov.wnc %>% 
   group_by(time_class, fenced) %>% 
   summarytools::descr(cover_allwillow,stats = "common") %>% 
@@ -1570,12 +1649,9 @@ pp_check(stmod_cov.wnc) +
 ggsave("./output/figures_exported/willow_cover/ppc_willowcov_wc.png", dpi = 300, width = 4.75, height = 3.75)
 ggsave("./output/figures_exported/willow_cover/ppc_willowcov_wc.pdf", width = 4.75, height = 3.75)
 
-# cov.wnc %>% 
-#   ggplot(aes(cover_allwillow)) +
-#   geom_density()
 ```
 
-### Effect Existence and Significance Testing
+### Effect Description
 ```{r}
 fun.sexit.gt(stmod_cov.wnc$stanfit)
 
@@ -1673,6 +1749,83 @@ wbasin.loc <- wbasin %>%
 
 ```
 
+## Wild Basin Comparisons
+
+```{r}
+## write the combined WB18 and winter range/KV plots
+wb.evmp18.willows <- read_csv("./data/EVMP_derived/wildbasin_evmp2018.csv")
+
+```
+
+
+```{r, cache=TRUE}
+wb_rt2stan <- wb.evmp18.willows %>% 
+  select(-yr) %>% 
+  group_by(site_id,site_type) %>% 
+  summarytools::descr(stats = "common") %>% 
+  tb() %>%
+  select(c(site_type,mean))
+
+wb_stanaov <- stan_aov(mean ~ site_type, data = wb_rt2stan, 
+                  prior = R2(location = 0.25), adapt_delta = 0.999,
+                  iter = 5000,
+                  seed = 12345)
+wb_stanaov
+
+# report::report(wb_stanaov)
+
+
+```
+
+```{r}
+wb_stanglmer <- stan_lmer(mean ~ 1 + (1|site_type),
+                   data = wb_rt2stan, prior_intercept = cauchy(),
+                   iter=8000,
+                   prior_covariance = decov(shape = 2, scale = 2),
+                   adapt_delta = 0.999, seed = 12345)
+
+summary(wb_stanglmer)#
+
+describe_posterior(
+  wb_stanglmer,
+  effects = "all",
+  component = "all",
+  test = c("p_direction", "p_significance"),
+  centrality = "all"
+) %>% 
+  gt()
+
+## stan aov
+describe_posterior(
+  wb_stanaov,
+  effects = "all",
+  component = "all",
+  test = c("p_direction", "p_significance"),
+  centrality = "all"
+) %>% 
+  gt()
+
+
+pp_check(wb_stanaov)
+
+wb.emm <- emmeans::emmeans(wb_stanaov, ~ site_type)
+pairs.wb <- pairs(emmeans(wb_stanaov, ~ site_type))
+
+gg.emm.wb.ht <- plot(pairs.wb) +
+  geom_vline(aes(xintercept = 0), lty = "dashed", color = "red") +
+  theme_minimal() +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "WB, WC WNC, Willow Height")
+
+gg.emm.wb.ht
+
+ggsave("./output/figures_exported/gg_emm_wildbasin_ht.png", width = 4.5, height = 3.55, dpi=300)
+ggsave("./output/figures_exported/gg_emm_wildbasin_ht.pdf", width = 4.5, height = 3.55)
+
+# report::report(wb_stanaov)
+```
+
+
 # Session info
 
 R version 4.0.3 (2020-10-10)  
@@ -1691,5 +1844,26 @@ report::report_table(sessionInfo()) %>%
   tab_header(title="Package Information")
 
 ```
+
+```{r, echo=FALSE, eval=FALSE}
+iris %>% 
+  rowid_to_column(var = "specimen") %>% 
+#  gather(contains("."), key = "Measurement", value = "cm") %>% 
+  group_by(Species) %>% 
+  nest %>% 
+  mutate(plot = map2(Species, data,  function (.x,.y){
+    ggplot(data = .y, aes(x =  Sepal.Length, y = Sepal.Width)) +
+      geom_smooth() +
+      ggtitle(label = .x)
+    
+  })) -> iris.with.plots
+
+iris.with.plots$plot[[1]] + iris.with.plots$plot[[2]]
+
+iris.with.plots %>% 
+  filter(Species %in% c("setosa", "versicolor")) %>% 
+  pluck("plot") %>% reduce(`%+%`)  # pull(plot) %>% reduce(`%+%`) also works
+```
+
 
 # References

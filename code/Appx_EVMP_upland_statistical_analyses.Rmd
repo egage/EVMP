@@ -6,7 +6,8 @@ output:
   html_document: 
     theme: journal
     toc: yes
-    toc_depth: 4
+    toc_depth: 2
+    code_folding: hide
 editor_options: 
   markdown: 
     wrap: 72
@@ -50,6 +51,25 @@ library(bayestestR)
 library(gt)
 
 ```
+
+```{r}
+# custom gradients and palettes
+dbhclass.gradient5 <- c("#26185F", "#0095AF", "#9ADCBB", "#FCFFDD", "grey50")
+
+colfunc1<-colorRampPalette(c("#26185F","#0095AF","#9ADCBB", "#FCFFDD"))
+colfunc2<-colorRampPalette(c("#0095AF","#9ADCBB", "#FCFFDD"))
+colfunc3<-colorRampPalette(c("#0095AF","#9ADCBB"))
+colfunc3_RdBu <- colorRampPalette(c("#EF8A62", "#FDDBC7", "#D1E5F0", "#67A9CF"))
+
+# plot(rep(1,50),col=(colfunc1(50)), pch=19,cex=2)
+# plot(rep(1,5),col=(colfunc1(5)), pch=19,cex=2)
+pal.5a <- colfunc1(5)
+pal.7a <- colfunc1(7)
+
+# palette3 <- RColorBrewer::brewer.pal(6,"RdBu")
+# RColorBrewer::display.brewer.pal(6,"RdBu")
+```
+
 
 ```{r, echo=FALSE, eval = TRUE}
 
@@ -148,7 +168,7 @@ fun.contrast.plot <- function(df){
   geom_point(aes(y = estimate), size = 2.5) +
   theme_minimal() +
   labs(caption = "Point estimate displayed: median 
-HPD interval probability: 0.95", x = "Estimate", y = "Estimate") +
+HPD interval probability", x = "Estimate", y = "Estimate") +
   coord_flip()
 }
 
@@ -161,6 +181,7 @@ ppc.plot <- function(model){
   labs(x = "Value", y = "Density") +
   theme_minimal()
 }
+
 
 ```
 
@@ -235,9 +256,23 @@ cov.byspp <- cov.byspp %>%
 
 ```
 
+```{r, echoFALSE, eval=FALSE}
+## create seperate subsets of ac and anc
+cov.allshrubs %>% 
+  glimpse()
+
+cov.allshrubs %>% 
+  names()
+
+# cov.allshrubs %>% 
+#   tabyl()
+
+```
+
+
 # Results
 
-## Upland Shrub Cover, Pooled Shrub Species - Combined Core and NonCore Winter Range   
+## Upland Shrub Cover, Pooled Shrub Species - Combined Winter Range
 ```{r}
 #### summary tables
 cov.allshrubs %>% 
@@ -251,7 +286,7 @@ cov.allshrubs %>%
 ```
 
 ### Modeling and Posterior Description
-```{r}
+```{r, cache=TRUE}
 ## add cover in 0-1 range
 cov.allshrubs <- cov.allshrubs %>%
   mutate(cover = perc_cover/100)
@@ -288,10 +323,11 @@ fun.model.summary(stmod_cov.allshr)
 posteriors.upl.allshrubcov.tidy %>%
   ggplot() +
   geom_density(aes(fill = parameter, x = values),color="grey", alpha = .25) +
-  scale_fill_viridis(discrete = TRUE) +
+  # scale_fill_viridis(discrete = TRUE) +
+  scale_fill_manual(values = colfunc2(ncol(posteriors.upl.allshrubcov.tidy))) +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
-  labs(caption = "Upland, all shrub cover - Combined Core and Non-core Winter Range")
+  labs(caption = "Upland, all shrub cover - Combined Winter Range")
 ```
 
 ```{r}
@@ -301,8 +337,8 @@ pp_check(stmod_cov.allshr) +
   theme_minimal()
 
 # save plots
-ggsave("./output/figures_exported/upland_cover/ppc_stemcnt_upl_allshrubs.png", dpi = 300, width = 4.75, height = 3.75)
-ggsave("./output/figures_exported/upland_cover/ppc_stemcnt_upl_allshrubs.pdf", width = 4.75, height = 3.75)
+ggsave("./output/figures_202107_stats_upland/ppc_stemcnt_upl_allshrubs_ucunc.png", dpi = 300, width = 4.75, height = 3.75)
+# ggsave("./output/figures_202107_stats_upland/ppc_stemcnt_upl_allshrubs.pdf", width = 4.75, height = 3.75)
 ```
 
 ```{r}
@@ -310,7 +346,7 @@ fun.sexit.gt(stmod_cov.allshr$stanfit)
 
 fun.sexit.gt(stmod_cov.allshr$stanfit) %>%
   tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
-  gt::gtsave(filename = "./output/tables/upland_cover/xupl_cov_allshrubs_stmod_cover1_posteriors.rtf")
+  gt::gtsave(filename = "./output/tables/upland_cover/xPUTR_allshrubs_stmod_cover1_posteriors.rtf")
 ```
 
 
@@ -324,11 +360,27 @@ fun.desc.post1.gt.rope(stmod_cov.allshr$stanfit) %>%
 ## save
 fun.desc.post1.gt(stmod_cov.allshr$stanfit) %>%
   tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
-  gt::gtsave(filename = "./output/tables/upland_cover/upl_cov_allshrubs_stmod_cover1_posteriors.rtf")
+  gt::gtsave(filename = "./output/tables/upland_cover/PUTR_allshrubs_stmod_cover1_posteriors.rtf")
+
+```
+### Effect Description  
+#### Probability of Direction
+```{r}
+# Visualize the pd
+#### PD - AC
+p_direction(stmod_cov.allshr) %>% plot() +
+  theme_minimal() +
+  scale_fill_manual(values = colfunc3(2)) +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Upland Shrub Cover Combined Winter Range") +
+  scale_fill_manual(values = colfunc3(2))
+
+# save plots
+ggsave("./output/figures_202107_stats_upland/pd_uplcov_ucunc.png", dpi = 300, width = 4.75, height = 3.75)
 
 ```
 
-### Region of Practical Equivalence (ROPE)
+#### Region of Practical Equivalence (ROPE)
 ```{r}
 rope.uplcov.wcwnc.gt <- rope(stmod_cov.allshr$stanfit, ci=0.9) %>% 
   gt() %>%
@@ -363,10 +415,10 @@ emmeans(stmod_cov.allshr, ~ time_class) %>%
   theme_minimal() +
   geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Point estimate displayed: median 
-HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core and Noncore Winter Range, All Shrub Cover")
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range, All Shrub Cover")
 
-ggsave("./output/figures_exported/upland_cover/emm_shrubcov_wcwnc.pdf", width = 4.5, height = 3.55) # save plot
-ggsave("./output/figures_exported/upland_cover/emm_shrubcov_wcwnc.png", width = 4.5, height = 3.55) # save plot
+# ggsave("./output/figures_202107_stats_upland/emm_shrubcov_wcwnc.pdf", width = 4.5, height = 3.55) # save plot
+ggsave("./output/figures_202107_stats_upland/emm_shrubcov_wcwnc_unc.png", width = 4.5, height = 3.55) # save plot
 
 # table of contrasts
 emmeans(stmod_cov.allshr, ~ time_class) %>% 
@@ -386,6 +438,1350 @@ emmeans(stmod_cov.allshr, ~ time_class) %>%
 
 ```
 
+## Upland Shrub Cover, Pooled Shrub Species - Core Winter Range
+```{r}
+#### summary tables
+cov.allshrubs %>% 
+  group_by(time_class, site_type) %>% 
+  summarytools::descr(perc_cover, stats = "common") %>% 
+  summarytools::tb() %>%
+  mutate_if(.predicate = is.numeric,.funs = round, digits = 2) %>% 
+  gt() %>% 
+  tab_header(title = "Upland cover - site type + time_class")
+
+```
+
+### Modeling and Posterior Description
+```{r, cache=TRUE}
+cov.allshrubs.uc <- cov.allshrubs %>% 
+  filter(site_type == "core range") # add 
+
+## add cover in 0-1 range
+cov.allshrubs.uc <- cov.allshrubs.uc %>%
+  mutate(cover = perc_cover/100)
+  
+stmod_cov.allshr.uc <- stan_glmer(cover ~ time_class + (1 | site_id), 
+                      data = cov.allshrubs,
+                      family = mgcv::betar,
+                      prior_aux = exponential(2),
+                      iter = 8000,
+                      seed = 1234)
+
+```
+
+```{r}
+# extract posteriors
+posteriors.upl.allshrubcov.uc <- insight::get_parameters(stmod_cov.allshr.uc)
+
+# tidy
+posteriors.upl.allshrubcov.tidy <- posteriors.upl.allshrubcov %>%
+  pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
+
+```
+
+**Prior summary**: cover ~ time_class + (1 | site_id)    
+```{r}
+prior_summary(stmod_cov.allshr.uc)
+```
+
+```{r}
+fun.model.summary(stmod_cov.allshr.uc)
+```
+
+```{r}
+posteriors.upl.allshrubcov.tidy %>%
+  ggplot() +
+  geom_density(aes(fill = parameter, x = values),color="grey", alpha = .25) +
+  # scale_fill_viridis(discrete = TRUE) +
+  scale_fill_manual(values = colfunc2(ncol(posteriors.upl.allshrubcov.tidy))) +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Upland, all shrub cover - Combined Winter Range")
+```
+
+```{r}
+#### PP check plot
+pp_check(stmod_cov.allshr.uc) +
+  labs(x = "Value", y = "Density", caption = "upland cover ppc plot. all shrubs pooled") +
+  theme_minimal()
+
+# save plots
+ggsave("./output/figures_202107_stats_upland/ppc_stemcnt_upl_allshrubs_uc.png", dpi = 300, width = 4.75, height = 3.75)
+# ggsave("./output/figures_202107_stats_upland/ppc_stemcnt_upl_allshrubs.pdf", width = 4.75, height = 3.75)
+```
+
+```{r}
+fun.sexit.gt(stmod_cov.allshr.uc$stanfit)
+
+fun.sexit.gt(stmod_cov.allshr.uc$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
+  gt::gtsave(filename = "./output/tables/upland_cover/xPUTR_allshrubs_stmod_cover1_posteriors.rtf")
+```
+
+
+```{r, echo=FALSE, eval=FALSE}
+fun.desc.post1.gt.rope(stmod_cov.allshr.uc$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range")
+
+```
+
+```{r, eval = FALSE}
+## save
+fun.desc.post1.gt(stmod_cov.allshr.uc$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
+  gt::gtsave(filename = "./output/tables/upland_cover/PUTR_allshrubs_stmod_cover1_posteriors.rtf")
+
+```
+### Effect Description  
+#### Probability of Direction
+```{r}
+# Visualize the pd
+#### PD - AC
+p_direction(stmod_cov.allshr.uc) %>% plot() +
+  theme_minimal() +
+  scale_fill_manual(values = colfunc3(2)) +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Upland Shrub Cover Combined Winter Range") +
+  scale_fill_manual(values = colfunc3(2))
+
+# save plots
+ggsave("./output/figures_202107_stats_upland/pd_upl_uc.png", dpi = 300, width = 4.75, height = 3.75)
+
+```
+
+
+#### Region of Practical Equivalence (ROPE)
+```{r}
+rope.uplcov.wcwnc.gt <- rope(stmod_cov.allshr.uc$stanfit, ci=0.9) %>% 
+  gt() %>%
+  tab_header(title = "Percent in ROPE") %>% 
+  fmt_number(
+    columns = 5,
+    decimals = 2,
+    suffixing = TRUE
+  ) 
+
+rope.uplcov.wcwnc.gt
+# rope.uplcov.wcwnc.gt %>%
+#   gt::gtsave(filename = "./output/tables/upland_cover/rope_uplcov_wcwnc.rtf")
+```
+
+### Contrasts
+
+EMM summaries with type = "response", the tests and confidence intervals
+are done before back-transforming. The ratios estimated are ratios of
+geometric means. A model with a log response is in fact a model for
+relative effects of any of its linear predictors, and this
+back-transformation to ratios goes hand-in-hand with that.
+
+```{r, include=FALSE, echo=FALSE}
+# library(emmeans)
+# Note: EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE). Also, in multi-factor situations, you may specify by factor(s) to perform the comparisons separately at the levels of those factors.
+
+# Results are given on the log (not the response) scale.
+emmeans(stmod_cov.allshr.uc, ~ time_class) %>% 
+  pairs() %>% 
+  plot(type="response") +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range, All Shrub Cover")
+
+# ggsave("./output/figures_202107_stats_upland/emm_shrubcov_wcwnc.pdf", width = 4.5, height = 3.55) # save plot
+ggsave("./output/figures_202107_stats_upland/emm_shrubcov_uc.png", width = 4.5, height = 3.55) # save plot
+
+# table of contrasts
+emmeans(stmod_cov.allshr.uc, ~ time_class) %>% 
+  pairs() %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>%
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the log scale")
+
+# table of contrasts. Results are given on the response scale.
+emmeans(stmod_cov.allshr.uc, ~ time_class) %>% 
+  pairs(reverse = FALSE, type="response") %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the response scale.")
+
+```
+## Upland Shrub Cover, Pooled Shrub Species - Noncore Winter Range
+### Modeling and Posterior Description
+```{r, cache=TRUE}
+cov.allshrubs.unc <- cov.allshrubs %>% 
+  filter(site_type == "non-core range") # add 
+
+## add cover in 0-1 range
+cov.allshrubs.unc <- cov.allshrubs.unc %>%
+  mutate(cover = perc_cover/100)
+  
+stmod_cov.allshr.unc <- stan_glmer(cover ~ time_class + (1 | site_id), 
+                      data = cov.allshrubs,
+                      family = mgcv::betar,
+                      prior_aux = exponential(2),
+                      iter = 8000,
+                      seed = 1234)
+
+```
+
+```{r}
+# extract posteriors
+posteriors.upl.allshrubcov.unc <- insight::get_parameters(stmod_cov.allshr.unc)
+
+# tidy
+posteriors.upl.allshrubcov.tidy <- posteriors.upl.allshrubcov %>%
+  pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
+
+```
+
+**Prior summary**: cover ~ time_class + (1 | site_id)    
+```{r}
+prior_summary(stmod_cov.allshr.unc)
+```
+
+```{r}
+fun.model.summary(stmod_cov.allshr.unc)
+```
+
+```{r}
+posteriors.upl.allshrubcov.tidy %>%
+  ggplot() +
+  geom_density(aes(fill = parameter, x = values),color="grey", alpha = .25) +
+  # scale_fill_viridis(discrete = TRUE) +
+  scale_fill_manual(values = colfunc2(ncol(posteriors.upl.allshrubcov.tidy))) +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Upland, all shrub cover - Combined Winter Range")
+```
+
+```{r}
+#### PP check plot
+pp_check(stmod_cov.allshr.unc) +
+  labs(x = "Value", y = "Density", caption = "upland cover ppc plot. all shrubs pooled") +
+  theme_minimal()
+
+# save plots
+ggsave("./output/figures_202107_stats_upland/ppc_stemcnt_upl_allshrubs_unc.png", dpi = 300, width = 4.75, height = 3.75)
+# ggsave("./output/figures_202107_stats_upland/ppc_stemcnt_upl_allshrubs.pdf", width = 4.75, height = 3.75)
+```
+
+```{r}
+fun.sexit.gt(stmod_cov.allshr.unc$stanfit)
+
+fun.sexit.gt(stmod_cov.allshr.unc$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
+  gt::gtsave(filename = "./output/tables/upland_cover/xPUTR_allshrubs_stmod_cover1_posteriors.rtf")
+```
+
+
+```{r, echo=FALSE, eval=FALSE}
+fun.desc.post1.gt.rope(stmod_cov.allshr.unc$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range")
+
+```
+
+```{r, eval = FALSE}
+## save
+fun.desc.post1.gt(stmod_cov.allshr.unc$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
+  gt::gtsave(filename = "./output/tables/upland_cover/PUTR_allshrubs_stmod_cover1_posteriors.rtf")
+
+```
+### Effect Description  
+#### Probability of Direction
+```{r}
+# Visualize the pd
+#### PD - AC
+p_direction(stmod_cov.allshr.unc) %>% plot() +
+  theme_minimal() +
+  scale_fill_manual(values = colfunc3(2)) +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Upland Shrub Cover Combined Winter Range") +
+  scale_fill_manual(values = colfunc3(2))
+
+# save plots
+ggsave("./output/figures_202107_stats_upland/pd_uplcov_unc.png", dpi = 300, width = 4.75, height = 3.75)
+
+```
+
+
+#### Region of Practical Equivalence (ROPE)
+```{r}
+rope.uplcov.wcwnc.gt <- rope(stmod_cov.allshr.unc$stanfit, ci=0.9) %>% 
+  gt() %>%
+  tab_header(title = "Percent in ROPE") %>% 
+  fmt_number(
+    columns = 5,
+    decimals = 2,
+    suffixing = TRUE
+  ) 
+
+rope.uplcov.wcwnc.gt
+# rope.uplcov.wcwnc.gt %>%
+#   gt::gtsave(filename = "./output/tables/upland_cover/rope_uplcov_wcwnc.rtf")
+```
+
+### Contrasts
+
+EMM summaries with type = "response", the tests and confidence intervals
+are done before back-transforming. The ratios estimated are ratios of
+geometric means. A model with a log response is in fact a model for
+relative effects of any of its linear predictors, and this
+back-transformation to ratios goes hand-in-hand with that.
+
+```{r, include=FALSE, echo=FALSE}
+# library(emmeans)
+# Note: EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE). Also, in multi-factor situations, you may specify by factor(s) to perform the comparisons separately at the levels of those factors.
+
+# Results are given on the log (not the response) scale.
+emmeans(stmod_cov.allshr.unc, ~ time_class) %>% 
+  pairs() %>% 
+  plot(type="response") +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range, All Shrub Cover")
+
+# ggsave("./output/figures_202107_stats_upland/emm_shrubcov_unc.pdf", width = 4.5, height = 3.55) # save plot
+ggsave("./output/figures_202107_stats_upland/emm_shrubcov_unc.png", width = 4.5, height = 3.55) # save plot
+
+# table of contrasts
+emmeans(stmod_cov.allshr.unc, ~ time_class) %>% 
+  pairs() %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>%
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the log scale")
+
+# table of contrasts. Results are given on the response scale.
+emmeans(stmod_cov.allshr.unc, ~ time_class) %>% 
+  pairs(reverse = FALSE, type="response") %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the response scale.")
+
+```
+
+# Individual species
+
+```{r}
+upl.byspp <- upl.byspp %>%
+  mutate(yr = as.character(yr)) %>% 
+  mutate(time_class = case_when(yr == 2008 ~ "BL",
+                              yr == 2007 ~ "BL", 
+                              TRUE ~ as.character(yr))) %>% 
+  mutate(time_class = as_factor(time_class))
+
+
+
+upl.byspp %>% 
+  tabyl(shrub_species) %>% 
+  arrange(-n) %>% 
+  gt()
+
+```
+
+
+## Upland Shrub Cover, _Purshia tridentata_ - Combined Winter Range
+```{r}
+# PUTR
+upl.putr <- upl.byspp %>%
+  filter(shrub_species == "PUTR")
+
+#### summary tables
+upl.putr %>% 
+  group_by(time_class, site_type) %>% 
+  summarytools::descr(perc_cover, stats = "common") %>% 
+  summarytools::tb() %>%
+  mutate_if(.predicate = is.numeric,.funs = round, digits = 2) %>% 
+  gt() %>% 
+  tab_header(title = "PUTR cover ~ site type + time_class")
+
+```
+
+### Modeling and Posterior Description
+```{r, cache=TRUE}
+## add cover in 0-1 range
+upl.putr <- upl.putr %>%
+  mutate(cover = perc_cover/100)
+  
+stmod_cov.putr <- stan_glmer(cover ~ time_class + (1 | site_id), 
+                      data = upl.putr,
+                      family = mgcv::betar,
+                      prior_aux = exponential(2),
+                      iter = 8000,
+                      seed = 1234)
+
+```
+
+```{r}
+# extract posteriors
+posteriors.upl.putrubcov <- insight::get_parameters(stmod_cov.putr)
+
+# tidy
+posteriors.upl.putrubcov.tidy <- posteriors.upl.putrubcov %>%
+  pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
+
+```
+
+**Prior summary**: cover ~ time_class + (1 | site_id)    
+```{r}
+prior_summary(stmod_cov.putr)
+```
+
+```{r}
+fun.model.summary(stmod_cov.putr)
+```
+
+```{r}
+posteriors.upl.putrubcov.tidy %>%
+  ggplot() +
+  geom_density(aes(fill = parameter, x = values),color="grey", alpha = .25) +
+  # scale_fill_viridis(discrete = TRUE) +
+  scale_fill_manual(values = colfunc2(ncol(posteriors.upl.putrubcov.tidy))) +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Upland, PUTR cover - Combined Winter Range")
+```
+
+```{r}
+#### PP check plot
+pp_check(stmod_cov.putr) +
+  labs(x = "Value", y = "Density", caption = "upland cover ppc plot. PUTR") +
+  theme_minimal()
+
+# save plots
+ggsave("./output/figures_202107_stats_upland/ppc_PUTR_putrubs_unc.png", dpi = 300, width = 4.75, height = 3.75)
+# ggsave("./output/figures_202107_stats_upland/ppc_PUTR_putrubs.pdf", width = 4.75, height = 3.75)
+```
+
+```{r}
+fun.sexit.gt(stmod_cov.putr$stanfit)
+
+fun.sexit.gt(stmod_cov.putr$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
+  gt::gtsave(filename = "./output/tables/upland_cover/xPUTR_putr_stmod_cover1_posteriors.rtf")
+```
+
+
+```{r, echo=FALSE, eval=FALSE}
+fun.desc.post1.gt.rope(stmod_cov.putr$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description - PUTR", subtitle = "Combined Core & Noncore Winter Range")
+
+```
+
+```{r, eval = FALSE}
+## save
+fun.desc.post1.gt(stmod_cov.putr$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description - PUTR", subtitle = "Combined Core & Noncore Winter Range") %>% 
+  gt::gtsave(filename = "./output/tables/upland_cover/PUTR_stmod_cover1_posteriors.rtf")
+
+```
+### Effect Description  
+#### Probability of Direction
+```{r}
+# Visualize the pd
+#### PD - AC
+p_direction(stmod_cov.putr) %>% plot() +
+  theme_minimal() +
+  scale_fill_manual(values = colfunc3(2)) +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Upland Shrub Cover Combined Winter Range") +
+  scale_fill_manual(values = colfunc3(2))
+
+# save plots
+ggsave("./output/figures_202107_stats_upland/pd_putr_cov_unc.png", dpi = 300, width = 4.75, height = 3.75)
+
+```
+
+
+#### Region of Practical Equivalence (ROPE)
+```{r}
+rope.PUTRcov.wcwnc.gt <- rope(stmod_cov.putr$stanfit, ci=0.9) %>% 
+  gt() %>%
+  tab_header(title = "Percent in ROPE") %>% 
+  fmt_number(
+    columns = 5,
+    decimals = 2,
+    suffixing = TRUE
+  ) 
+
+rope.PUTRcov.wcwnc.gt
+# rope.PUTRcov.wcwnc.gt %>%
+#   gt::gtsave(filename = "./output/tables/upland_cover/rope_putr_cov_wcwnc.rtf")
+```
+
+### Contrasts
+
+EMM summaries with type = "response", the tests and confidence intervals
+are done before back-transforming. The ratios estimated are ratios of
+geometric means. A model with a log response is in fact a model for
+relative effects of any of its linear predictors, and this
+back-transformation to ratios goes hand-in-hand with that.
+
+```{r, include=FALSE, echo=FALSE}
+# library(emmeans)
+# Note: EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE). Also, in multi-factor situations, you may specify by factor(s) to perform the comparisons separately at the levels of those factors.
+
+# Results are given on the log (not the response) scale.
+emmeans(stmod_cov.putr, ~ time_class) %>% 
+  pairs() %>% 
+  plot(type="response") +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range, All Shrub Cover")
+
+ggsave("./output/figures_202107_stats_upland/emm_putr_cov_ucunc.png", width = 4.5, height = 3.55) # save plot
+
+# table of contrasts
+emmeans(stmod_cov.putr, ~ time_class) %>% 
+  pairs() %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>%
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the log scale")
+
+# table of contrasts. Results are given on the response scale.
+emmeans(stmod_cov.putr, ~ time_class) %>% 
+  pairs(reverse = FALSE, type="response") %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the response scale.")
+
+```
+
+## Upland Shrub Cover, _Purshia tridentata_ - Core Winter Range
+```{r}
+#### summary tables
+upl.putr %>% 
+  group_by(time_class, site_type) %>% 
+  summarytools::descr(perc_cover, stats = "common") %>% 
+  summarytools::tb() %>%
+  mutate_if(.predicate = is.numeric,.funs = round, digits = 2) %>% 
+  gt() %>% 
+  tab_header(title = "Upland cover - site type + time_class")
+
+```
+
+### Modeling and Posterior Description
+```{r, cache=TRUE}
+upl.putr.uc <- upl.putr %>% 
+  filter(site_type == "core range") # add 
+
+## add cover in 0-1 range
+upl.putr.uc <- upl.putr.uc %>%
+  mutate(cover = perc_cover/100)
+  
+stmod_cov.putr.uc <- stan_glmer(cover ~ time_class + (1 | site_id), 
+                      data = upl.putr,
+                      family = mgcv::betar,
+                      prior_aux = exponential(2),
+                      iter = 8000,
+                      seed = 1234)
+
+```
+
+```{r}
+# extract posteriors
+posteriors.upl.putrubcov.uc <- insight::get_parameters(stmod_cov.putr.uc)
+
+# tidy
+posteriors.upl.putrubcov.tidy <- posteriors.upl.putrubcov %>%
+  pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
+
+```
+
+**Prior summary**: cover ~ time_class + (1 | site_id)    
+```{r}
+prior_summary(stmod_cov.putr.uc)
+```
+
+```{r}
+fun.model.summary(stmod_cov.putr.uc)
+```
+
+```{r}
+posteriors.upl.putrubcov.tidy %>%
+  ggplot() +
+  geom_density(aes(fill = parameter, x = values),color="grey", alpha = .25) +
+  # scale_fill_viridis(discrete = TRUE) +
+  scale_fill_manual(values = colfunc2(ncol(posteriors.upl.putrubcov.tidy))) +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Upland,PUTR - Combined Winter Range")
+```
+
+```{r}
+#### PP check plot
+pp_check(stmod_cov.putr.uc) +
+  labs(x = "Value", y = "Density", caption = "upland cover ppc plot. PUTR") +
+  theme_minimal()
+
+# save plots
+ggsave("./output/figures_202107_stats_upland/ppc_PUTR_putrubs_uc.png", dpi = 300, width = 4.75, height = 3.75)
+# ggsave("./output/figures_202107_stats_upland/ppc_PUTR_putrubs.pdf", width = 4.75, height = 3.75)
+```
+
+```{r}
+fun.sexit.gt(stmod_cov.putr.uc$stanfit)
+
+fun.sexit.gt(stmod_cov.putr.uc$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
+  gt::gtsave(filename = "./output/tables/upland_cover/xPUTR_stmod_cover1_posteriors.rtf")
+```
+
+
+```{r, echo=FALSE, eval=FALSE}
+fun.desc.post1.gt.rope(stmod_cov.putr.uc$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range")
+
+```
+
+```{r, eval = FALSE}
+## save
+fun.desc.post1.gt(stmod_cov.putr.uc$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
+  gt::gtsave(filename = "./output/tables/upland_cover/RICE_stmod_cover1_posteriors.rtf")
+
+```
+### Effect Description  
+#### Probability of Direction
+```{r}
+# Visualize the pd
+#### PD - AC
+p_direction(stmod_cov.putr.uc) %>% plot() +
+  theme_minimal() +
+  scale_fill_manual(values = colfunc3(2)) +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Upland Shrub Cover Combined Winter Range") +
+  scale_fill_manual(values = colfunc3(2))
+
+# save plots
+ggsave("./output/figures_202107_stats_upland/pd_upl_uc.png", dpi = 300, width = 4.75, height = 3.75)
+
+```
+
+
+#### Region of Practical Equivalence (ROPE)
+```{r}
+rope.PUTRcov.wcwnc.gt <- rope(stmod_cov.putr.uc$stanfit, ci=0.9) %>% 
+  gt() %>%
+  tab_header(title = "Percent in ROPE") %>% 
+  fmt_number(
+    columns = 5,
+    decimals = 2,
+    suffixing = TRUE
+  ) 
+
+rope.PUTRcov.wcwnc.gt
+# rope.PUTRcov.wcwnc.gt %>%
+#   gt::gtsave(filename = "./output/tables/upland_cover/rope_PUTRcov_wcwnc.rtf")
+```
+
+### Contrasts
+
+EMM summaries with type = "response", the tests and confidence intervals
+are done before back-transforming. The ratios estimated are ratios of
+geometric means. A model with a log response is in fact a model for
+relative effects of any of its linear predictors, and this
+back-transformation to ratios goes hand-in-hand with that.
+
+```{r, include=FALSE, echo=FALSE}
+# library(emmeans)
+# Note: EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE). Also, in multi-factor situations, you may specify by factor(s) to perform the comparisons separately at the levels of those factors.
+
+# Results are given on the log (not the response) scale.
+emmeans(stmod_cov.putr.uc, ~ time_class) %>% 
+  pairs() %>% 
+  plot(type="response") +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range,PUTR")
+
+# ggsave("./output/figures_202107_stats_upland/emm_PUTRcov_wcwnc.pdf", width = 4.5, height = 3.55) # save plot
+ggsave("./output/figures_202107_stats_upland/emm_PUTRcov_uc.png", width = 4.5, height = 3.55) # save plot
+
+# table of contrasts
+emmeans(stmod_cov.putr.uc, ~ time_class) %>% 
+  pairs() %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>%
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the log scale")
+
+# table of contrasts. Results are given on the response scale.
+emmeans(stmod_cov.putr.uc, ~ time_class) %>% 
+  pairs(reverse = FALSE, type="response") %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the response scale.")
+
+```
+## Upland Shrub Cover, _Purshia tridentata_ - Noncore Winter Range
+### Modeling and Posterior Description
+```{r, cache=TRUE}
+upl.putr.unc <- upl.putr %>% 
+  filter(site_type == "non-core range") # add 
+
+## add cover in 0-1 range
+upl.putr.unc <- upl.putr.unc %>%
+  mutate(cover = perc_cover/100)
+  
+stmod_cov.putr.unc <- stan_glmer(cover ~ time_class + (1 | site_id), 
+                      data = upl.putr,
+                      family = mgcv::betar,
+                      prior_aux = exponential(2),
+                      iter = 8000,
+                      seed = 1234)
+
+```
+
+```{r}
+# extract posteriors
+posteriors.upl.putrubcov.unc <- insight::get_parameters(stmod_cov.putr.unc)
+
+# tidy
+posteriors.upl.putrubcov.tidy <- posteriors.upl.putrubcov %>%
+  pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
+
+```
+
+**Prior summary**: cover ~ time_class + (1 | site_id)    
+```{r}
+prior_summary(stmod_cov.putr.unc)
+```
+
+```{r}
+fun.model.summary(stmod_cov.putr.unc)
+```
+
+```{r}
+posteriors.upl.putrubcov.tidy %>%
+  ggplot() +
+  geom_density(aes(fill = parameter, x = values),color="grey", alpha = .25) +
+  # scale_fill_viridis(discrete = TRUE) +
+  scale_fill_manual(values = colfunc2(ncol(posteriors.upl.putrubcov.tidy))) +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Upland,PUTR - Combined Winter Range")
+```
+
+```{r}
+#### PP check plot
+pp_check(stmod_cov.putr.unc) +
+  labs(x = "Value", y = "Density", caption = "upland cover ppc plot. PUTR") +
+  theme_minimal()
+
+# save plots
+ggsave("./output/figures_202107_stats_upland/ppc_PUTR_putrubs_unc.png", dpi = 300, width = 4.75, height = 3.75)
+# ggsave("./output/figures_202107_stats_upland/ppc_PUTR_putrubs.pdf", width = 4.75, height = 3.75)
+```
+
+```{r}
+fun.sexit.gt(stmod_cov.putr.unc$stanfit)
+
+fun.sexit.gt(stmod_cov.putr.unc$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
+  gt::gtsave(filename = "./output/tables/upland_cover/xRICE_stmod_cover1_posteriors.rtf")
+```
+
+
+```{r, echo=FALSE, eval=FALSE}
+fun.desc.post1.gt.rope(stmod_cov.putr.unc$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range")
+
+```
+
+```{r, eval = FALSE}
+## save
+fun.desc.post1.gt(stmod_cov.putr.unc$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
+  gt::gtsave(filename = "./output/tables/upland_cover/RICE_stmod_cover1_posteriors.rtf")
+
+```
+### Effect Description  
+#### Probability of Direction
+```{r}
+# Visualize the pd
+#### PD - AC
+p_direction(stmod_cov.putr.unc) %>% plot() +
+  theme_minimal() +
+  scale_fill_manual(values = colfunc3(2)) +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Upland Shrub Cover Combined Winter Range") +
+  scale_fill_manual(values = colfunc3(2))
+
+# save plots
+ggsave("./output/figures_202107_stats_upland/pd_PUTRcov_unc.png", dpi = 300, width = 4.75, height = 3.75)
+
+```
+
+
+#### Region of Practical Equivalence (ROPE)
+```{r}
+rope.PUTRcov.wcwnc.gt <- rope(stmod_cov.putr.unc$stanfit, ci=0.9) %>% 
+  gt() %>%
+  tab_header(title = "Percent in ROPE") %>% 
+  fmt_number(
+    columns = 5,
+    decimals = 2,
+    suffixing = TRUE
+  ) 
+
+rope.PUTRcov.wcwnc.gt
+# rope.PUTRcov.wcwnc.gt %>%
+#   gt::gtsave(filename = "./output/tables/upland_cover/rope_RICEcov_wcwnc.rtf")
+```
+
+### Contrasts
+
+EMM summaries with type = "response", the tests and confidence intervals
+are done before back-transforming. The ratios estimated are ratios of
+geometric means. A model with a log response is in fact a model for
+relative effects of any of its linear predictors, and this
+back-transformation to ratios goes hand-in-hand with that.
+
+```{r, include=FALSE, echo=FALSE}
+# library(emmeans)
+# Note: EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE). Also, in multi-factor situations, you may specify by factor(s) to perform the comparisons separately at the levels of those factors.
+
+# Results are given on the log (not the response) scale.
+emmeans(stmod_cov.putr.unc, ~ time_class) %>% 
+  pairs() %>% 
+  plot(type="response") +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range,PUTR")
+
+# ggsave("./output/figures_202107_stats_upland/emm_PUTRcov_unc.pdf", width = 4.5, height = 3.55) # save plot
+ggsave("./output/figures_202107_stats_upland/emm_PUTRcov_unc.png", width = 4.5, height = 3.55) # save plot
+
+# table of contrasts
+emmeans(stmod_cov.putr.unc, ~ time_class) %>% 
+  pairs() %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>%
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the log scale")
+
+# table of contrasts. Results are given on the response scale.
+emmeans(stmod_cov.putr.unc, ~ time_class) %>% 
+  pairs(reverse = FALSE, type="response") %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the response scale.")
+
+```
+
+## Upland Shrub Cover, _Ribes cereum_ - Combined Winter Range
+```{r}
+# PUTR
+upl.rice <- upl.byspp %>%
+  filter(shrub_species == "RICE")
+
+#### summary tables
+upl.rice %>% 
+  group_by(time_class, site_type) %>% 
+  summarytools::descr(perc_cover, stats = "common") %>% 
+  summarytools::tb() %>%
+  mutate_if(.predicate = is.numeric,.funs = round, digits = 2) %>% 
+  gt() %>% 
+  tab_header(title = "Upland cover ~ site type + time_class")
+
+```
+
+### Modeling and Posterior Description
+```{r, cache=TRUE}
+## add cover in 0-1 range
+upl.rice <- upl.rice %>%
+  mutate(cover = perc_cover/100)
+  
+stmod_cov.rice <- stan_glmer(cover ~ time_class + (1 | site_id), 
+                      data = upl.rice,
+                      family = mgcv::betar,
+                      prior_aux = exponential(2),
+                      iter = 8000,
+                      seed = 1234)
+
+```
+
+```{r}
+# extract posteriors
+posteriors.upl.riceubcov <- insight::get_parameters(stmod_cov.rice)
+
+# tidy
+posteriors.upl.riceubcov.tidy <- posteriors.upl.riceubcov %>%
+  pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
+
+```
+
+**Prior summary**: cover ~ time_class + (1 | site_id)    
+```{r}
+prior_summary(stmod_cov.rice)
+```
+
+```{r}
+fun.model.summary(stmod_cov.rice)
+```
+
+```{r}
+posteriors.upl.riceubcov.tidy %>%
+  ggplot() +
+  geom_density(aes(fill = parameter, x = values),color="grey", alpha = .25) +
+  # scale_fill_viridis(discrete = TRUE) +
+  scale_fill_manual(values = colfunc2(ncol(posteriors.upl.riceubcov.tidy))) +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Upland,RICE - Combined Winter Range")
+```
+
+```{r}
+#### PP check plot
+pp_check(stmod_cov.rice) +
+  labs(x = "Value", y = "Density", caption = "upland cover ppc plot. RICE") +
+  theme_minimal()
+
+# save plots
+ggsave("./output/figures_202107_stats_upland/ppc_PUTR_riceubs_unc.png", dpi = 300, width = 4.75, height = 3.75)
+# ggsave("./output/figures_202107_stats_upland/ppc_PUTR_riceubs.pdf", width = 4.75, height = 3.75)
+```
+
+```{r}
+fun.sexit.gt(stmod_cov.rice$stanfit)
+
+fun.sexit.gt(stmod_cov.rice$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
+  gt::gtsave(filename = "./output/tables/upland_cover/xPUTR_riceubs_stmod_cover1_posteriors.rtf")
+```
+
+
+```{r, echo=FALSE, eval=FALSE}
+fun.desc.post1.gt.rope(stmod_cov.rice$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range")
+
+```
+
+```{r, eval = FALSE}
+## save
+fun.desc.post1.gt(stmod_cov.rice$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
+  gt::gtsave(filename = "./output/tables/upland_cover/rice_cov_stmod_cover1_posteriors.rtf")
+
+```
+### Effect Description  
+#### Probability of Direction
+```{r}
+# Visualize the pd
+#### PD - AC
+p_direction(stmod_cov.rice) %>% plot() +
+  theme_minimal() +
+  scale_fill_manual(values = colfunc3(2)) +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Upland Shrub Cover Combined Winter Range") +
+  scale_fill_manual(values = colfunc3(2))
+
+# save plots
+ggsave("./output/figures_202107_stats_upland/pd_RICEcov_ucunc.png", dpi = 300, width = 4.75, height = 3.75)
+
+```
+
+
+#### Region of Practical Equivalence (ROPE)
+```{r}
+rope.RICEcov.wcwnc.gt <- rope(stmod_cov.rice$stanfit, ci=0.9) %>% 
+  gt() %>%
+  tab_header(title = "Percent in ROPE") %>% 
+  fmt_number(
+    columns = 5,
+    decimals = 2,
+    suffixing = TRUE
+  ) 
+
+rope.RICEcov.wcwnc.gt
+# rope.RICEcov.wcwnc.gt %>%
+#   gt::gtsave(filename = "./output/tables/upland_cover/rope_RICEcov_wcwnc.rtf")
+```
+
+### Contrasts
+
+EMM summaries with type = "response", the tests and confidence intervals
+are done before back-transforming. The ratios estimated are ratios of
+geometric means. A model with a log response is in fact a model for
+relative effects of any of its linear predictors, and this
+back-transformation to ratios goes hand-in-hand with that.
+
+```{r, include=FALSE, echo=FALSE}
+# library(emmeans)
+# Note: EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE). Also, in multi-factor situations, you may specify by factor(s) to perform the comparisons separately at the levels of those factors.
+
+# Results are given on the log (not the response) scale.
+emmeans(stmod_cov.rice, ~ time_class) %>% 
+  pairs() %>% 
+  plot(type="response") +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range,RICE")
+
+# ggsave("./output/figures_202107_stats_upland/emm_RICEcov_wcwnc.pdf", width = 4.5, height = 3.55) # save plot
+ggsave("./output/figures_202107_stats_upland/emm_RICEcov_wcwnc_unc.png", width = 4.5, height = 3.55) # save plot
+
+# table of contrasts
+emmeans(stmod_cov.rice, ~ time_class) %>% 
+  pairs() %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>%
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the log scale")
+
+# table of contrasts. Results are given on the response scale.
+emmeans(stmod_cov.rice, ~ time_class) %>% 
+  pairs(reverse = FALSE, type="response") %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the response scale.")
+
+```
+
+## Upland Shrub Cover, _Ribes cereum_ - Core Winter Range
+```{r}
+#### summary tables
+upl.rice %>% 
+  group_by(time_class, site_type) %>% 
+  summarytools::descr(perc_cover, stats = "common") %>% 
+  summarytools::tb() %>%
+  mutate_if(.predicate = is.numeric,.funs = round, digits = 2) %>% 
+  gt() %>% 
+  tab_header(title = "Upland cover - site type + time_class")
+
+```
+
+### Modeling and Posterior Description
+```{r, cache=TRUE}
+upl.rice.uc <- upl.rice %>% 
+  filter(site_type == "core range") # add 
+
+## add cover in 0-1 range
+upl.rice.uc <- upl.rice.uc %>%
+  mutate(cover = perc_cover/100)
+  
+stmod_cov.rice.uc <- stan_glmer(cover ~ time_class + (1 | site_id), 
+                      data = upl.rice,
+                      family = mgcv::betar,
+                      prior_aux = exponential(2),
+                      iter = 8000,
+                      seed = 1234)
+
+```
+
+```{r}
+# extract posteriors
+posteriors.upl.riceubcov.uc <- insight::get_parameters(stmod_cov.rice.uc)
+
+# tidy
+posteriors.upl.riceubcov.tidy <- posteriors.upl.riceubcov %>%
+  pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
+
+```
+
+**Prior summary**: cover ~ time_class + (1 | site_id)    
+```{r}
+prior_summary(stmod_cov.rice.uc)
+```
+
+```{r}
+fun.model.summary(stmod_cov.rice.uc)
+```
+
+```{r}
+posteriors.upl.riceubcov.tidy %>%
+  ggplot() +
+  geom_density(aes(fill = parameter, x = values),color="grey", alpha = .25) +
+  # scale_fill_viridis(discrete = TRUE) +
+  scale_fill_manual(values = colfunc2(ncol(posteriors.upl.riceubcov.tidy))) +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Upland,RICE - Combined Winter Range")
+```
+
+```{r}
+#### PP check plot
+pp_check(stmod_cov.rice.uc) +
+  labs(x = "Value", y = "Density", caption = "upland cover ppc plot. RICE") +
+  theme_minimal()
+
+# save plots
+ggsave("./output/figures_202107_stats_upland/ppc_RICE_riceubs_uc.png", dpi = 300, width = 4.75, height = 3.75)
+# ggsave("./output/figures_202107_stats_upland/ppc_RICE_riceubs.pdf", width = 4.75, height = 3.75)
+```
+
+```{r}
+fun.sexit.gt(stmod_cov.rice.uc$stanfit)
+
+fun.sexit.gt(stmod_cov.rice.uc$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
+  gt::gtsave(filename = "./output/tables/upland_cover/RICE_riceubs_stmod_cover1_posteriors.rtf")
+```
+
+
+```{r, echo=FALSE, eval=FALSE}
+fun.desc.post1.gt.rope(stmod_cov.rice.uc$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range")
+
+```
+
+```{r, eval = FALSE}
+## save
+fun.desc.post1.gt(stmod_cov.rice.uc$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
+  gt::gtsave(filename = "./output/tables/upland_cover/RICE_riceubs_stmod_cover1_posteriors.rtf")
+
+```
+### Effect Description  
+#### Probability of Direction
+```{r}
+# Visualize the pd
+#### PD - AC
+p_direction(stmod_cov.rice.uc) %>% plot() +
+  theme_minimal() +
+  scale_fill_manual(values = colfunc3(2)) +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Upland Shrub Cover Combined Winter Range") +
+  scale_fill_manual(values = colfunc3(2))
+
+# save plots
+ggsave("./output/figures_202107_stats_upland/pd_upl_uc.png", dpi = 300, width = 4.75, height = 3.75)
+
+```
+
+
+#### Region of Practical Equivalence (ROPE)
+```{r}
+rope.RICEcov.wcwnc.gt <- rope(stmod_cov.rice.uc$stanfit, ci=0.9) %>% 
+  gt() %>%
+  tab_header(title = "Percent in ROPE") %>% 
+  fmt_number(
+    columns = 5,
+    decimals = 2,
+    suffixing = TRUE
+  ) 
+
+rope.RICEcov.wcwnc.gt
+# rope.RICEcov.wcwnc.gt %>%
+#   gt::gtsave(filename = "./output/tables/upland_cover/rope_RICEcov_wcwnc.rtf")
+```
+
+### Contrasts
+
+EMM summaries with type = "response", the tests and confidence intervals
+are done before back-transforming. The ratios estimated are ratios of
+geometric means. A model with a log response is in fact a model for
+relative effects of any of its linear predictors, and this
+back-transformation to ratios goes hand-in-hand with that.
+
+```{r, include=FALSE, echo=FALSE}
+# library(emmeans)
+# Note: EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE). Also, in multi-factor situations, you may specify by factor(s) to perform the comparisons separately at the levels of those factors.
+
+# Results are given on the log (not the response) scale.
+emmeans(stmod_cov.rice.uc, ~ time_class) %>% 
+  pairs() %>% 
+  plot(type="response") +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range,RICE")
+
+# ggsave("./output/figures_202107_stats_upland/emm_RICEcov_wcwnc.pdf", width = 4.5, height = 3.55) # save plot
+ggsave("./output/figures_202107_stats_upland/emm_RICEcov_uc.png", width = 4.5, height = 3.55) # save plot
+
+# table of contrasts
+emmeans(stmod_cov.rice.uc, ~ time_class) %>% 
+  pairs() %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>%
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the log scale")
+
+# table of contrasts. Results are given on the response scale.
+emmeans(stmod_cov.rice.uc, ~ time_class) %>% 
+  pairs(reverse = FALSE, type="response") %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the response scale.")
+
+```
+## Upland Shrub Cover, _Ribes cereum_ - Noncore Winter Range
+### Modeling and Posterior Description
+```{r, cache=TRUE}
+upl.rice.unc <- upl.rice %>% 
+  filter(site_type == "non-core range") # add 
+
+## add cover in 0-1 range
+upl.rice.unc <- upl.rice.unc %>%
+  mutate(cover = perc_cover/100)
+  
+stmod_cov.rice.unc <- stan_glmer(cover ~ time_class + (1 | site_id), 
+                      data = upl.rice.unc,
+                      family = mgcv::betar,
+                      prior_aux = exponential(2),
+                      iter = 8000,
+                      seed = 1234)
+
+```
+
+```{r}
+# extract posteriors
+posteriors.upl.riceubcov.unc <- insight::get_parameters(stmod_cov.rice.unc)
+
+# tidy
+posteriors.upl.riceubcov.tidy <- posteriors.upl.riceubcov %>%
+  pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
+
+```
+
+**Prior summary**: cover ~ time_class + (1 | site_id)    
+```{r}
+prior_summary(stmod_cov.rice.unc)
+```
+
+```{r}
+fun.model.summary(stmod_cov.rice.unc)
+```
+
+```{r}
+posteriors.upl.riceubcov.tidy %>%
+  ggplot() +
+  geom_density(aes(fill = parameter, x = values),color="grey", alpha = .25) +
+  # scale_fill_viridis(discrete = TRUE) +
+  scale_fill_manual(values = colfunc2(ncol(posteriors.upl.riceubcov.tidy))) +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Upland,RICE - Combined Winter Range")
+```
+
+```{r}
+#### PP check plot
+pp_check(stmod_cov.rice.unc) +
+  labs(x = "Value", y = "Density", caption = "upland cover ppc plot. RICE") +
+  theme_minimal()
+
+# save plots
+ggsave("./output/figures_202107_stats_upland/ppc_RICE_riceubs_unc.png", dpi = 300, width = 4.75, height = 3.75)
+# ggsave("./output/figures_202107_stats_upland/ppc_RICE_riceubs.pdf", width = 4.75, height = 3.75)
+```
+
+```{r}
+fun.sexit.gt(stmod_cov.rice.unc$stanfit)
+
+fun.sexit.gt(stmod_cov.rice.unc$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
+  gt::gtsave(filename = "./output/tables/upland_cover/xRICE_riceubs_stmod_cover1_posteriors.rtf")
+```
+
+
+```{r, echo=FALSE, eval=FALSE}
+fun.desc.post1.gt.rope(stmod_cov.rice.unc$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range")
+
+```
+
+```{r, eval = FALSE}
+## save
+fun.desc.post1.gt(stmod_cov.rice.unc$stanfit) %>%
+  tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
+  gt::gtsave(filename = "./output/tables/upland_cover/RICE_riceubs_stmod_cover1_posteriors.rtf")
+
+```
+### Effect Description  
+#### Probability of Direction
+```{r}
+# Visualize the pd
+#### PD - AC
+p_direction(stmod_cov.rice.unc) %>% plot() +
+  theme_minimal() +
+  scale_fill_manual(values = colfunc3(2)) +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Upland Shrub Cover Combined Winter Range") +
+  scale_fill_manual(values = colfunc3(2))
+
+# save plots
+ggsave("./output/figures_202107_stats_upland/pd_RICEcov_unc.png", dpi = 300, width = 4.75, height = 3.75)
+
+```
+
+
+#### Region of Practical Equivalence (ROPE)
+```{r}
+rope.RICEcov.wcwnc.gt <- rope(stmod_cov.rice.unc$stanfit, ci=0.9) %>% 
+  gt() %>%
+  tab_header(title = "Percent in ROPE") %>% 
+  fmt_number(
+    columns = 5,
+    decimals = 2,
+    suffixing = TRUE
+  ) 
+
+rope.RICEcov.wcwnc.gt
+# rope.RICEcov.wcwnc.gt %>%
+#   gt::gtsave(filename = "./output/tables/upland_cover/rope_RICEcov_wcwnc.rtf")
+```
+
+### Contrasts
+
+EMM summaries with type = "response", the tests and confidence intervals
+are done before back-transforming. The ratios estimated are ratios of
+geometric means. A model with a log response is in fact a model for
+relative effects of any of its linear predictors, and this
+back-transformation to ratios goes hand-in-hand with that.
+
+```{r, include=FALSE, echo=FALSE}
+# library(emmeans)
+# Note: EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE). Also, in multi-factor situations, you may specify by factor(s) to perform the comparisons separately at the levels of those factors.
+
+# Results are given on the log (not the response) scale.
+emmeans(stmod_cov.rice.unc, ~ time_class) %>% 
+  pairs() %>% 
+  plot(type="response") +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range,RICE")
+
+# ggsave("./output/figures_202107_stats_upland/emm_RICEcov_unc.pdf", width = 4.5, height = 3.55) # save plot
+ggsave("./output/figures_202107_stats_upland/emm_RICEcov_unc.png", width = 4.5, height = 3.55) # save plot
+
+# table of contrasts
+emmeans(stmod_cov.rice.unc, ~ time_class) %>% 
+  pairs() %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>%
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the log scale")
+
+# table of contrasts. Results are given on the response scale.
+emmeans(stmod_cov.rice.unc, ~ time_class) %>% 
+  pairs(reverse = FALSE, type="response") %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric),round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the response scale.")
+
+```
+
+
+
 # Session info
 
 R version 4.0.3 (2020-10-10)  
@@ -404,7 +1800,8 @@ subset(data.frame(sessioninfo::package_info()), attached==TRUE, c(package, loade
 citation(package = "emmeans")
 citation(package = "rstanarm")
 citation(package = "bayestestR")
+citation(package = "Tidyverse")
+citation(package = "Bayesplot")
 ```
 
 
-# References

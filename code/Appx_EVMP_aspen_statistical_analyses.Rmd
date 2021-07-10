@@ -6,7 +6,7 @@ output:
   html_document: 
     theme: journal
     toc: yes
-    toc_depth: 3
+    toc_depth: 2
     code_folding: hide
 editor_options: 
   markdown: 
@@ -123,6 +123,27 @@ ppc.plot <- function(model){
   theme_minimal()
 }
 
+## emmip fence x tc
+plotF.emmip_FxTC_response <- function(model){
+  emmip(model, fenced ~ time_class, type = "response") +
+  theme_minimal() +
+  scale_color_manual(values = colfunc3(2)) +
+  labs(color="") +
+  theme(legend.position = "top")
+  # theme(legend.position = c(.15, .15))
+}
+
+
+
+# plot.emmip.smsap.acanc <- emmip(stmod_stally2.acanc.sm, fenced ~ time_class, type = "reponse",
+#   breaks = seq(0.50, 1, by = 0.10)) +
+#   theme_minimal() +
+#   scale_color_manual(values = colfunc3(2)) +
+#   labs(color="") +
+#   theme(legend.position = c(.15, .15))
+# 
+# plot.emmip.smsap.acanc
+
 ## describe posterior to DT
 desc.post1 <- function(model){
   describe_posterior(
@@ -156,39 +177,6 @@ pal.7a <- colfunc1(7)
 # RColorBrewer::display.brewer.pal(6,"RdBu")
 ```
 
-```{r, eval=FALSE, echo=FALSE}
-# code snippets
-snippet my_custom_barchart
-	  ggplot(${1:mydf}, aes(x=${2:myxcol}, y=${3:myycol})) + 
-	  geom_col(color = "black", fill="#0072B2") +
-	  theme_minimal() +
-	  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
-	        panel.grid.minor = element_blank(), axis.line = 
-	          element_line(colour = "gray"),
-	        plot.title = element_text(hjust = 0.5),
-	        plot.subtitle = element_text(hjust = 0.5)
-	  ) +
-	  scale_y_continuous(label = comma) + 
-	xlab("") +
-	ylab("") +
-	geom_text(aes(label=scales::dollar(${3:myycol})), vjust=1.5, colour="white", 
-	  position=position_dodge(.9), size=5) +
-	ggtitle("${4:mytitle}", subtitle = 
-	  "${5:mysubtitle}") 
-	  
-
-```
-
-
-<details><summary>Click here</summary>
-Some text
-
-```{r code}
-# even code
-print("Hello world!")
-```
-</details>
-
 # Introduction
 
 This document contains code for running statistical analyses of Elk
@@ -220,8 +208,8 @@ to specific tasks (e.g., the "bayesplot" plot for visualization of
 Bayesian posterior distributions) were also used [@gabry2019].
 
 Bayesian repeated measures analyses were fit separately for combined
-core and non-core winter range, core winter range (WC) and non-core
-winter range plots (WNC) with plots treated as random factors using the
+core and noncore winter range, core winter range, and noncore
+winter range plots with plots treated as random factors using the
 'stan_glmer' function in the rstanrm package
 [@goodrich2020][@brilleman2018]. Bayesian estimation was performed via
 MCMC adding independent weakly informed priors specific to the data type
@@ -234,13 +222,15 @@ associated with the most probable direction (positive or negative) of
 the effect (e.g., time class, fencing). The PD is correlated with the
 frequentist p-value, with a two-sided p-value of respectively .1, .05,
 and .01 approximated by a PD of 95%, 97.5%, and 99.5% [@makowski2019].
-the "region of practical equivalence" (ROPE) to evaluate the probability
+The "region of practical equivalence" (ROPE) was used to evaluate the probability
 of a parameter being outside a range that can be considered as
 "practically no effect", i.e., a region enclosing values that are
-equivalent to the null value for practical purposes [@kruschke2018],
-with the proportion of the 95% HDI credible interval falling within the
+equivalent to the null value for practical purposes [@kruschke2018].
+The proportion of the 95% HDI credible interval falling within the
 ROPE was used as an index for an analog to frequentist "null-hypothesis"
 testing.
+
+
 
 
 ```{r}
@@ -406,6 +396,98 @@ ht_perc1 %>%
 
 ```
 
+
+```{r}
+tally.sapsize <- ht_perc1 %>%
+  filter(live_dead == "LIVE") %>%
+  group_by(sap_size, site_id, site_type, time_class, fenced, burned) %>% 
+  summarise(sum.st = sum(stem_tally)) %>% 
+  ungroup() 
+
+
+sapsize_summaryTCxSiteType <- tally.sapsize %>%
+  group_by(time_class, site_type, sap_size) %>%  
+  summarytools::descr(var = sum.st, round.digits = 1) %>% 
+  summarytools::tb() %>%
+  mutate(across(where(is.numeric), round, 1)) %>% 
+  select(-c(variable, se.skewness, kurtosis, pct.valid,cv, skewness))
+  
+sapsize_summaryTCxSiteType %>% 
+  rename(n = n.valid, 'Time class' = time_class) %>% 
+  arrange(sap_size,site_type,'time_class') %>% 
+  gt() %>% 
+  tab_header(title = "Aspen Saplings")# 
+
+## barchart
+sapsize_summaryTCxSiteType %>% 
+  mutate(site_type = as_factor(site_type)) %>% 
+  mutate(site_type = fct_relevel(site_type, "AK", after = 2)) %>% 
+  ggplot(aes(x=time_class, y=mean)) +
+  geom_col(aes(fill = sap_size), position = 'dodge') +
+  scale_fill_manual(values=colfunc3(2)) +
+  facet_wrap(~site_type) +
+  theme_minimal() +
+  labs(x = "Time class", y = "Mean stem tally", fill = "")
+
+ggsave("./output/figures_exported/aspen_stem_count/asp_saplingmean_3panel.png", dpi = 300, width = 8.75, height = 4.75)
+
+```
+
+
+```{r, eval=FALSE}
+## separate panels
+pl.sapmean.ac <- tally.sapsize %>%
+  filter(site_type == "AC") %>% 
+  group_by(time_class, sap_size, fenced) %>%  
+  summarytools::descr(var = sum.st, round.digits = 1) %>% 
+  summarytools::tb() %>%
+  mutate(across(where(is.numeric), round, 1)) %>% 
+  ggplot(aes(x=time_class, y=mean)) +
+  geom_col(aes(fill = fenced), position = 'dodge') +
+  scale_fill_manual(values=colfunc3(2)) +
+  facet_wrap(~sap_size) +
+  theme_minimal() +
+  theme(legend.position = "top") +
+  labs(title = "Core Winter Range", x = "Time class", y = "Mean stem tally", fill = "")
+
+## anc
+pl.sapmean.anc <- tally.sapsize %>%
+  filter(site_type == "ANC") %>% 
+  group_by(time_class, sap_size, fenced) %>%  
+  summarytools::descr(var = sum.st, round.digits = 1) %>% 
+  summarytools::tb() %>%
+  mutate(across(where(is.numeric), round, 1)) %>% 
+  ggplot(aes(x=time_class, y=mean)) +
+  geom_col(aes(fill = fenced), position = 'dodge') +
+  scale_fill_manual(values=colfunc3(2)) +
+  facet_wrap(~sap_size) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(title = "Noncore Winter Range", x = "Time class", y = "Mean stem tally", fill = "")
+
+## ak
+pl.sapmean.ak <- tally.sapsize %>%
+  filter(site_type == "AK") %>% 
+  group_by(time_class, sap_size, fenced) %>%  
+  summarytools::descr(var = sum.st, round.digits = 1) %>% 
+  summarytools::tb() %>%
+  mutate(across(where(is.numeric), round, 1)) %>% 
+  ggplot(aes(x=time_class, y=mean)) +
+  geom_col(aes(fill = fenced), position = 'dodge') +
+  scale_fill_manual(values=colfunc3(2)) +
+  facet_wrap(~sap_size) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(title = "Kawuneeche Valley", x = "Time class", y = "Mean stem tally", fill = "")
+
+pl.sapmean.ac + pl.sapmean.anc + pl.sapmean.ak + patchwork::plot_layout(ncol=3)
+
+# save plots
+# ggsave("./output/figures_exported/aspen_stem_count/asp_saplingmean_3panelalt.png", dpi = 300, width = 5.75, height = 6.75)
+
+```
+
+
 ## Short Saplings (<=1.5m Tall)) - Combined Winter Range (AC+ANC)
 ```{r}
 asp.sm.acanc <- asp.sm.acanc %>%
@@ -422,7 +504,7 @@ asp.sm.acanc <- asp.sm.acanc %>%
 #### main factors + interactions:
 stmod_stally2.acanc.sm <- stan_glmer(stem_tally ~ time_class * fenced + (1 | site_id), data = asp.sm.acanc,
                       family= poisson,
-                      iter = 5000,
+                      iter = 8000,
                       seed = 1234
                       )
 
@@ -443,7 +525,7 @@ fun.model.summary(stmod_stally2.acanc.sm)
 posteriors.acanc.stcnt.sm <- insight::get_parameters(stmod_stally2.acanc.sm) %>% 
   rename('2013' = time_class2013) %>%
   rename('2018' = time_class2018) %>%
-  rename(Unfenced = fencedFenced) %>%
+  rename(Fenced = fencedFenced) %>%
   rename('2013:Fenced' = `time_class2013:fencedFenced`) %>%
   rename('2018:Fenced' = `time_class2018:fencedFenced`)
 
@@ -451,20 +533,23 @@ posteriors.acanc.stcnt.sm <- insight::get_parameters(stmod_stally2.acanc.sm) %>%
 
 # tidy
 posteriors.acanc.stcnt.sm.tidy <- posteriors.acanc.stcnt.sm %>%
-  pivot_longer(cols = c(`(Intercept)`,"2013","2018","Unfenced","2013:Fenced", "2018:Fenced"),names_to = "parameter", values_to = "values")
+  pivot_longer(cols = c(`(Intercept)`,"2013","2018","Fenced","2013:Fenced", "2018:Fenced"),names_to = "parameter", values_to = "values")
   # pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
 
 ```
 
 ```{r}
 color_scheme_set("teal")
-mcmc_areas(posteriors.acanc.stcnt.sm,
+plot.mcmcareas_acanc.stcnt.sm <- mcmc_areas(posteriors.acanc.stcnt.sm,
            prob = 0.9) +
-  ggtitle("Posterior distributions",
-                      "with medians and 90% credible intervals")
+  ggtitle("Combined Winter Range") +
+  theme_minimal() +
+  theme(text = element_text(family = 'sans'))
+
+plot.mcmcareas_acanc.stcnt.sm
 ```
 
-### Effect Existence and Significance Testing
+### Effect Description
 ```{r}
 fun.sexit.gt(stmod_stally2.acanc.sm)
 
@@ -473,25 +558,24 @@ fun.sexit.gt(stmod_stally2.acanc.sm)
 # stmod_stally2.acanc.sm$linear.predictors
 
 fun.sexit.gt(stmod_stally2.acanc.sm) %>%
- tab_header(title = "Aspen Count Posterior Description", subtitle = "Small Saplings, All Winter Range") %>%
+ tab_header(title = "Aspen Count Posterior Description", subtitle = "Small Saplings, Combined Winter Range") %>%
   gt::gtsave(filename = "./output/tables/aspen_stem_count/xpostdesc_stemcnt_TCxF_acanc_smsap.rtf")
 
 ```
 
-
 ```{r, echo=FALSE, eval=FALSE}
 ### Model posterior parameters to table
 fun.desc.post1.gt.rope(stmod_stally2.acanc.sm) %>% 
-  tab_header(title = "Aspen Count Posterior Description", subtitle = "Small Saplings, All Winter Range")
+  tab_header(title = "Aspen Count Posterior Description", subtitle = "Small Saplings, Combined Winter Range")
 
 ## save as RTF
 fun.desc.post1.gt.rope(stmod_stally2.acanc.sm) %>%
- tab_header(title = "Aspen Count Posterior Description", subtitle = "Small Saplings, All Winter Range") %>%
+ tab_header(title = "Aspen Count Posterior Description", subtitle = "Small Saplings, Combined Winter Range") %>%
   gt::gtsave(filename = "./output/tables/aspen_stem_count/postdesc_stemcnt_TCxF_acanc_smsap.rtf")
 
 ```
 
-```{r}
+```{r, echo=FALSE, eval=FALSE}
 # library(ggridges)
 posteriors.acanc.stcnt.sm.tidy %>% 
   ggplot() +
@@ -514,7 +598,7 @@ plot.pdif.acanc.sm <- p_direction(stmod_stally2.acanc.sm) %>%
   plot() +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
-  labs(caption = "Aspen stem count, Small Saplings, All Winter Range") +
+  labs(caption = "Aspen stem count, Small Saplings, Combined Winter Range") +
   scale_fill_manual(values = colfunc3(2))
 
 plot.pdif.acanc.sm
@@ -543,7 +627,7 @@ rope.stemcnt.acanc.sm %>%
 ### Contrasts
 ```{r}
 #### Contrasts
-# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE).
+# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs.
 
 # library(emmeans)
 emmeans(stmod_stally2.acanc.sm, ~ time_class | fenced) %>% 
@@ -554,8 +638,7 @@ emmeans(stmod_stally2.acanc.sm, ~ time_class | fenced) %>%
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   # labs(title= "Core winter range", caption = "Point estimate displayed: median 
 # HPD interval probability: 0.95, Results on log scale", x = "Estimate", y = "Contrast")
-  labs(subtitle = "Point estimate displayed: median HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "All Winter Range, Aspen Stem Count, Small Saplings. Results are given on the log scale")
-
+  labs(subtitle = "Point estimate displayed: median HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range, Aspen Stem Count, Small Saplings. Results are given on the log scale") 
 
 ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_acanc_smsap.pdf", width = 4.5, height = 3.55) # save plot
 ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_acanc_smsap.png", width = 4.5, height = 3.55) # save plot
@@ -580,6 +663,19 @@ emmeans(stmod_stally2.acanc.sm, ~ time_class | fenced) %>%
 
 ```
 
+```{r}
+plot.emmip.smsap.acanc <- emmip(stmod_stally2.acanc.sm, fenced ~ time_class, type = "reponse",
+  breaks = seq(0.50, 1, by = 0.10)) +
+  theme_minimal() +
+  scale_color_manual(values = colfunc3(2)) +
+  labs(color="") +
+  theme(legend.position = c(.15, .15))
+
+plot.emmip.smsap.acanc
+
+```
+
+
 ## Short Saplings (<=1.5m Tall) - Core Winter Range (AC)
 ```{r}
 asp.sm.ac <- asp.sm.ac %>%
@@ -591,7 +687,7 @@ asp.sm.ac <- asp.sm.ac %>%
 #### main factors + interactions:
 stmod_stally2.ac.sm <- stan_glmer(stem_tally ~ time_class * fenced + (1 | site_id), data = asp.sm.ac,
                       family= poisson,
-                      iter = 5000,
+                      iter = 8000,
                       seed = 1234
                       )
 
@@ -612,15 +708,15 @@ fun.model.summary(stmod_stally2.ac.sm)
 posteriors.ac.stcnt.sm <- insight::get_parameters(stmod_stally2.ac.sm) %>% 
   rename('2013' = time_class2013) %>%
   rename('2018' = time_class2018) %>%
-  rename(Unfenced = fencedFenced) %>%
+  rename(Fenced = fencedFenced) %>%
   rename('2013:Fenced' = `time_class2013:fencedFenced`) %>%
   rename('2018:Fenced' = `time_class2018:fencedFenced`)
 
-names(posteriors.ac.stcnt.sm)
+# names(posteriors.ac.stcnt.sm)
 
 # tidy
 posteriors.ac.stcnt.sm.tidy <- posteriors.ac.stcnt.sm %>%
-  pivot_longer(cols = c(`(Intercept)`,"2013","2018","Unfenced","2013:Fenced", "2018:Fenced"),names_to = "parameter", values_to = "values")
+  pivot_longer(cols = c(`(Intercept)`,"2013","2018","Fenced","2013:Fenced", "2018:Fenced"),names_to = "parameter", values_to = "values")
 
 # tidy
 # posteriors.ac.stcnt.sm.tidy <- posteriors.ac.stcnt.sm %>%
@@ -630,13 +726,16 @@ posteriors.ac.stcnt.sm.tidy <- posteriors.ac.stcnt.sm %>%
 
 ```{r}
 color_scheme_set("teal")
-mcmc_areas(posteriors.ac.stcnt.sm,
+plot.mcmcareas_ac.stcnt.sm <- mcmc_areas(posteriors.ac.stcnt.sm,
            prob = 0.9) +
-  ggtitle("Posterior distributions",
-                      "with medians and 90% credible intervals")
+  ggtitle("Core Winter Range") +
+  theme_minimal() +
+  theme(text = element_text(family = 'sans'))
+
+plot.mcmcareas_ac.stcnt.sm
 ```
 
-### Effect Existence and Significance Testing
+### Effect Description
 ```{r}
 fun.sexit.gt(stmod_stally2.ac.sm)
 
@@ -659,7 +758,7 @@ fun.desc.post1.gt.rope(stmod_stally2.ac.sm) %>%
 
 ```
 
-```{r}
+```{r, echo=FALSE, eval=FALSE}
 # library(ggridges)
 posteriors.ac.stcnt.sm.tidy %>% 
   ggplot() +
@@ -693,8 +792,8 @@ p_direction(stmod_stally2.ac.sm) %>% #distinct(Parameter)
   labs(caption = "Aspen stem count, Small Saplings, Core Winter Range") +
   scale_fill_manual(values = colfunc3(2))
 
-p_direction(stmod_stally2.ac.sm) %>%
-  tabyl(Parameter)
+# p_direction(stmod_stally2.ac.sm) %>%
+#   tabyl(Parameter)
 
 # save plots
 ggsave("./output/figures_exported/aspen_stem_count/pd_stemcnt_ac_smsap.png", dpi = 300, width = 4.75, height = 3.75)
@@ -721,7 +820,7 @@ rope.stemcnt.ac.sm %>%
 ### Contrasts
 ```{r}
 #### Contrasts
-# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE).
+# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs.
 
 # library(emmeans)
 emmeans(stmod_stally2.ac.sm, ~ time_class | fenced) %>% 
@@ -770,7 +869,7 @@ asp.sm.anc <- asp.sm.anc %>%
 #### main factors + interactions:
 stmod_stally2.anc.sm <- stan_glmer(stem_tally ~ time_class + (1 | site_id), data = asp.sm.anc,
                       family= poisson,
-                      iter = 5000,
+                      iter = 8000,
                       seed = 1234
                       )
 
@@ -808,13 +907,16 @@ posteriors.anc.stcnt.sm <- insight::get_parameters(stmod_stally2.anc.sm) %>%
 
 ```{r}
 color_scheme_set("teal")
-mcmc_areas(posteriors.anc.stcnt.sm,
+plot.mcmcareas_anc.stcnt.sm <- mcmc_areas(posteriors.anc.stcnt.sm,
            prob = 0.9) +
-  ggtitle("Posterior distributions",
-                      "with medians and 90% credible intervals")
+  ggtitle("Noncore Winter Range") +
+  theme_minimal() +
+  theme(text = element_text(family = 'sans'))
+
+plot.mcmcareas_anc.stcnt.sm
 ```
 
-### Effect Existence and Significance Testing
+### Effect Description
 ```{r}
 fun.sexit.gt(stmod_stally2.anc.sm)
 
@@ -837,14 +939,13 @@ fun.desc.post1.gt.rope(stmod_stally2.anc.sm) %>%
 
 ```
 
-```{r}
+```{r, echo=FALSE, eval=FALSE}
 # library(ggridges)
 posteriors.anc.stcnt.sm.tidy %>% 
   ggplot() +
   geom_density(aes(fill = parameter, x = values, color = parameter), alpha = .12) +
   scale_fill_manual(values = colfunc2(ncol(posteriors.anc.stcnt.sm.tidy))) +
   scale_color_manual(values = colfunc2(ncol(posteriors.anc.stcnt.sm.tidy))) +
-  # scale_fill_brewer(palette = "Set1") +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   theme_minimal()
 
@@ -889,7 +990,7 @@ rope.stemcnt.anc.sm %>%
 ### Contrasts
 ```{r}
 #### Contrasts
-# EMMs for later fanctor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE).
+# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs.
 
 # library(emmeans)
 emmeans(stmod_stally2.anc.sm, ~ time_class) %>% 
@@ -937,7 +1038,7 @@ asp.sm.ak <- asp.sm.ak %>%
 #### main factors + interactions:
 stmod_stally2.ak.sm <- stan_glmer(stem_tally ~ time_class + (1 | site_id), data = asp.sm.ak,
                       family= poisson,
-                      iter = 5000,
+                      iter = 8000,
                       seed = 1234
                       )
 
@@ -970,60 +1071,52 @@ posteriors.ak.stcnt.sm.tidy <- posteriors.ak.stcnt.sm %>%
 color_scheme_set("teal")
 # color_scheme_set("teal")
 
-mcmc_areas(posteriors.ak.stcnt.sm,
+plot.mcmcareas_ak.stcnt.sm <- mcmc_areas(posteriors.ak.stcnt.sm,
            prob = 0.9) +
-  ggtitle("Posterior distributions",
-                      "with medians and 90% credible intervals") +
-  theme_minimal()
+  ggtitle("Kawuneeche Valley") +
+  theme_minimal() +
+  theme(text = element_text(family = 'sans'))
 
+plot.mcmcareas_ak.stcnt.sm
 ```
 
+**Panel plot of above MCMC area plots**
 ```{r}
 ## rendered for print doc
 ## turned off for Rmd appx
 # panel of ACNC AC ANC AK - small saplings
-posteriors.acanc.stcnt.sm %>% 
-  # rename('2013' = time_class2013) %>%
-  # rename('2018' = time_class2018) %>%
-  # rename(Unfenced = fencedFenced) %>%
-  # rename('2013:Fenced' = `time_class2013:fencedFenced`) %>%
-  # rename('2018:Fenced' = `time_class2018:fencedFenced`) %>%
-  mcmc_areas(.,
-           prob = 0.9) +
-  ggtitle("All Winter Range") +
-  theme_minimal() +
-  geom_vline(aes(xintercept=0), lty="dashed")
 
 smsap.plot1 <- mcmc_areas(posteriors.acanc.stcnt.sm,
            prob = 0.9) +
-  ggtitle("All Winter Range") +
+  ggtitle("Combined Winter Range") +
   theme_minimal() +
-  geom_vline(aes(xintercept=0), lty="dashed")
+  geom_vline(aes(xintercept=0), lty="dashed") +
+  theme(text = element_text(family = 'sans'))
 
 smsap.plot2 <- mcmc_areas(posteriors.ac.stcnt.sm,
            prob = 0.9) +
   ggtitle("Core Winter Range") +
   theme_minimal() +
-  geom_vline(aes(xintercept=0), lty="dashed")
+  geom_vline(aes(xintercept=0), lty="dashed") +
+  theme(text = element_text(family = 'sans'))
 
 smsap.plot3 <- mcmc_areas(posteriors.anc.stcnt.sm,
            prob = 0.9) +
   ggtitle("Noncore Winter Range") +
   theme_minimal() +
-  geom_vline(aes(xintercept=0), lty="dashed")
+  geom_vline(aes(xintercept=0), lty="dashed") +
+  theme(text = element_text(family = 'sans'))
 
 smsap.plot4 <- mcmc_areas(posteriors.ak.stcnt.sm,
            prob = 0.9) +
   ggtitle("Kawuneeche Valley") +
   theme_minimal() +
-  geom_vline(aes(xintercept=0), lty="dashed")
+  geom_vline(aes(xintercept=0), lty="dashed") +
+  theme(text = element_text(family = 'sans'))
 
 # combine
 smsap.plot1 + smsap.plot2 + smsap.plot3 + smsap.plot4 + plot_annotation(
-  title = 'Posterior Distributions: Small Aspen Stems' #,
-  # subtitle = 'These 3 plots will reveal yet-untold secrets about our beloved data-set',
-  # caption = 'Disclaimer: None of these plots are insightful'
-)
+  title = 'Posterior Distributions: Small Aspen Stems')
 
 # save plots
 ggsave("./output/figures_exported/asp_small_sapling_panel_plot.png", dpi = 300, width = 8.75, height = 4.75)
@@ -1031,7 +1124,7 @@ ggsave("./output/figures_exported/asp_small_sapling_panel_plot.pdf", width = 8.7
 ```
 
 
-### Effect Existence and Significance Testing
+### Effect Description
 ```{r}
 fun.sexit.gt(stmod_stally2.ak.sm)
 
@@ -1054,7 +1147,7 @@ fun.desc.post1.gt.rope(stmod_stally2.ak.sm) %>%
 
 ```
 
-```{r}
+```{r, echo=FALSE, eval=FALSE}
 # library(ggridges)
 posteriors.ak.stcnt.sm.tidy %>% 
   ggplot() +
@@ -1106,7 +1199,7 @@ rope.stemcnt.ak.sm %>%
 ### Contrasts
 ```{r}
 #### Contrasts
-# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE).
+# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs.
 
 # library(emmeans)
 emmeans(stmod_stally2.ak.sm, ~ time_class) %>% 
@@ -1144,11 +1237,11 @@ emmeans(stmod_stally2.ak.sm, ~ time_class) %>%
 ###  Effects of Burning on Short Saplings (<1.5m Tall) - Combined Winter Range (AC+ANC) 
 ```{r}
 asp.sm.acanc %>% 
-  filter(range_type == "core winter range") %>% 
   filter(time_class == "BL" | time_class == "2013" | time_class == "2018") %>%
   group_by(time_class, range_type, burned, fenced) %>% 
-  summarytools::descr(stats = "fivenum") %>%
+  summarytools::descr(var = stem_den_ac, stats = "fivenum") %>%
   summarytools::tb() %>% 
+  mutate(across(where(is.numeric), round, 1)) %>% 
   gt() %>% 
   tab_header(title="Summary statistics")
 
@@ -1213,7 +1306,7 @@ emmeans(stmod_smsap_TCxFxB_acanc, ~ time_class | burned | fenced) %>%
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Point estimate displayed: median 
-HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "All Winter Range, Aspen Stem Count, TCxFxB")
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range, Aspen Stem Count, TCxFxB")
 
 
 ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxFxB_smsap_ac.pdf", width = 4.5, height = 3.55) # save plot
@@ -1245,7 +1338,7 @@ asp.lg.acanc <- asp.lg.acanc %>%
 #### main factors + interactions:
 stmod_stally2.acanc.lg <- stan_glmer(stem_tally ~ time_class * fenced + (1 | site_id), data = asp.lg.acanc,
                       family= poisson,
-                      iter = 5000,
+                      iter = 8000,
                       seed = 1234
                       )
 
@@ -1273,34 +1366,37 @@ posteriors.acanc.stcnt.lg.tidy <- posteriors.acanc.stcnt.lg %>%
 
 ```{r}
 color_scheme_set("teal")
-mcmc_areas(posteriors.acanc.stcnt.lg,
+plot.mcmcareas_acanc.stcnt.lg <- mcmc_areas(posteriors.acanc.stcnt.lg,
            prob = 0.9) +
-  ggtitle("Posterior distributions",
-                      "with medians and 90% credible intervals")
+  ggtitle("Combined Winter Range") +
+  theme_minimal() +
+  theme(text = element_text(family = 'sans'))
+
+plot.mcmcareas_acanc.stcnt.lg
 ```
 
-### Effect Existence and Significance Testing
+### Effect Description
 ```{r}
 fun.sexit.gt(stmod_stally2.acanc.lg)
 
 fun.sexit.gt(stmod_stally2.acanc.lg) %>%
- tab_header(title = "Aspen Count Posterior Description", subtitle = "Large Saplings, All Winter Range") %>%
+ tab_header(title = "Aspen Count Posterior Description", subtitle = "Large Saplings, Combined Winter Range") %>%
   gt::gtsave(filename = "./output/tables/aspen_stem_count/xpostdesc_stemcnt_TCxF_acanc_lgsap.rtf")
 ```
 
 ```{r, echo=FALSE, eval=FALSE}
 ### Model posterior parameters to table
 fun.desc.post1.gt.rope(stmod_stally2.acanc.lg) %>% 
-  tab_header(title = "Aspen Count Posterior Description", subtitle = "Large Saplings, All Winter Range")
+  tab_header(title = "Aspen Count Posterior Description", subtitle = "Large Saplings, Combined Winter Range")
 
 ## save as RTF
 fun.desc.post1.gt.rope(stmod_stally2.acanc.lg) %>%
- tab_header(title = "Aspen Count Posterior Description", subtitle = "Large Saplings, All Winter Range") %>%
+ tab_header(title = "Aspen Count Posterior Description", subtitle = "Large Saplings, Combined Winter Range") %>%
   gt::gtsave(filename = "./output/tables/aspen_stem_count/postdesc_stemcnt_TCxF_acanc_lgsap.rtf")
 
 ```
 
-```{r}
+```{r, eval=FALSE, echo=FALSE}
 # library(ggridges)
 posteriors.acanc.stcnt.lg.tidy %>% 
   ggplot() +
@@ -1321,7 +1417,7 @@ p_direction(stmod_stally2.acanc.lg) %>%
   plot() +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
-  labs(caption = "Aspen stem count, Large Saplings, All Winter Range") +
+  labs(caption = "Aspen stem count, Large Saplings, Combined Winter Range") +
   scale_fill_manual(values = colfunc3(2))
 
 # save plots
@@ -1349,7 +1445,7 @@ rope.stemcnt.acanc.lg %>%
 ### Contrasts
 ```{r}
 #### Contrasts
-# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE).
+# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs.
 
 # library(emmeans)
 emmeans(stmod_stally2.acanc.lg, ~ time_class | fenced) %>% 
@@ -1360,7 +1456,7 @@ emmeans(stmod_stally2.acanc.lg, ~ time_class | fenced) %>%
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   # labs(title= "Core winter range", caption = "Point estimate displayed: median 
 # HPD interval probability: 0.95, Results on log scale", x = "Estimate", y = "Contrast")
-  labs(subtitle = "Point estimate displayed: median HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "All Winter Range, Aspen Stem Count, Large Saplings. Results are given on the log scale")
+  labs(subtitle = "Point estimate displayed: median HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range, Aspen Stem Count, Large Saplings. Results are given on the log scale")
 
 
 ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_acanc_lgsap.pdf", width = 4.5, height = 3.55) # save plot
@@ -1386,6 +1482,18 @@ emmeans(stmod_stally2.acanc.lg, ~ time_class | fenced) %>%
 
 ```
 
+```{r}
+
+```
+
+```{r, echo=FALSE, eval=FALSE}
+pl.emmip.lg <- plotF.emmip_FxTC_response(stmod_stally2.acanc.lg)
+pl.emmip.sm <- plotF.emmip_FxTC_response(stmod_stally2.acanc.sm)
+pl.emmip.sm + pl.emmip.lg
+
+```
+
+
 ## Tall Saplings (1.5-2.5m Tall) - Core Winter Range (AC)
 ```{r}
 asp.lg.ac <- asp.lg.ac %>%
@@ -1397,7 +1505,7 @@ asp.lg.ac <- asp.lg.ac %>%
 #### main factors + interactions:
 stmod_stally2.ac.lg <- stan_glmer(stem_tally ~ time_class * fenced + (1 | site_id), data = asp.lg.ac,
                       family= poisson,
-                      iter = 5000,
+                      iter = 8000,
                       seed = 1234
                       )
 
@@ -1418,7 +1526,7 @@ fun.model.summary(stmod_stally2.ac.lg)
 posteriors.ac.stcnt.lg <- insight::get_parameters(stmod_stally2.ac.lg) %>% 
   rename('2013' = time_class2013) %>%
   rename('2018' = time_class2018) %>%
-  rename(Unfenced = fencedFenced) %>%
+  rename(Fenced = fencedFenced) %>%
   rename('2013:Fenced' = `time_class2013:fencedFenced`) %>%
   rename('2018:Fenced' = `time_class2018:fencedFenced`)
 
@@ -1426,7 +1534,7 @@ names(posteriors.ac.stcnt.lg)
 
 # tidy
 posteriors.ac.stcnt.lg.tidy <- posteriors.ac.stcnt.lg %>%
-  pivot_longer(cols = c(`(Intercept)`,"2013","2018","Unfenced","2013:Fenced", "2018:Fenced"),names_to = "parameter", values_to = "values")
+  pivot_longer(cols = c(`(Intercept)`,"2013","2018","Fenced","2013:Fenced", "2018:Fenced"),names_to = "parameter", values_to = "values")
 
 # tidy
 # posteriors.ac.stcnt.lg.tidy <- posteriors.ac.stcnt.lg %>%
@@ -1436,13 +1544,16 @@ posteriors.ac.stcnt.lg.tidy <- posteriors.ac.stcnt.lg %>%
 
 ```{r}
 color_scheme_set("teal")
-mcmc_areas(posteriors.ac.stcnt.lg,
+plot.mcmcareas_ac.stcnt.lg <- mcmc_areas(posteriors.ac.stcnt.lg,
            prob = 0.9) +
-  ggtitle("Posterior distributions",
-                      "with medians and 90% credible intervals")
+  ggtitle("Core Winter Range") +
+  theme_minimal() +
+  theme(text = element_text(family = 'sans'))
+
+plot.mcmcareas_ac.stcnt.lg
 ```
 
-### Effect Existence and Significance Testing
+### Effect Description
 ```{r}
 fun.sexit.gt(stmod_stally2.ac.lg)
 
@@ -1465,7 +1576,7 @@ fun.desc.post1.gt.rope(stmod_stally2.ac.lg) %>%
 
 ```
 
-```{r}
+```{r, echo=FALSE, eval=FALSE}
 # library(ggridges)
 posteriors.ac.stcnt.lg.tidy %>% 
   ggplot() +
@@ -1527,7 +1638,7 @@ rope.stemcnt.ac.lg %>%
 ### Contrasts
 ```{r}
 #### Contrasts
-# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE).
+# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs.
 
 # library(emmeans)
 emmeans(stmod_stally2.ac.lg, ~ time_class | fenced) %>% 
@@ -1576,7 +1687,7 @@ asp.lg.anc <- asp.lg.anc %>%
 #### main factors + interactions:
 stmod_stally2.anc.lg <- stan_glmer(stem_tally ~ time_class + (1 | site_id), data = asp.lg.anc,
                       family= poisson,
-                      iter = 5000,
+                      iter = 8000,
                       seed = 1234
                       )
 
@@ -1614,13 +1725,16 @@ posteriors.anc.stcnt.lg <- insight::get_parameters(stmod_stally2.anc.lg) %>%
 
 ```{r}
 color_scheme_set("teal")
-mcmc_areas(posteriors.anc.stcnt.lg,
+plot.mcmcareas_anc.stcnt.lg <- mcmc_areas(posteriors.anc.stcnt.lg,
            prob = 0.9) +
-  ggtitle("Posterior distributions",
-                      "with medians and 90% credible intervals")
+  ggtitle("Noncore Winter Range") +
+  theme_minimal() +
+  theme(text = element_text(family = 'sans'))
+
+plot.mcmcareas_acanc.stcnt.lg
 ```
 
-### Effect Existence and Significance Testing
+### Effect Description
 ```{r}
 fun.sexit.gt(stmod_stally2.anc.lg)
 
@@ -1643,7 +1757,7 @@ fun.desc.post1.gt.rope(stmod_stally2.anc.lg) %>%
 
 ```
 
-```{r}
+```{r, echo=FALSE, eval=FALSE}
 # library(ggridges)
 posteriors.anc.stcnt.lg.tidy %>% 
   ggplot() +
@@ -1695,7 +1809,7 @@ rope.stemcnt.anc.lg %>%
 ### Contrasts
 ```{r}
 #### Contrasts
-# EMMs for later fanctor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE).
+# EMMs for later fanctor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs.
 
 # library(emmeans)
 emmeans(stmod_stally2.anc.lg, ~ time_class) %>% 
@@ -1743,7 +1857,7 @@ asp.lg.ak <- asp.lg.ak %>%
 #### main factors + interactions:
 stmod_stally2.ak.lg <- stan_glmer(stem_tally ~ time_class + (1 | site_id), data = asp.lg.ak,
                       family= poisson,
-                      iter = 5000,
+                      iter = 8000,
                       seed = 1234
                       )
 
@@ -1775,50 +1889,48 @@ posteriors.ak.stcnt.lg.tidy <- posteriors.ak.stcnt.lg %>%
 ```{r}
 color_scheme_set("teal")
 
-mcmc_areas(posteriors.ak.stcnt.lg,
+plot.mcmcareas_ak.stcnt.lg <- mcmc_areas(posteriors.ak.stcnt.lg,
            prob = 0.9) +
-  ggtitle("Posterior distributions",
-                      "with medians and 90% credible intervals") +
-  theme_minimal()
+  ggtitle("Kawuneeche Valley") +
+  theme_minimal() +
+  theme(text = element_text(family = 'sans'))
 
+plot.mcmcareas_ak.stcnt.lg
 ```
 
-
+**Panel plot of above MCMC area plots**
 ```{r}
 ## rendered for print doc
 ## turned off for Rmd appx
 # panel of ACNC AC ANC AK - tall saplings
 # glimpse(posteriors.acanc.stcnt.lg)
 
-posteriors.acanc.stcnt.lg %>% 
-  mcmc_areas(.,
-           prob = 0.9) +
-  ggtitle("All Winter Range") +
-  theme_minimal() +
-  geom_vline(aes(xintercept=0), lty="dashed")
-
 lgsap.plot1 <- mcmc_areas(posteriors.acanc.stcnt.lg,
            prob = 0.9) +
-  ggtitle("All Winter Range") +
+  ggtitle("Combined Winter Range") +
   theme_minimal() +
+  theme(text = element_text(family = 'sans')) +
   geom_vline(aes(xintercept=0), lty="dashed")
 
 lgsap.plot2 <- mcmc_areas(posteriors.ac.stcnt.lg,
            prob = 0.9) +
   ggtitle("Core Winter Range") +
   theme_minimal() +
+  theme(text = element_text(family = 'sans')) +
   geom_vline(aes(xintercept=0), lty="dashed")
 
 lgsap.plot3 <- mcmc_areas(posteriors.anc.stcnt.lg,
            prob = 0.9) +
   ggtitle("Noncore Winter Range") +
   theme_minimal() +
+  theme(text = element_text(family = 'sans')) +
   geom_vline(aes(xintercept=0), lty="dashed")
 
 lgsap.plot4 <- mcmc_areas(posteriors.ak.stcnt.lg,
            prob = 0.9) +
   ggtitle("Kawuneeche Valley") +
   theme_minimal() +
+  theme(text = element_text(family = 'sans')) +
   geom_vline(aes(xintercept=0), lty="dashed")
 
 # combine
@@ -1831,7 +1943,7 @@ ggsave("./output/figures_exported/asp_tall_sapling_panel_plot.pdf", width = 8.75
 ```
 
 
-### Effect Existence and Significance Testing
+### Effect Description
 ```{r}
 fun.sexit.gt(stmod_stally2.ak.lg)
 
@@ -1854,7 +1966,7 @@ fun.desc.post1.gt.rope(stmod_stally2.ak.lg) %>%
 
 ```
 
-```{r}
+```{r, echo=FALSE, eval=FALSE}
 # library(ggridges)
 posteriors.ak.stcnt.lg.tidy %>% 
   ggplot() +
@@ -1906,7 +2018,7 @@ rope.stemcnt.ak.lg %>%
 ### Contrasts
 ```{r}
 #### Contrasts
-# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE).
+# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs.
 
 # library(emmeans)
 emmeans(stmod_stally2.ak.lg, ~ time_class) %>% 
@@ -2010,7 +2122,7 @@ emmeans(stmod_lgsap_TCxFxB_acanc, ~ time_class | burned | fenced) %>%
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Point estimate displayed: median 
-HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "All Winter Range, Large Saplings, TCxFxB")
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range, Large Saplings, TCxFxB")
 
 
 ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxFxB_lgsap_ac.pdf", width = 4.5, height = 3.55) # save plot
@@ -2041,7 +2153,7 @@ asp.acanc  %>%
 ```
 
 ### Modeling and Posterior Description
-```{r, eval=FALSE}
+```{r, cache=TRUE,eval=FALSE}
 #### Main Factors Only
 ## Not run. Used in model comparisons, but model w/ interaction selected
 asp.acanc <- asp.acanc %>%
@@ -2092,11 +2204,12 @@ library("bayesplot")
 color_scheme_set("teal")
 mcmc_areas(posteriors.acanc.stcnt,
            prob = 0.8) +
-  ggtitle("Posterior distributions",
-                      "with medians and 80% credible intervals")
+  ggtitle("Combined Winter Range") +
+  theme_minimal() +
+  theme(text = element_text(family = 'sans'))
 ```
 
-### Effect Existence and Significance Testing
+### Effect Description
 ```{r}
 fun.sexit.gt(stmod_stally2.acanc)
 
@@ -2119,7 +2232,7 @@ fun.desc.post1.gt.rope(stmod_stally2.acanc) %>%
 
 ```
 
-```{r}
+```{r, echo=FALSE, eval=FALSE}
 # library(ggridges)
 posteriors.acanc.stcnt.tidy %>% 
   ggplot() +
@@ -2143,7 +2256,7 @@ p_direction(stmod_stally2.acanc) %>%
   plot() +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
-  labs(caption = "Aspen stem count, all winter range") +
+  labs(caption = "Aspen stem count, Combined Winter Range") +
   scale_fill_manual(values = colfunc3(2))
 
 # save plots
@@ -2171,7 +2284,7 @@ rope.stemcnt.ac %>%
 ### Contrasts
 ```{r}
 #### Contrasts
-# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE).
+# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs.
 
 # library(emmeans)
 emmeans(stmod_stally2.acanc, ~ time_class | fenced) %>% 
@@ -2182,7 +2295,7 @@ emmeans(stmod_stally2.acanc, ~ time_class | fenced) %>%
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   # labs(title= "Core winter range", caption = "Point estimate displayed: median 
 # HPD interval probability: 0.95, Results on log scale", x = "Estimate", y = "Contrast")
-  labs(subtitle = "Point estimate displayed: median HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "All Winter Range, Aspen Stem Count, Results are given on the log scale")
+  labs(subtitle = "Point estimate displayed: median HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range, Aspen Stem Count, Results are given on the log scale")
 
 
 # ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_acanc.pdf", width = 4.5, height = 3.55) # save plot
@@ -2300,7 +2413,7 @@ mcmc_areas(stmod_stally2,
                       "with medians and 80% credible intervals")
 ```
 
-### Effect Existence and Significance Testing
+### Effect Description
 ```{r}
 fun.sexit.gt(stmod_stally2)
 
@@ -2323,7 +2436,7 @@ fun.desc.post1.gt.rope(stmod_stally2) %>%
 
 ```
 
-```{r}
+```{r, echo=FALSE, eval=FALSE}
 # library(ggridges)
 posteriors.ac.stcnt.tidy %>% 
   ggplot() +
@@ -2372,7 +2485,7 @@ rope.stemcnt.ac %>%
 ### Contrasts
 ```{r}
 #### Contrasts
-# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE).
+# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs.
 
 # library(emmeans)
 emmeans(stmod_stally2, ~ time_class | fenced) %>% 
@@ -2537,7 +2650,7 @@ ggsave("./output/figures_exported/aspen_stem_count/ppc_willowht_anc.png", dpi = 
 ggsave("./output/figures_exported/aspen_stem_count/ppc_willowht_anc.pdf", width = 4.75, height = 3.75)
 ```
 
-```{r}
+```{r, echo=FALSE, eval=FALSE}
 # library(ggridges)
 
 posteriors.anc.stcnt.tidy %>% 
@@ -2560,7 +2673,7 @@ mcmc_areas(stmod_anc_stally1,
                       "with medians and 80% credible intervals")
 ```
 
-### Effect Existence and Significance Testing
+### Effect Description
 ```{r}
 fun.sexit.gt(stmod_anc_stally1)
 
@@ -2622,7 +2735,7 @@ rope.stemcnt.ac %>%
 
 ```{r}
 #### Contrasts
-# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE).
+# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs.
 
 emmeans(stmod_anc_stally1, ~ time_class) %>% 
   pairs(reverse = TRUE) %>% 
@@ -2727,7 +2840,7 @@ ggsave("./output/figures_exported/aspen_stem_count/ppc_willowht_ak.png", dpi = 3
 ggsave("./output/figures_exported/aspen_stem_count/ppc_willowht_ak.pdf", width = 4.75, height = 3.75)
 ```
 
-```{r}
+```{r, echo=FALSE, eval=FALSE}
 # library(ggridges)
 
 posteriors.ak.stcnt.tidy %>% 
@@ -2751,7 +2864,7 @@ mcmc_areas(stmod_ak_stally1,
 ```
 
 
-### Effect Existence and Significance Testing  
+### Effect Description  
 ```{r}
 fun.sexit.gt(stmod_ak_stally1)
 
@@ -2811,7 +2924,7 @@ rope.stemcnt.ak %>%
 
 ```{r}
 #### Contrasts
-# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs(pigs.emm.s, reverse = TRUE).
+# EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs.
 
 emmeans(stmod_ak_stally1, ~ time_class) %>% 
   pairs(reverse = TRUE) %>% 
