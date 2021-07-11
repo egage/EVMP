@@ -44,6 +44,7 @@ library(bayestestR)
 library(gt)
 library(ggridges)
 library(bayesplot)
+library(patchwork)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}

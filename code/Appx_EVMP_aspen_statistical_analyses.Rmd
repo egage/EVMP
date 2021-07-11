@@ -487,6 +487,17 @@ pl.sapmean.ac + pl.sapmean.anc + pl.sapmean.ak + patchwork::plot_layout(ncol=3)
 
 ```
 
+```{r, eval=FALSE}
+asp.sm.acanc %>%
+  filter(LIVE_DEAD == 'LIVE') %>% 
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>% 
+  mutate(timeClass = fct_drop(timeClass)) %>% 
+  mutate(timeClass = fct_rev(timeClass)) %>%
+  group_by(timeClass, SITE_TYPE) %>% 
+  summarytools::descr(var = stemDen.ha,
+                      stats = "common")
+```
+
 
 ## Short Saplings (<=1.5m Tall)) - Combined Winter Range (AC+ANC)
 ```{r}

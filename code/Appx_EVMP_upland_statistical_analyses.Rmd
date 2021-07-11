@@ -20,7 +20,7 @@ mycologica@gmail.com
 https://github.com/egage/EVMP  
  
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, echo=FALSE}
 library(knitr)
 opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align = 'center')
 opts_knit$set(root.dir=normalizePath('../')) # this is required if Rmd is nested below the project directory
@@ -28,7 +28,7 @@ opts_chunk$set(fig.path = "../output/figures/")
 set.seed(1234)
 ```
 
-```{r,echo=FALSE}
+```{r,pkg_load, echo=FALSE}
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(fs))
 suppressPackageStartupMessages(library(sf))
@@ -41,7 +41,7 @@ suppressPackageStartupMessages(library(ggstance))
 suppressPackageStartupMessages(library(readxl))
 suppressPackageStartupMessages(library(DT))
 suppressPackageStartupMessages(library(lubridate))
-suppressPackageStartupMessages(library(skimr)) 
+# suppressPackageStartupMessages(library(skimr)) 
 suppressPackageStartupMessages(library(dataMaid))
 library(lubridate)
 library(emmeans)
@@ -49,10 +49,12 @@ library(rstanarm)
 options(mc.cores = parallel::detectCores())
 library(bayestestR)
 library(gt)
+library(patchwork)
+library(ggtext)
 
 ```
 
-```{r}
+```{r, palletes}
 # custom gradients and palettes
 dbhclass.gradient5 <- c("#26185F", "#0095AF", "#9ADCBB", "#FCFFDD", "grey50")
 
@@ -71,7 +73,7 @@ pal.7a <- colfunc1(7)
 ```
 
 
-```{r, echo=FALSE, eval = TRUE}
+```{r, funcs, echo=FALSE, eval = TRUE}
 
 ## Functions
 ### Table functions
@@ -156,15 +158,14 @@ fun.desc.post1.gt.rope <- function(model){
 }
 
 ```
-
+# below check contrast plot spec to linerange color  
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}
-
 #### Plotting functions
 
 fun.contrast.plot <- function(df){
   df %>% 
   ggplot(aes(x = contrast)) +
-  geom_linerange(aes(ymin = lower.HPD, ymax = upper.HPD), color = "lightblue", size = 2) +
+  geom_linerange(aes(ymin = lower.HPD, ymax = upper.HPD), color = "#0095AF", size = 2) +
   geom_point(aes(y = estimate), size = 2.5) +
   theme_minimal() +
   labs(caption = "Point estimate displayed: median 
@@ -173,6 +174,25 @@ HPD interval probability", x = "Estimate", y = "Estimate") +
 }
 
 ```
+
+
+```{r, eval=FALSE}
+# purrr plots
+tmp1 <- function(df){
+  dcanopy.all.willow.sum  %>% 
+  group_nest(SITE_TYPE) %>% 
+  mutate(plots = map2(.y = SITE_TYPE, .x = data, ~{ggplot(data = .x) +
+                              geom_boxplot(aes(y = cover.allwillow, x = timeClass), fill="Gray80") +
+                              geom_hline(aes(xintercept=0.31)) +
+                              # ggtitle(paste0("Willow cover, site: ", .y)) +
+                              labs(title = paste0("Site type: ", .y), x = "", y = "Willow cover (%)") +
+                              theme_minimal()}))
+
+tmp1 %>% 
+  pull(plots)
+
+```
+
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}
 ## ppcheck.plot
@@ -246,14 +266,19 @@ cov.byspp <- upl.byspp %>%
   filter(!is.na(perc_cover)) %>%  
   mutate(time_class = case_when(yr == 2007 ~ "BL",
                               TRUE ~ as.character(yr))) %>% 
-  mutate(timeClass = as.factor(time_class)) %>%
+  mutate(time_class = as.factor(time_class)) %>%
   mutate(site_type = as.factor(site_type)) %>%
-  mutate(time_class = fct_relevel(timeClass, "2018", "2013", "BL")) 
+  mutate(time_class = fct_relevel(time_class, "2018", "2013", "BL")) 
 
 ## reorder the time class
 cov.byspp <- cov.byspp %>% 
   mutate(time_class = fct_rev(time_class))
-
+# %>% 
+#   mutate(timeClass = case_when(yr == 2008 ~ "BL",
+#                               yr == 2009 ~ "BL", 
+#                               TRUE ~ as.character(yr))) %>% 
+#   mutate(timeClass = as.factor(timeClass)) %>% 
+#   mutate(timeClass = fct_relevel(timeClass, "2018", "2013", "BL"))
 ```
 
 ```{r, echoFALSE, eval=FALSE}
@@ -269,8 +294,63 @@ cov.allshrubs %>%
 
 ```
 
+```{r}
+# join in site info
+## join in the site info
+
+site.info.clean <- read_csv("./data/EVMP_derived/site_info_clean.csv")
+site.info.cleannames <- site.info.clean %>% 
+  clean_names() %>% 
+  select(-starts_with('utm')) %>% 
+  select(-c(wilderness,east_west)) %>% 
+  distinct() %>% 
+  mutate(burned = case_when(burned == "Not burned" ~ "Unburned",
+                            is.na(burned) ~ "Unburned",
+                            TRUE ~ burned)) 
+
+cov.allshrubs <- left_join(cov.allshrubs, site.info.cleannames, by = "site_id")
+cov.byspp <- left_join(cov.byspp, site.info.cleannames, by = "site_id")
+```
 
 # Results
+```{r}
+# purrr plots
+list.pl.allshrub.wcwnc <- cov.allshrubs %>% 
+  group_nest(site_type) %>% 
+  mutate(plots = map2(.y = site_type, .x = data, ~{ggplot(data = .x) +
+                              geom_boxplot(aes(y = perc_cover, x = time_class), fill="Gray80") +
+                              # geom_hline(aes(xintercept=0.31)) +
+                              # ggtitle(paste0("Willow cover, site: ", .y)) +
+                              labs(title = paste0("Site type: ", .y), x = "", y = "All shrub cover (%)") +
+                              theme_minimal()}))
+
+list.pl.allshrub.wcwnc %>% 
+  pull(plots)
+
+```
+
+```{r, eval=FALSE}
+# purrr plots
+list.pl.allshrub.wc.f <- cov.allshrubs %>%
+  filter(site_type == "core range") %>% 
+  group_nest(fenced) %>% 
+  mutate(plots = map2(.y = fenced, .x = data, ~{ggplot(data = .x) +
+                              geom_boxplot(aes(y = perc_cover, x = time_class), fill="Gray80") +
+                              # geom_hline(aes(xintercept=0.31)) +
+                              # ggtitle(paste0("Willow cover, site: ", .y)) +
+                              labs(title = paste0("Site type: ", .y), x = "", y = "All shrub cover (%)") +
+                              theme_minimal()}))
+
+list.pl.allshrub.wc.f %>% 
+  pull(plots)
+
+```
+
+
+```{r}
+
+```
+
 
 ## Upland Shrub Cover, Pooled Shrub Species - Combined Winter Range
 ```{r}
@@ -282,8 +362,40 @@ cov.allshrubs %>%
   mutate_if(.predicate = is.numeric,.funs = round, digits = 2) %>% 
   gt() %>% 
   tab_header(title = "Upland cover - site type + time_class")
-
+  
 ```
+
+```{r, fig.width=7.5, fig.height=7.5}
+cov.allshrubs %>% 
+  filter(!is.na(range_type)) %>%
+  ggplot(aes(time_class, perc_cover)) +
+  geom_boxplot(fill="grey80") +
+  geom_point(color="#0095AF") +
+  theme_minimal() +
+  labs(x="Time class", y="% cover") +
+  facet_grid(burned~range_type)
+  
+
+# save plots
+ggsave("./output/figures_202107_stats_upland/cover_range_type_boxplot.png", dpi = 300, width = 5.75, height = 3.75)
+```
+
+
+```{r, fig.width=7.5, fig.height=7.5}
+cov.allshrubs %>% 
+  filter(!is.na(valley_full)) %>% 
+  ggplot(aes(time_class, perc_cover)) +
+  geom_boxplot(fill="grey80") +
+  geom_point(color="#0095AF") +
+  theme_minimal() +
+  labs(x="Time class", y="% cover") +
+  facet_wrap(~valley_full, ncol=3)
+
+# save plots
+ggsave("./output/figures_202107_stats_upland/cover_valley_boxplot.png", dpi = 300, width = 6.75, height = 6.25)
+```
+
+
 
 ### Modeling and Posterior Description
 ```{r, cache=TRUE}
@@ -747,7 +859,7 @@ HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Comb
 # ggsave("./output/figures_202107_stats_upland/emm_shrubcov_unc.pdf", width = 4.5, height = 3.55) # save plot
 ggsave("./output/figures_202107_stats_upland/emm_shrubcov_unc.png", width = 4.5, height = 3.55) # save plot
 
-# table of contrasts
+# plot
 emmeans(stmod_cov.allshr.unc, ~ time_class) %>% 
   pairs() %>% 
   as_tibble() %>% 
@@ -765,19 +877,46 @@ emmeans(stmod_cov.allshr.unc, ~ time_class) %>%
 
 ```
 
+
+
+```{r}
+# Point estimate displayed: median 
+# HPD interval probability: 0.95
+
+pl.emm.upl.allshr.ucunc <- emmeans(stmod_cov.allshr, ~ time_class) %>% 
+  pairs() %>% 
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Combined Range", x = "Estimate", y = "Contrast")
+
+pl.emm.upl.allshr.uc <- emmeans(stmod_cov.allshr.uc, ~ time_class) %>% 
+  pairs() %>% 
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Core Range", x = "Estimate", y = "Contrast")
+
+pl.emm.upl.allshr.unc <- emmeans(stmod_cov.allshr.unc, ~ time_class) %>% 
+  pairs() %>% 
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Noncore Range", x = "Estimate", y = "Contrast")
+
+
+pl.emm.upl.allshr.ucunc + pl.emm.upl.allshr.uc + pl.emm.upl.allshr.unc + 
+  patchwork::plot_layout(ncol=1) +
+  plot_annotation('Upland Shrub Cover', caption = 'All Shrub Species Pooled')
+
+```
+
+
+
 # Individual species
 
 ```{r}
-upl.byspp <- upl.byspp %>%
-  mutate(yr = as.character(yr)) %>% 
-  mutate(time_class = case_when(yr == 2008 ~ "BL",
-                              yr == 2007 ~ "BL", 
-                              TRUE ~ as.character(yr))) %>% 
-  mutate(time_class = as_factor(time_class))
-
-
-
-upl.byspp %>% 
+cov.byspp %>% 
   tabyl(shrub_species) %>% 
   arrange(-n) %>% 
   gt()
@@ -788,11 +927,11 @@ upl.byspp %>%
 ## Upland Shrub Cover, _Purshia tridentata_ - Combined Winter Range
 ```{r}
 # PUTR
-upl.putr <- upl.byspp %>%
+cov.putr <- cov.byspp %>%
   filter(shrub_species == "PUTR")
 
 #### summary tables
-upl.putr %>% 
+cov.putr %>% 
   group_by(time_class, site_type) %>% 
   summarytools::descr(perc_cover, stats = "common") %>% 
   summarytools::tb() %>%
@@ -805,11 +944,11 @@ upl.putr %>%
 ### Modeling and Posterior Description
 ```{r, cache=TRUE}
 ## add cover in 0-1 range
-upl.putr <- upl.putr %>%
+cov.putr <- cov.putr %>%
   mutate(cover = perc_cover/100)
   
 stmod_cov.putr <- stan_glmer(cover ~ time_class + (1 | site_id), 
-                      data = upl.putr,
+                      data = cov.putr,
                       family = mgcv::betar,
                       prior_aux = exponential(2),
                       iter = 8000,
@@ -819,10 +958,10 @@ stmod_cov.putr <- stan_glmer(cover ~ time_class + (1 | site_id),
 
 ```{r}
 # extract posteriors
-posteriors.upl.putrubcov <- insight::get_parameters(stmod_cov.putr)
+posteriors.cov.putrubcov <- insight::get_parameters(stmod_cov.putr)
 
 # tidy
-posteriors.upl.putrubcov.tidy <- posteriors.upl.putrubcov %>%
+posteriors.cov.putrubcov.tidy <- posteriors.cov.putrubcov %>%
   pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
 
 ```
@@ -837,11 +976,11 @@ fun.model.summary(stmod_cov.putr)
 ```
 
 ```{r}
-posteriors.upl.putrubcov.tidy %>%
+posteriors.cov.putrubcov.tidy %>%
   ggplot() +
   geom_density(aes(fill = parameter, x = values),color="grey", alpha = .25) +
   # scale_fill_viridis(discrete = TRUE) +
-  scale_fill_manual(values = colfunc2(ncol(posteriors.upl.putrubcov.tidy))) +
+  scale_fill_manual(values = colfunc2(ncol(posteriors.cov.putrubcov.tidy))) +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(caption = "Upland, PUTR cover - Combined Winter Range")
@@ -958,7 +1097,7 @@ emmeans(stmod_cov.putr, ~ time_class) %>%
 ## Upland Shrub Cover, _Purshia tridentata_ - Core Winter Range
 ```{r}
 #### summary tables
-upl.putr %>% 
+cov.putr %>% 
   group_by(time_class, site_type) %>% 
   summarytools::descr(perc_cover, stats = "common") %>% 
   summarytools::tb() %>%
@@ -970,15 +1109,15 @@ upl.putr %>%
 
 ### Modeling and Posterior Description
 ```{r, cache=TRUE}
-upl.putr.uc <- upl.putr %>% 
+cov.putr.uc <- cov.putr %>% 
   filter(site_type == "core range") # add 
 
 ## add cover in 0-1 range
-upl.putr.uc <- upl.putr.uc %>%
+cov.putr.uc <- cov.putr.uc %>%
   mutate(cover = perc_cover/100)
   
 stmod_cov.putr.uc <- stan_glmer(cover ~ time_class + (1 | site_id), 
-                      data = upl.putr,
+                      data = cov.putr,
                       family = mgcv::betar,
                       prior_aux = exponential(2),
                       iter = 8000,
@@ -988,10 +1127,10 @@ stmod_cov.putr.uc <- stan_glmer(cover ~ time_class + (1 | site_id),
 
 ```{r}
 # extract posteriors
-posteriors.upl.putrubcov.uc <- insight::get_parameters(stmod_cov.putr.uc)
+posteriors.cov.putrubcov.uc <- insight::get_parameters(stmod_cov.putr.uc)
 
 # tidy
-posteriors.upl.putrubcov.tidy <- posteriors.upl.putrubcov %>%
+posteriors.cov.putrubcov.tidy <- posteriors.cov.putrubcov %>%
   pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
 
 ```
@@ -1006,11 +1145,11 @@ fun.model.summary(stmod_cov.putr.uc)
 ```
 
 ```{r}
-posteriors.upl.putrubcov.tidy %>%
+posteriors.cov.putrubcov.tidy %>%
   ggplot() +
   geom_density(aes(fill = parameter, x = values),color="grey", alpha = .25) +
   # scale_fill_viridis(discrete = TRUE) +
-  scale_fill_manual(values = colfunc2(ncol(posteriors.upl.putrubcov.tidy))) +
+  scale_fill_manual(values = colfunc2(ncol(posteriors.cov.putrubcov.tidy))) +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(caption = "Upland,PUTR - Combined Winter Range")
@@ -1127,15 +1266,15 @@ emmeans(stmod_cov.putr.uc, ~ time_class) %>%
 ## Upland Shrub Cover, _Purshia tridentata_ - Noncore Winter Range
 ### Modeling and Posterior Description
 ```{r, cache=TRUE}
-upl.putr.unc <- upl.putr %>% 
+cov.putr.unc <- cov.putr %>% 
   filter(site_type == "non-core range") # add 
 
 ## add cover in 0-1 range
-upl.putr.unc <- upl.putr.unc %>%
+cov.putr.unc <- cov.putr.unc %>%
   mutate(cover = perc_cover/100)
   
 stmod_cov.putr.unc <- stan_glmer(cover ~ time_class + (1 | site_id), 
-                      data = upl.putr,
+                      data = cov.putr,
                       family = mgcv::betar,
                       prior_aux = exponential(2),
                       iter = 8000,
@@ -1145,10 +1284,10 @@ stmod_cov.putr.unc <- stan_glmer(cover ~ time_class + (1 | site_id),
 
 ```{r}
 # extract posteriors
-posteriors.upl.putrubcov.unc <- insight::get_parameters(stmod_cov.putr.unc)
+posteriors.cov.putrubcov.unc <- insight::get_parameters(stmod_cov.putr.unc)
 
 # tidy
-posteriors.upl.putrubcov.tidy <- posteriors.upl.putrubcov %>%
+posteriors.cov.putrubcov.tidy <- posteriors.cov.putrubcov %>%
   pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
 
 ```
@@ -1163,11 +1302,11 @@ fun.model.summary(stmod_cov.putr.unc)
 ```
 
 ```{r}
-posteriors.upl.putrubcov.tidy %>%
+posteriors.cov.putrubcov.tidy %>%
   ggplot() +
   geom_density(aes(fill = parameter, x = values),color="grey", alpha = .25) +
   # scale_fill_viridis(discrete = TRUE) +
-  scale_fill_manual(values = colfunc2(ncol(posteriors.upl.putrubcov.tidy))) +
+  scale_fill_manual(values = colfunc2(ncol(posteriors.cov.putrubcov.tidy))) +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(caption = "Upland,PUTR - Combined Winter Range")
@@ -1285,11 +1424,11 @@ emmeans(stmod_cov.putr.unc, ~ time_class) %>%
 ## Upland Shrub Cover, _Ribes cereum_ - Combined Winter Range
 ```{r}
 # PUTR
-upl.rice <- upl.byspp %>%
+cov.rice <- cov.byspp %>%
   filter(shrub_species == "RICE")
 
 #### summary tables
-upl.rice %>% 
+cov.rice %>% 
   group_by(time_class, site_type) %>% 
   summarytools::descr(perc_cover, stats = "common") %>% 
   summarytools::tb() %>%
@@ -1302,11 +1441,11 @@ upl.rice %>%
 ### Modeling and Posterior Description
 ```{r, cache=TRUE}
 ## add cover in 0-1 range
-upl.rice <- upl.rice %>%
+cov.rice <- cov.rice %>%
   mutate(cover = perc_cover/100)
   
 stmod_cov.rice <- stan_glmer(cover ~ time_class + (1 | site_id), 
-                      data = upl.rice,
+                      data = cov.rice,
                       family = mgcv::betar,
                       prior_aux = exponential(2),
                       iter = 8000,
@@ -1316,10 +1455,10 @@ stmod_cov.rice <- stan_glmer(cover ~ time_class + (1 | site_id),
 
 ```{r}
 # extract posteriors
-posteriors.upl.riceubcov <- insight::get_parameters(stmod_cov.rice)
+posteriors.cov.riceubcov <- insight::get_parameters(stmod_cov.rice)
 
 # tidy
-posteriors.upl.riceubcov.tidy <- posteriors.upl.riceubcov %>%
+posteriors.cov.riceubcov.tidy <- posteriors.cov.riceubcov %>%
   pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
 
 ```
@@ -1334,11 +1473,11 @@ fun.model.summary(stmod_cov.rice)
 ```
 
 ```{r}
-posteriors.upl.riceubcov.tidy %>%
+posteriors.cov.riceubcov.tidy %>%
   ggplot() +
   geom_density(aes(fill = parameter, x = values),color="grey", alpha = .25) +
   # scale_fill_viridis(discrete = TRUE) +
-  scale_fill_manual(values = colfunc2(ncol(posteriors.upl.riceubcov.tidy))) +
+  scale_fill_manual(values = colfunc2(ncol(posteriors.cov.riceubcov.tidy))) +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(caption = "Upland,RICE - Combined Winter Range")
@@ -1456,7 +1595,7 @@ emmeans(stmod_cov.rice, ~ time_class) %>%
 ## Upland Shrub Cover, _Ribes cereum_ - Core Winter Range
 ```{r}
 #### summary tables
-upl.rice %>% 
+cov.rice %>% 
   group_by(time_class, site_type) %>% 
   summarytools::descr(perc_cover, stats = "common") %>% 
   summarytools::tb() %>%
@@ -1468,15 +1607,15 @@ upl.rice %>%
 
 ### Modeling and Posterior Description
 ```{r, cache=TRUE}
-upl.rice.uc <- upl.rice %>% 
+cov.rice.uc <- cov.rice %>% 
   filter(site_type == "core range") # add 
 
 ## add cover in 0-1 range
-upl.rice.uc <- upl.rice.uc %>%
+cov.rice.uc <- cov.rice.uc %>%
   mutate(cover = perc_cover/100)
   
 stmod_cov.rice.uc <- stan_glmer(cover ~ time_class + (1 | site_id), 
-                      data = upl.rice,
+                      data = cov.rice,
                       family = mgcv::betar,
                       prior_aux = exponential(2),
                       iter = 8000,
@@ -1486,10 +1625,10 @@ stmod_cov.rice.uc <- stan_glmer(cover ~ time_class + (1 | site_id),
 
 ```{r}
 # extract posteriors
-posteriors.upl.riceubcov.uc <- insight::get_parameters(stmod_cov.rice.uc)
+posteriors.cov.riceubcov.uc <- insight::get_parameters(stmod_cov.rice.uc)
 
 # tidy
-posteriors.upl.riceubcov.tidy <- posteriors.upl.riceubcov %>%
+posteriors.cov.riceubcov.tidy <- posteriors.cov.riceubcov %>%
   pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
 
 ```
@@ -1504,11 +1643,11 @@ fun.model.summary(stmod_cov.rice.uc)
 ```
 
 ```{r}
-posteriors.upl.riceubcov.tidy %>%
+posteriors.cov.riceubcov.tidy %>%
   ggplot() +
   geom_density(aes(fill = parameter, x = values),color="grey", alpha = .25) +
   # scale_fill_viridis(discrete = TRUE) +
-  scale_fill_manual(values = colfunc2(ncol(posteriors.upl.riceubcov.tidy))) +
+  scale_fill_manual(values = colfunc2(ncol(posteriors.cov.riceubcov.tidy))) +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(caption = "Upland,RICE - Combined Winter Range")
@@ -1625,15 +1764,15 @@ emmeans(stmod_cov.rice.uc, ~ time_class) %>%
 ## Upland Shrub Cover, _Ribes cereum_ - Noncore Winter Range
 ### Modeling and Posterior Description
 ```{r, cache=TRUE}
-upl.rice.unc <- upl.rice %>% 
+cov.rice.unc <- cov.rice %>% 
   filter(site_type == "non-core range") # add 
 
 ## add cover in 0-1 range
-upl.rice.unc <- upl.rice.unc %>%
+cov.rice.unc <- cov.rice.unc %>%
   mutate(cover = perc_cover/100)
   
 stmod_cov.rice.unc <- stan_glmer(cover ~ time_class + (1 | site_id), 
-                      data = upl.rice.unc,
+                      data = cov.rice.unc,
                       family = mgcv::betar,
                       prior_aux = exponential(2),
                       iter = 8000,
@@ -1643,10 +1782,10 @@ stmod_cov.rice.unc <- stan_glmer(cover ~ time_class + (1 | site_id),
 
 ```{r}
 # extract posteriors
-posteriors.upl.riceubcov.unc <- insight::get_parameters(stmod_cov.rice.unc)
+posteriors.cov.riceubcov.unc <- insight::get_parameters(stmod_cov.rice.unc)
 
 # tidy
-posteriors.upl.riceubcov.tidy <- posteriors.upl.riceubcov %>%
+posteriors.cov.riceubcov.tidy <- posteriors.cov.riceubcov %>%
   pivot_longer(cols = starts_with("time"), names_to = "parameter", values_to = "values")
 
 ```
@@ -1661,11 +1800,11 @@ fun.model.summary(stmod_cov.rice.unc)
 ```
 
 ```{r}
-posteriors.upl.riceubcov.tidy %>%
+posteriors.cov.riceubcov.tidy %>%
   ggplot() +
   geom_density(aes(fill = parameter, x = values),color="grey", alpha = .25) +
   # scale_fill_viridis(discrete = TRUE) +
-  scale_fill_manual(values = colfunc2(ncol(posteriors.upl.riceubcov.tidy))) +
+  scale_fill_manual(values = colfunc2(ncol(posteriors.cov.riceubcov.tidy))) +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(caption = "Upland,RICE - Combined Winter Range")
@@ -1780,7 +1919,95 @@ emmeans(stmod_cov.rice.unc, ~ time_class) %>%
 
 ```
 
+# Additional plots
+```{r}
+# Point estimate displayed: median 
+# HPD interval probability: 0.95
 
+pl.emm.cov.putr.ucunc <- emmeans(stmod_cov.putr, ~ time_class) %>% 
+  pairs() %>% 
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Combined Range", x = "Estimate", y = "Contrast")
+
+pl.emm.cov.putr.uc <- emmeans(stmod_cov.putr.uc, ~ time_class) %>% 
+  pairs() %>% 
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Core Range", x = "Estimate", y = "Contrast")
+
+pl.emm.cov.putr.unc <- emmeans(stmod_cov.putr.unc, ~ time_class) %>% 
+  pairs() %>% 
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Noncore Range", x = "Estimate", y = "Contrast")
+
+
+pl.emm.cov.putr.ucunc + pl.emm.cov.putr.uc + pl.emm.cov.putr.unc + 
+  patchwork::plot_layout(ncol=1) +
+  plot_annotation(title = 'Upland Shrub Cover', subtitle = expression(paste(italic("Pushia tridentata"))))
+```
+# here
+```{r, eval=FALSE}
+# Point estimate displayed: median 
+# HPD interval probability: 0.95
+
+pl.emm.cov.rice.ucunc <- emmeans(stmod_cov.rice, ~ time_class) %>% 
+  pairs() %>% 
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Combined Range", x = "Estimate", y = "Contrast")
+
+pl.emm.cov.rice.uc <- emmeans(stmod_cov.rice.uc, ~ time_class) %>% 
+  pairs() %>% 
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Core Range", x = "Estimate", y = "Contrast")
+
+pl.emm.cov.rice.unc <- emmeans(stmod_cov.rice.unc, ~ time_class) %>% 
+  pairs() %>% 
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Noncore Range", x = "Estimate", y = "Contrast")
+
+
+pl.emm.cov.rice.ucunc + pl.emm.cov.rice.uc + pl.emm.cov.rice.unc + 
+  patchwork::plot_layout(ncol=1) +
+  plot_annotation(title = 'Upland Shrub Cover', subtitle = expression(paste(italic("Pushia tridentata"))))
+```
+
+**Combined range**
+```{r}
+pl.emm.upl.allshr + pl.emm.cov.putr.ucunc + pl.emm.cov.rice.ucunc + 
+  patchwork::plot_layout(ncol=1) +
+  plot_annotation(title = 'Upland Shrub Cover', subtitle = 'Combined Range', tag_levels = "A")
+
+ggsave("./output/figures_202107_stats_upland/uplcov_3panel_ucunc.png", dpi = 300, width = 7.75, height = 3.75)
+```
+
+**Core range**
+```{r}
+(pl.emm.upl.allshr.uc + labs(subtitle="")) + pl.emm.cov.putr.uc + pl.emm.cov.rice.uc + 
+  patchwork::plot_layout(ncol=1) +
+  plot_annotation(title = 'Upland Shrub Cover', subtitle = 'Core Range',  tag_levels = "A")
+
+ggsave("./output/figures_202107_stats_upland/uplcov_3panel_uc.png", dpi = 300, width = 7.75, height = 3.75)
+```
+
+**Noncore range**
+```{r}
+pl.emm.upl.allshr.ucunc + pl.emm.cov.putr.ucunc + pl.emm.cov.rice.ucunc + 
+  patchwork::plot_layout(ncol=1) +
+  plot_annotation(title = 'Upland Shrub Cover', subtitle = 'Noncore Range',  tag_levels = "A")
+
+ggsave("./output/figures_202107_stats_upland/uplcov_3panel_unc.png", dpi = 300, width = 7.75, height = 3.75)
+```
 
 # Session info
 

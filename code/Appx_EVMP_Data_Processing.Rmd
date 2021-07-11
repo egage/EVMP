@@ -133,8 +133,9 @@ ggTile_yr_season_site2 <- function(df){
   group_by(yr, season, site2) %>%
   summarise(n= n()) %>%
   ggplot(aes(yr, site2)) +
-  geom_tile(aes(fill = n), color = 'white') +
-  scale_fill_gradientn(values = c("#9ADCBB", "#FCFFDD")) +
+  geom_tile(aes(fill = n), color = 'grey80', alpha=0.85) +
+  # scale_fill_gradientn(colors = c("#0095AF","#0095AF","#9ADCBB", "#FCFFDD")) +
+  scale_fill_gradientn(values = c("#0095AF", "#FCFFDD")) +
   # viridis::scale_fill_viridis(option = "B") +
   facet_wrap(~season) +
   theme(axis.text.x = element_text(angle = 55, hjust = 1, size = 7)) +
@@ -147,8 +148,8 @@ ggTile_yr_season_site <- function(df){
   group_by(yr, season, site) %>%
   summarise(n= n()) %>%
   ggplot(aes(yr, site)) +
-  geom_tile(aes(fill = n), color = 'white') +
-  scale_fill_gradientn(values = c("#9ADCBB", "#FCFFDD")) +
+  geom_tile(aes(fill = n), color = 'grey80', alpha=0.85) +
+  scale_fill_gradientn(values = c("#0095AF", "#FCFFDD")) +
   # viridis::scale_fill_viridis(option = "D") +
   theme(axis.text.x = element_text(angle = 55, hjust = 1, size = 7)) +
   theme(axis.text.y = element_text(size = 7)) +
@@ -274,7 +275,7 @@ site.info.active <- si.d$'ACTIVE VEG SITE LOCATION MASTER'
 # csel <- c("SITE_ID","UTM_E_NAD83","UTM_N_NAD83","FENCED","VALLEY","UTM_N_NAD83","BURNED")
 csel <- c("SITE_ID","UTM_E_NAD83","UTM_N_NAD83","FENCED","BURNED","REMOVED")
 
-site.info.willow <- select(site.info.willow,csel) %>% 
+site.info.willow <- select(site.info.willow,csel) %>% # all_of(csel)
   mutate(pType = "willow")
 site.info.aspen <- select(site.info.aspen,csel) %>% 
   mutate(pType = "aspen")
@@ -668,14 +669,14 @@ pl.hm1 <- site.info.clean.sf %>%
   facet_wrap(~pType) +
   labs(x="Fenced", y = "", title = "Count of EVMP sampling sites")
 
-ggsave(plot = pl.hm1, filename = "./output/figures_202107/descriptive_background/cnt_plot_valley_x_fenced.png", width = 5, height = 4, dpi = 300)
+ggsave(plot = pl.hm1, filename = "./output/figures_202107/cnt_plot_valley_x_fenced.png", width = 5, height = 4, dpi = 300)
 
 pl.hm1
 # pl.hm2
 
 # paneled version of above
 # cowplot::plot_grid(pl.hm1, pl.hm2, labels = "AUTO", ncol=1,rel_heights = c(2,1))
-# ggsave(plot = cow1, filename = "./output/figures_202107/descriptive_background/cnt_ptype_valle_x_fenced.png", width = 5, height = 4, dpi = 300)
+# ggsave(plot = cow1, filename = "./output/figures_202107/cnt_ptype_valle_x_fenced.png", width = 5, height = 4, dpi = 300)
 
 ```
 
@@ -1158,13 +1159,13 @@ csv.all.lc.li.df %>%
   geom_boxplot(aes(fill = FENCED), outlier.shape = NA) +
   geom_hline(aes(yintercept = 110), color = "red", lty = "dashed", size = 1) +
   ylim(0,300) +
-  labs(x="", y= "Height (cm)", title = "Maximum shrub height", caption = "WC, All shrub species line intercept plots") +
+  labs(x="", y= "Height (cm)", title = "Maximum shrub height", caption = "All shrub species line intercept plots", fill="") +
   scale_fill_manual(values = c("grey90","grey50")) +
   theme_minimal() + 
   # theme(axis.text.x=element_text(angle = 45, hjust = 1)) #+
   facet_wrap(~SITE_TYPE)
 
-# ggsave("./output/figures_202107/WCWNCWK_LI_shrubHt_boxplot.png", width = 6.5, height = 4.875)
+ggsave("./output/figures_202107/WCWNCWK_LI_shrubHt_boxplot.png", width = 6.5, height = 4.875)
 
 ```
 
@@ -1208,13 +1209,13 @@ csv.all.lc.li.df %>%
   geom_boxplot(aes(fill = FENCED), outlier.shape = NA) +
   geom_hline(aes(yintercept = 110), color = "red", lty = "dashed", size = 1) +
   ylim(0,300) +
-  labs(x="", y= "Height (cm)", title = "Maximum shrub height", caption = "WC, All shrub species line intercept plots") +
+  labs(x="", y= "Height (cm)", title = "Maximum shrub height", caption = "All shrub species line intercept plots", fill="") +
   scale_fill_manual(values = c("grey90","grey50")) +
   theme_minimal() + 
   # theme(axis.text.x=element_text(angle = 45, hjust = 1)) #+
   facet_wrap(BURNED~SITE_TYPE)
 
-# ggsave("./output/figures_202107/WCWNCWK_LI_shrubHt_FenBur_boxplot.png", width = 6.5, height = 4.875)
+ggsave("./output/figures_202107/WCWNCWK_LI_shrubHt_FenBur_boxplot.png", width = 6.5, height = 4.875)
 
 ```
 
@@ -1302,7 +1303,7 @@ csv.wil.lc.li.df %>%
   geom_boxplot(aes(fill = FENCED), outlier.shape = NA) +
   geom_hline(aes(yintercept = 110), color = "red", lty = "dashed", size = 1) +
   ylim(0,600) +
-  labs(x="", y= "Height (cm)", title = "Maximum willow height", caption = "WC, All willow species line intercept plots") +
+  labs(x="", y= "Height (cm)", title = "Maximum willow height", caption = "WC, All willow species line intercept plots", fill="") +
   scale_fill_manual(values = c("grey90","grey50")) +
   theme_minimal() + 
   # theme(axis.text.x=element_text(angle = 45, hjust = 1)) #+
@@ -1352,7 +1353,7 @@ csv.wil.lc.li.df %>%
   geom_boxplot(aes(fill = FENCED), outlier.shape = NA) +
   geom_hline(aes(yintercept = 110), color = "red", lty = "dashed", size = 1) +
   ylim(0,600) +
-  labs(x="", y= "Height (cm)", title = "Maximum shrub height", caption = "WC, All willow species line intercept plots") +
+  labs(x="", y= "Height (cm)", title = "Maximum shrub height", caption = "WC, All willow species line intercept plots", fill="") +
   scale_fill_manual(values = c("grey90","grey50")) +
   theme_minimal() + 
   # theme(axis.text.x=element_text(angle = 45, hjust = 1)) #+
@@ -2105,6 +2106,7 @@ tmp1 <- canopy.all.willow.sum  %>%
   group_nest(SITE_TYPE) %>% 
   mutate(plots = map2(.y = SITE_TYPE, .x = data, ~{ggplot(data = .x) +
                               geom_boxplot(aes(y = cover.allwillow, x = timeClass), fill="Gray80") +
+                              geom_hline(aes(yintercept=31), color="red", lty="dashed") +
                               # ggtitle(paste0("Willow cover, site: ", .y)) +
                               labs(title = paste0("Site type: ", .y), x = "", y = "Willow cover (%)") +
                               theme_minimal()}))
@@ -2113,6 +2115,8 @@ tmp1 %>%
   pull(plots)
 
 ```
+
+
 
 ```{r}
 # purrr plots
@@ -2132,7 +2136,7 @@ tmp2 <- canopy.all.willow.sum  %>%
   group_nest(LOCATION) %>%
   mutate(tbls = map(.x = data, .f = datatable)) %>% 
   mutate(plots = map2(.y = LOCATION, .x = data, ~{ggplot(data = .x) +
-                              geom_boxplot(aes(y = cover.allwillow, x = timeClass), fill="Gray40") +
+                              geom_boxplot(aes(y = cover.allwillow, x = timeClass), fill="Gray80") +
                               # ggtitle(paste0("Willow cover, site: ", .y)) +
                               geom_hline(aes(yintercept = 31), color = "red", lty = "dashed", size = 1) +
       labs(title = paste0("Location: ", .y), x = "", y = "Willow cover (%)") +
@@ -2599,9 +2603,10 @@ canopy.all.willow.sum %>%
   # replace_na(list(above = 0, below = 0)) %>% 
   mutate(perc.above.thresh = round((above/(above + below)*100),1)) %>% 
   ggplot(aes(x = fenced, y = burned)) +
-  geom_tile(aes(fill = perc.above.thresh), color = 'white') +
-  scale_fill_viridis_b() +
-  geom_text(aes(label = round(perc.above.thresh,1)), color = "grey80") +
+  geom_tile(aes(fill = perc.above.thresh), color = 'grey80', alpha=0.85) +
+  # scale_fill_viridis_b() +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
+  geom_text(aes(label = round(perc.above.thresh,1)), color = "grey80", alpha = 1) +
   theme_minimal() +
   labs(x = "", y = "", fill = "% above \n threshold") +
   facet_grid(~time_class)
@@ -2626,9 +2631,10 @@ canopy.all.willow.sum %>%
   # replace_na(list(above = 0, below = 0)) %>% 
   mutate(perc.above.thresh = round((above/(above + below)*100),1)) %>% 
   ggplot(aes(x = fenced, y = burned)) +
-  geom_tile(aes(fill = perc.above.thresh), color = 'white') +
-  scale_fill_viridis_b() +
-  geom_text(aes(label = round(perc.above.thresh,1)), color = "grey80") +
+  geom_tile(aes(fill = perc.above.thresh), color = 'grey80', alpha=0.85) +
+  # scale_fill_viridis_b() +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
+  geom_text(aes(label = round(perc.above.thresh,1)), color = "black", alpha = .85) +
   theme_minimal() +
   labs(x = "", y = "", fill = "% above \n threshold") +
   facet_grid(site_type~time_class)
@@ -3154,11 +3160,10 @@ ht.WCWNC.willow.plotsummary %>%
 **Mean height by willow species**
 ```{r}
 
-csv.all.lc.mcro.df %>% 
-  filter(str_detect(SPECIES_CODE, "^SA")) %>% 
-  filter(SPECIES_CODE !="SAPE" & SPECIES_CODE !="SAWO" & SPECIES_CODE !="SAXX" & SPECIES_CODE !="SALUC" & SPECIES_CODE !="SABR" & SPECIES_CODE !="SABO" & SPECIES_CODE !="SAER") %>%
-  filter(SITE_TYPE == "WC") %>%
-  # filter(SITE_TYPE != "WNC") %>% 
+pl.meanht.wcwnc.tile <- csv.all.lc.mcro.df %>% 
+  filter(SPECIES_CODE == "SAMO" | SPECIES_CODE == "SAGE" | SPECIES_CODE == "SAPL") %>% 
+  # filter(SITE_TYPE == "WC") %>%
+  filter(SITE_TYPE != "WK") %>%
   mutate(yr = as.character(yr)) %>%
   filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
   group_by(yr,SPECIES_CODE) %>% 
@@ -3166,14 +3171,101 @@ csv.all.lc.mcro.df %>%
   select(yr, contains("skim"),SPECIES_CODE, contains("c.m"), contains("c.s")) %>%
   select(-skim_type) %>% 
   ggplot(aes(yr, SPECIES_CODE)) +
-  geom_tile(aes(fill = numeric.mean)) +
-  geom_text(aes(label = round(numeric.mean,1)), color = "grey80") +
-  # scale_fill_viridis() +
-  scale_fill_gradientn(colors = c("#26185F","#0095AF","#9ADCBB", "#FCFFDD")) +
+  geom_tile(aes(fill = numeric.mean), color="grey80", alpha=0.85) +
+  geom_text(aes(label = round(numeric.mean,1)), color = "black", alpha = .85) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
   theme_minimal() +
-  labs(x = "Year", y = "Species", fill = "mean", title = "Mean Height - Core Range", subtitle = "Macroplot data")
+  theme(legend.position = "none") +
+  labs(x = "Year", y = "Species", fill = "mean height (cm)", title = "Combined Range")
+
+pl.meanht.wc.tile <- csv.all.lc.mcro.df %>% 
+  filter(SPECIES_CODE == "SAMO" | SPECIES_CODE == "SAGE" | SPECIES_CODE == "SAPL") %>% 
+  filter(SITE_TYPE == "WC") %>%
+  # filter(SITE_TYPE != "WK") %>%
+  mutate(yr = as.character(yr)) %>%
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  group_by(yr,SPECIES_CODE) %>% 
+  skimr::skim(PLANT_HT_CM) %>% 
+  select(yr, contains("skim"),SPECIES_CODE, contains("c.m"), contains("c.s")) %>%
+  select(-skim_type) %>% 
+  ggplot(aes(yr, SPECIES_CODE)) +
+  geom_tile(aes(fill = numeric.mean), color="grey80", alpha=0.85) +
+  geom_text(aes(label = round(numeric.mean,1)), color = "black", alpha = .85) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(x = "Year", y = "Species", fill = "mean height (cm)", title = "Core Range")
+
+
+pl.meanht.wnc.tile <- csv.all.lc.mcro.df %>% 
+  filter(SPECIES_CODE == "SAMO" | SPECIES_CODE == "SAGE" | SPECIES_CODE == "SAPL") %>% 
+  filter(SITE_TYPE == "WNC") %>%
+  # filter(SITE_TYPE != "WK") %>%
+  mutate(yr = as.character(yr)) %>%
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  group_by(yr,SPECIES_CODE) %>% 
+  skimr::skim(PLANT_HT_CM) %>% 
+  select(yr, contains("skim"),SPECIES_CODE, contains("c.m"), contains("c.s")) %>%
+  select(-skim_type) %>% 
+  ggplot(aes(yr, SPECIES_CODE)) +
+  geom_tile(aes(fill = numeric.mean), color="grey80", alpha=0.85) +
+  geom_text(aes(label = round(numeric.mean,1)), color = "black", alpha = .85) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(x = "Year", y = "Species", fill = "mean height (cm)", title = "Noncore Range")
+
+pl.meanht.wk.tile <- csv.all.lc.mcro.df %>% 
+  filter(SPECIES_CODE == "SAMO" | SPECIES_CODE == "SAGE" | SPECIES_CODE == "SAPL") %>% 
+  filter(SITE_TYPE == "WK") %>%
+  # filter(SITE_TYPE != "WK") %>%
+  mutate(yr = as.character(yr)) %>%
+  # filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  group_by(yr,SPECIES_CODE) %>% 
+  skimr::skim(PLANT_HT_CM) %>% 
+  select(yr, contains("skim"),SPECIES_CODE, contains("c.m"), contains("c.s")) %>%
+  select(-skim_type) %>% 
+  ggplot(aes(yr, SPECIES_CODE)) +
+  geom_tile(aes(fill = numeric.mean), color="grey80", alpha=0.85) +
+  geom_text(aes(label = round(numeric.mean,1)), color = "black", alpha = .85) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
+  theme_minimal() +
+  # theme(legend.position = "none") +
+  labs(x = "Year", y = "Species", fill = "mean height (cm)", title = "Kawuneeche Valley")
+
+pl.meanht.wk.tile
+
+pl.meanht.wcwnc.tile + pl.meanht.wc.tile + pl.meanht.wnc.tile
+ggsave("./output/figures_202107/willowht_macroplot+WCWNC_tile_3panel.png", width = 7.5, height = 4.75, dpi = 300)
 
 ```
+
+```{r}
+pl.meanht.wc.tile.fenced <- csv.all.lc.mcro.df %>% 
+  filter(SPECIES_CODE == "SAMO" | SPECIES_CODE == "SAGE" | SPECIES_CODE == "SAPL") %>% 
+  filter(SITE_TYPE == "WC") %>%
+  # filter(SITE_TYPE != "WK") %>%
+  mutate(yr = as.character(yr)) %>%
+  filter(yr == 2008 | yr == 2013 | yr == 2018) %>%
+  group_by(yr,SPECIES_CODE, FENCED) %>% 
+  skimr::skim(PLANT_HT_CM) %>% 
+  select(yr, FENCED, contains("skim"),SPECIES_CODE, contains("c.m"), contains("c.s")) %>%
+  select(-skim_type) %>% 
+  ggplot(aes(yr, SPECIES_CODE)) +
+  geom_tile(aes(fill = numeric.mean), color="grey80", alpha=0.85) +
+  geom_text(aes(label = round(numeric.mean,1)), color = "black", alpha = .85) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(x = "Year", y = "Species", fill = "mean height (cm)", title = "Core Range") +
+  facet_wrap(~FENCED)
+
+
+pl.meanht.wc.tile.fenced + pl.meanht.wnc.tile + plot_layout(widths = c(2,1))
+ggsave("./output/figures_202107/willowht_macroplot_WCWNCxF_tile_2panel.png", width = 7.5, height = 4.75, dpi = 300)
+
+```
+
 
 ```{r, eval=FALSE}
 
@@ -3554,7 +3646,7 @@ pl.b.wnc <- willow.mcro.all %>%
 
 pl.b.wnc + pl.b.wc + plot_layout(widths = c(1, 2))
 
-ggsave("./output/figures_202107/willow_height/wilht_wc_wnc.png", width = 6.5, height = 3.75, dpi=300)
+ggsave("./output/figures_202107/wilht_wc_wnc.png", width = 6.5, height = 3.75, dpi=300)
 
 ```
 
@@ -5720,6 +5812,7 @@ asp.tally.ht.tidy <- asp.tally.all %>%
     values_to = "HTval"
   )
 
+# asp.tally.all
 
 asp.tally.ht.tidy <- asp.tally.ht.tidy %>% 
   select(-contains("DBH"))
@@ -5915,7 +6008,7 @@ asp.tally.dbh.tidy <- asp.tally.dbh.tidy %>%
   mutate(SITE_TYPE = as_factor(SITE_TYPE)) %>% 
   mutate(SITE_TYPE = fct_relevel(SITE_TYPE, "AK", after = Inf))
 
-asp.tally.dbh.tidy %>%
+asp.tally.dbh.tidy %>% 
   filter(LIVE_DEAD == 'LIVE') %>%
  filter(timeClass == "BL" | timeClass == "2013" |timeClass == "2018") %>%
   group_by(timeClass,DBHclGp01, FENCED,SITE_TYPE) %>%
@@ -5994,7 +6087,7 @@ asp.tally.dbh.tidy %>%
   labs(x = "", y = "", title = "Aspen live stem density", subtitle = "Core winter range", fill = "Stems/acre", y = "DBH class") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-ggsave("./output/figures_202107/revised_figs_aspen/AC_ht_stemsAc_tile_revised.png", width = 9.75, height = 10.5)
+ggsave("./output/figures_202107/AC_ht_stemsAc_tile_revised.png", width = 9.75, height = 10.5)
 
 ```
 
@@ -6088,12 +6181,13 @@ asp.tally.dbh.tidy %>%
   geom_tile(aes(fill = mean.tally), color = "grey80", alpha = .4) +
   # geom_tile(fill = "grey90", color = "grey80", alpha = .2) +
   geom_text(aes(label = mean.tally), size = 3) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
   facet_wrap(~FENCED) +
   theme_minimal() +
   labs(x = "", y = "", fill = "Mean tally", title = "Mean aspen count in burned plots", caption = "Plots burned in 2012, AC&ANC, live stems only") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-ggsave("./output/figures_202107/revised_figs_aspen/asp_burned_live_only_TCxF_mean.png", width = 6, height = 4)
+ggsave("./output/figures_202107/asp_burned_live_only_TCxF_mean.png", width = 6, height = 4)
 
 asp.tally.dbh.tidy %>% 
   filter(LIVE_DEAD == 'LIVE') %>% 
@@ -6122,13 +6216,14 @@ asp.tally.dbh.tidy %>%
   geom_tile(aes(fill = mean.tally), color = "grey80", alpha = .4) +
   # geom_tile(fill = "grey90", color = "grey80", alpha = .2) +
   geom_text(aes(label = mean.tally), size = 3) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
   # facet_wrap(~FENCED) +
   facet_grid(LIVE_DEAD~FENCED) +
   theme_minimal() +
   labs(x = "", y = "", fill = "Mean tally", title = "Mean aspen stem tallies in burned plots", caption = "Plots burned in 2012, AC&ANC") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-ggsave("./output/figures_202107/revised_figs_aspen/asp_burned_only_TCxF_LiveXdead_meanCnt.png", width = 7, height = 5)
+ggsave("./output/figures_202107/asp_burned_only_TCxF_LiveXdead_meanCnt.png", width = 7, height = 5)
 
 ```
 
@@ -6147,7 +6242,7 @@ asp.tally.dbh.tidy %>%
   labs(x = "", y = "", title = "Aspen live stem density", subtitle = "Core winter range", fill = "Stems/acre", y = "DBH class") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-ggsave("./output/figures_202107/revised_figs_aspen/AC_diam_stemsAc_tile_rev.png", width = 7.5, height = 7.5)
+ggsave("./output/figures_202107/AC_diam_stemsAc_tile_rev.png", width = 7.5, height = 7.5)
 ```
 
 ```{r, fig.height=6, fig.width=6}
@@ -6165,7 +6260,7 @@ asp.tally.dbh.tidy %>%
   labs(x = "", y = "", title = "Aspen live stem density", subtitle = "Non-core winter range", fill = "Stems/acre", y = "DBH class") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-ggsave("./output/figures_202107/revised_figs_aspen/ANC_diam_stemsAc_tile_rev.png", width = 7.5, height = 5.5)
+ggsave("./output/figures_202107/ANC_diam_stemsAc_tile_rev.png", width = 7.5, height = 5.5)
 
 ```
 
@@ -6183,7 +6278,7 @@ asp.tally.dbh.tidy %>%
   labs(x = "", y = "", title = "Aspen live stem density", subtitle = "Kawuneeche Valley", fill = "Stems/acre", y = "DBH class") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-ggsave("./output/figures_202107/revised_figs_aspen/AK_diam_stemsAc_tile_revised.png", width = 5.5, height = 3.5)
+ggsave("./output/figures_202107/AK_diam_stemsAc_tile_revised.png", width = 5.5, height = 3.5)
 
 ```
 
@@ -6287,8 +6382,8 @@ plot.percTot.dbh.AC.UF <- dbh.joined %>%
 plot.percTot.dbh.AC.F + plot.percTot.dbh.AC.UF +
   plot_layout(widths = c(1, 2))
 
-ggsave("./output/figures_202107/revised_figs_aspen/AspPercTotXdbh_ac_FxUf.png", width = 10, height = 5, dpi=300)
-ggsave("./output/figures_202107/revised_figs_aspen/AsppercTotXdbh_ac_FxUf.pdf", width = 10, height = 5)
+ggsave("./output/figures_202107/AspPercTotXdbh_ac_FxUf.png", width = 10, height = 5, dpi=300)
+ggsave("./output/figures_202107/AsppercTotXdbh_ac_FxUf.pdf", width = 10, height = 5)
 
 ```
 
@@ -6308,11 +6403,13 @@ dbh.perc.f <- asp.tally.dbh.tidy %>%
 dbh.perc.f %>%
   filter(!is.nan(percentTot)) %>%
   ggplot(aes(DBHclGp01, SITE_ID)) +
-  geom_tile(aes(fill = percentTot), color = 'white') +
+  geom_tile(aes(fill = percentTot), color = 'grey80', alpha=.8) +
   facet_grid(.~timeClass) +
-  scale_fill_viridis_c(begin = .01, end = .9, direction = -1) +
+  # scale_fill_viridis_c(begin = .01, end = .9, direction = -1) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
+  theme(legend.position = "bottom") +
   theme_minimal() +
-  labs(x = "DBH class", y = "", fill = "", title = "Proportion of Live Aspen Stems by DBH Class", subtitle = "Fenced and unburned plots only")
+  labs(x = "DBH class", y = "", fill = "", title = "Proportion of Live Aspen Stems by DBH Class", subtitle = "Fenced Plots only")
 
 ggsave("./output/figures_202107/AC_Live_Fenced_Unburned_PropDBH_heatmap.png", width = 7, height = 5, dpi = 300)
 
@@ -6324,10 +6421,7 @@ dbh.perc.f %>%
   # geom_col(aes(fill = DBHclGp01), color = "darkgray") +
   geom_col(aes(fill = DBHclGp01)) +
   facet_wrap(~SITE_ID, ncol = 5) +
-  # scale_fill_manual(values = c("bisque1", "bisque3", "bisque4")) +
-  scale_fill_manual(values = c("honeydew2", "honeydew3", "darkolivegreen")) +
   scale_fill_grey() +
-  # theme_minimal() +
   theme_minimal() +
   labs(y = "% total stems", x = "", fill = "DBH class", title = "Proportion of Live Aspen Stems by DBH Class", caption = "Fenced plots only") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
@@ -6357,7 +6451,8 @@ dbh.perc2 %>%
   # geom_col(aes(fill = DBHclGp01), color = "darkgray") +
   geom_col(aes(fill = DBHclGp01)) +
   facet_wrap(~timeClass, ncol = 3) +
-  scale_fill_viridis_d(option = "D") +
+  # scale_fill_viridis_d(option = "D") +
+  scale_fill_manual(values = colfunc2(5)) +
   # theme_minimal() +
   theme_minimal() +
   labs(y = "Proportion of stems", x = "", fill = "DBH class", title = "Proportion of Live Aspen Stems by DBH Class", subtitle = "Fenced and burned plots only") +
@@ -6463,9 +6558,6 @@ dbh.anc.ak.joined <- dbh.anc.ak.joined %>%
 ### revised plots 2021-02-09
 # stacked sorted boxplot
 ## create color gradient 
-# colorspace::sequential_hcl(4, "Teal")
-# colorspace::sequential_hcl(4, "Greens")
-# colorspace::sequential_hcl(4, "YlGnBu")
 dbhclass.gradient <- c("#26185F", "#0095AF", "#9ADCBB", "#FCFFDD", "grey50")
 
 # ANC  
@@ -6497,8 +6589,8 @@ dbh.anc.ak.joined %>%
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_y_continuous(labels=scales::percent) 
 
-ggsave("./output/figures_202107/revised_figs_aspen/AspPercTotXdbh_anc.png", width = 7, height = 5, dpi=300)
-ggsave("./output/figures_202107/revised_figs_aspen/AsppercTotXdbh_anc.pdf", width = 7, height = 5)
+ggsave("./output/figures_202107/AspPercTotXdbh_anc.png", width = 7, height = 5, dpi=300)
+ggsave("./output/figures_202107/AsppercTotXdbh_anc.pdf", width = 7, height = 5)
 
 ```
 
@@ -6559,8 +6651,8 @@ dbh.anc.ak.joined %>%
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_y_continuous(labels=scales::percent) 
 
-ggsave("./output/figures_202107/revised_figs_aspen/AspPercTotXdbh_ak.png", width = 5, height = 5, dpi=300)
-ggsave("./output/figures_202107/revised_figs_aspen/AsppercTotXdbh_ak.pdf", width = 5, height = 5)
+ggsave("./output/figures_202107/AspPercTotXdbh_ak.png", width = 5, height = 5, dpi=300)
+ggsave("./output/figures_202107/AsppercTotXdbh_ak.pdf", width = 5, height = 5)
 
 ```
 
@@ -6790,8 +6882,8 @@ suckering.vtype %>%
   labs(x="", y = "Percent of plots in condition class", fill = "", caption = "Suckering condition class, combined AC and ANC plots") +
   scale_y_continuous(labels=scales::percent)
 
-ggsave("./output/figures_202107/revised_figs_aspen/AspPercTotXsuckeringClass_ac_anc.png", width = 5, height = 5, dpi=300)
-# ggsave("./output/figures_202107/revised_figs_aspen/AspPercTotXsuckeringClass_ac_anc.pdf", width = 5, height = 5)
+ggsave("./output/figures_202107/AspPercTotXsuckeringClass_ac_anc.png", width = 5, height = 5, dpi=300)
+# ggsave("./output/figures_202107/AspPercTotXsuckeringClass_ac_anc.pdf", width = 5, height = 5)
 
 ```
 
@@ -6858,8 +6950,8 @@ suckering.vtype %>%
   labs(x="", y = "Percent of plots in condition class", fill = "", caption = "Suckering condition class, combined AC and ANC plots") +
   scale_y_continuous(labels=scales::percent)
 
-ggsave("./output/figures_202107/revised_figs_aspen/AspPercTotXsuckeringClass_ac_anc.png", width = 5, height = 5, dpi=300)
-ggsave("./output/figures_202107/revised_figs_aspen/AspPercTotXsuckeringClass_ac_anc.pdf", width = 5, height = 5)
+ggsave("./output/figures_202107/AspPercTotXsuckeringClass_ac_anc.png", width = 5, height = 5, dpi=300)
+ggsave("./output/figures_202107/AspPercTotXsuckeringClass_ac_anc.pdf", width = 5, height = 5)
 
 ```
 
@@ -6919,7 +7011,7 @@ library(patchwork)
 asp.pl.ac + asp.pl.anc + plot_layout(ncol=2,widths=c(2,1))
 
 ## save revised figure
-ggsave("./output/figures_202107/aspen_stem_count/AC_ANC_suckering_1p5to2p5m_fenced.png", width = 7.5, height = 5)
+ggsave("./output/figures_202107AC_ANC_suckering_1p5to2p5m_fenced.png", width = 7.5, height = 5)
 
 ```
 
@@ -6967,7 +7059,7 @@ suckering.vtype.burned.allHt %>%
   theme_minimal() +
   # scale_fill_viridis(trans = "log") +
   # scale_fill_viridis() +
-  scale_fill_gradientn(colors = c("#26185F","#0095AF","#9ADCBB", "#FCFFDD")) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
   # scale_fill_gradient(low = "black", high = "grey") +
   # theme(legend.position = "top") +
   labs(x = "", y = "Site ID", fill = "stems/ha", caption = "Suckering: Stem density ha AC - BURNED") +
@@ -6987,7 +7079,7 @@ suckering.vtype.burned.allHt %>%
   # geom_tile(aes(color = FENCED, fill = stemDen.ha)) + # scale_fill_grey() +
   theme_minimal() +
   # scale_fill_viridis(trans = "log") +
-  scale_fill_gradientn(colors = c("#26185F","#0095AF","#9ADCBB", "#FCFFDD")) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
   # scale_fill_viridis() +
   # scale_fill_gradient(low = "black", high = "grey") +
   # theme(legend.position = "top") +
@@ -7022,7 +7114,7 @@ suckering.vtype.burned.allHt %>%
   # geom_tile(aes(color = FENCED, fill = stemDen.ha)) + # scale_fill_grey() +
   theme_minimal() +
   # scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
-  scale_fill_gradientn(colors = c("#26185F","#0095AF","#9ADCBB", "#FCFFDD")) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
   # scale_fill_gradient(low = "black", high = "grey") +
   # theme(legend.position = "top") +
   labs(x = "", y = "Site ID", fill = "stems/acre", caption = "Suckering: Stem density acre AC - BURNED")
@@ -7040,9 +7132,9 @@ suckering.vtype.burned.allHt %>%
   # geom_tile(aes(color = FENCED, fill = stemDen.ha)) + # scale_fill_grey() +
   theme_minimal() +
   # scale_fill_viridis() +
-  scale_fill_gradientn(colors = c("#26185F","#0095AF","#9ADCBB", "#FCFFDD")) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
   # scale_fill_gradient(low = "black", high = "grey") +
-  theme(legend.position = "bottom") +
+  # theme(legend.position = "bottom") +
   labs(x = "", y = "Site ID", fill = "stems/ha", caption = "Suckering: Stem density ha AC - UNBURNED") +
   facet_wrap(~HTclass.lbl, ncol = 5)
 
@@ -7059,7 +7151,7 @@ suckering.vtype.burned.allHt %>%
   # geom_tile(aes(color = FENCED, fill = stemDen.ha)) + # scale_fill_grey() +
   theme_minimal() +
   # scale_fill_viridis() +
-  scale_fill_gradientn(colors = c("#26185F","#0095AF","#9ADCBB", "#FCFFDD")) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
   # scale_fill_gradient(low = "black", high = "grey") +
   # theme(legend.position = "top") +
   labs(x = "", y = "Site ID", fill = "stems/acre", caption = "Suckering: Stem density acre AC - UNBURNED") +
@@ -7080,7 +7172,7 @@ suckering.vtype.burned.allHt %>%
   geom_tile(aes(fill = stemDen.ac), color = "grey80") +
   # geom_tile(aes(color = FENCED, fill = stemDen.ha)) + # scale_fill_grey() +
   theme_minimal() +
-  scale_fill_gradientn(colors = c("#26185F","#0095AF","#9ADCBB", "#FCFFDD")) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
   # scale_fill_viridis() +
   # scale_fill_gradient(low = "black", high = "grey") +
   # theme(legend.position = "top") +
@@ -7433,16 +7525,17 @@ ggsave("./output/figures_202107/MP_aspHt_stemTally_fenced_only.png", width = 6, 
 
 ```
 
-### AC dead trees (>2.5m)-- by fencing
+### AC dead trees (>2.5m)
 
-```{r}
+**By Fencing and Burning**
+```{r, eval=FALSE}
 ### AC dead stems --  by fencing
 asp.tally.ht.tidy %>%
   filter(SITE_TYPE == "AC") %>%
   filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>%
   filter(LIVE_DEAD == "DEAD") %>%
   group_by(FENCED, BURNED, timeClass) %>% 
-  summarise(median.tally = median(stemTally),mean.tally = mean(stemTally), sum.tally = sum(stemTally), iqr.tally = IQR(stemTally)) %>% 
+  summarise(median.tally = median(stemTally, na.rm = TRUE),mean.tally = mean(stemTally, na.rm=TRUE), sum.tally = sum(stemTally), iqr.tally = IQR(stemTally, na.rm=TRUE)) %>% 
   ungroup() %>% 
   ggplot(aes(timeClass, mean.tally)) +
   geom_col(aes(fill = FENCED), position = "dodge") +
@@ -7454,40 +7547,58 @@ asp.tally.ht.tidy %>%
 ggsave("./output/figures_202107/AC_sum_dead.png", width = 3.75, height = 4)
 ```
 
-### AC dead trees (>2.5m) -- by fencing
 
 ```{r}
 ### AC dead stems --  by fencing
-asp.tally.ht.tidy %>%
+pl.bar.dead.ac <- asp.tally.ht.tidy %>%
   filter(SITE_TYPE == "AC") %>%
   filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>%
   filter(LIVE_DEAD == "DEAD") %>%
   group_by(FENCED, BURNED, timeClass) %>% 
-  summarise(median.tally = median(stemTally), sum.tally = sum(stemTally), iqr.tally = IQR(stemTally),mean.tally = mean(stemTally),) %>% 
+  summarise(median.tally = median(stemTally, na.rm = TRUE), sum.tally = sum(stemTally), iqr.tally = IQR(stemTally, na.rm=TRUE),mean.tally = mean(stemTally, na.rm=TRUE)) %>% 
   ungroup() %>% 
   ggplot(aes(timeClass, mean.tally)) +
-  geom_col(aes(fill = FENCED), position = "dodge") +
+  geom_col(aes(fill = BURNED), position = "dodge") +
   theme_minimal() +
   scale_fill_manual(values = colfunc3(2)) +
   # scale_fill_grey() +
-  labs(x = "", y = "Stem count", fill = "", title = "Core winter range", caption = "AC plots - mean count of dead stems across all plots") +
-  facet_wrap(~BURNED)
+  theme(legend.position = "none") +
+  labs(x = "", y = "Stem count", fill = "", title = "Core range") +
+  facet_wrap(~FENCED)
 
-ggsave("./output/figures_202107/AC_mean_dead_fenced_burned.png", width = 4.75, height = 3.5)
+pl.bar.dead.anc <- asp.tally.ht.tidy %>%
+  filter(SITE_TYPE == "ANC") %>%
+  filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>%
+  filter(LIVE_DEAD == "DEAD") %>%
+  group_by(BURNED, timeClass) %>% 
+  summarise(median.tally = median(stemTally, na.rm = TRUE), sum.tally = sum(stemTally), iqr.tally = IQR(stemTally, na.rm=TRUE),mean.tally = mean(stemTally, na.rm=TRUE)) %>% 
+  ungroup() %>% 
+  ggplot(aes(timeClass, mean.tally)) +
+  geom_col(aes(fill = BURNED), position = "dodge") +
+  theme_minimal() +
+  scale_fill_manual(values = colfunc3(2)) +
+  # scale_fill_grey() +
+  theme(legend.position = "bottom") +
+  labs(x = "", y = "Stem count", fill = "", title = "Noncore Range") 
 
+pl.bar.dead.ac + pl.bar.dead.anc
+
+ggsave("./output/figures_202107/AC_mean_dead_fenced_burned_combo.png", width = 4.75, height = 3.5)
+```
+
+```{r}
 asp.tally.ht.tidy %>%
   filter(SITE_TYPE == "AC") %>%
   filter(timeClass == "BL" | timeClass == "2013" | timeClass == "2018") %>%
   filter(LIVE_DEAD == "DEAD") %>%
   group_by(FENCED, BURNED, timeClass) %>% 
-  summarise(median.tally = median(stemTally), sum.tally = sum(stemTally), iqr.tally = IQR(stemTally),mean.tally = mean(stemTally),) %>% 
+  summarise(median.tally = median(stemTally, na.rm = TRUE), sum.tally = sum(stemTally), iqr.tally = IQR(stemTally, na.rm=TRUE),mean.tally = mean(stemTally, na.rm=TRUE),) %>% 
   ungroup() %>% 
   group_by(FENCED, BURNED, timeClass) %>%
   descr(mean.tally) %>% 
   tb() %>% 
   mutate(across(where(is.numeric), round, 1)) %>% 
   datatable()
-
 ```
 
 ```{r}
@@ -7513,7 +7624,7 @@ med.cnt.dbh.fenced.ac <- asp.tally.ht.tidy %>%
   filter(timeClass == "BL" |timeClass == "2013" |timeClass == "2018") %>% 
   filter(SITE_TYPE == "AC") %>% 
   group_by(timeClass, FENCED, VALLEY, HTclass2) %>% 
-  summarise(med.tally = median(stemTally)) %>% 
+  summarise(med.tally = median(stemTally, na.rm = TRUE)) %>% 
   ungroup() 
 
 med.cnt.dbh.fenced.ac %>% 
@@ -7527,7 +7638,7 @@ med.cnt.dbh.fenced.ac %>%
   facet_grid(VALLEY~FENCED, as.table = FALSE) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   theme_minimal() +
-  scale_fill_gradientn(colors = c("#26185F","#0095AF","#9ADCBB", "#FCFFDD")) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
   # scale_fill_viridis() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(x = "", y = "Height class", fill = "Stem count", caption = "AC plots only - Median stem count")
@@ -7558,7 +7669,7 @@ asp.tally.ht.tidy %>%
   filter(VALLEY == "MP") %>%
   ggplot(aes(HTclass2, timeClass)) +
   geom_tile(aes(fill = stemTally), color = "grey80") +
-  scale_fill_gradientn(colors = c("#26185F","#0095AF","#9ADCBB", "#FCFFDD")) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
   # scale_fill_viridis_c() +
   facet_wrap(~SITE_ID, ncol=6) +
   theme_minimal() +
@@ -7574,7 +7685,7 @@ med.cnt.dbh.fenced.anc <- asp.tally.ht.tidy %>%
   filter(timeClass == "BL" |timeClass == "2013" |timeClass == "2018") %>% 
   filter(SITE_TYPE == "ANC") %>% 
   group_by(timeClass, FENCED, VALLEY, HTclass2) %>% 
-  summarise(med.tally = median(stemTally)) %>% 
+  summarise(med.tally = median(stemTally, na.rm = TRUE)) %>% 
   ungroup() 
 
 med.cnt.dbh.fenced.anc %>% 
@@ -7617,7 +7728,7 @@ med.cnt.dbh.fenced.ak <- asp.tally.ht.tidy %>%
   filter(timeClass == "BL" |timeClass == "2013" |timeClass == "2018") %>% 
   filter(SITE_TYPE == "AK") %>% 
   group_by(timeClass, FENCED, VALLEY, HTclass2) %>% 
-  summarise(med.tally = median(stemTally)) %>% 
+  summarise(med.tally = median(stemTally, na.rm = TRUE)) %>% 
   ungroup() 
 
 med.cnt.dbh.fenced.ak %>% 
@@ -7632,7 +7743,7 @@ med.cnt.dbh.fenced.ak %>%
   facet_grid(FENCED~VALLEY, as.table = FALSE) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   theme_minimal() +
-  scale_fill_gradientn(colors = c("#26185F","#0095AF","#9ADCBB", "#FCFFDD")) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
   # scale_fill_viridis() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(x = "", y = "Height class", fill = "Stem count", caption = "AK plots only - Median stem count")
@@ -7657,7 +7768,7 @@ asp.tally.ht.tidy %>%
   facet_wrap(~SITE_ID) +
   theme_minimal() +
   # scale_fill_viridis_c(begin = .4, end = .95, direction = -1, option = "B") +
-  scale_fill_gradientn(colors = c("#26185F","#0095AF","#9ADCBB", "#FCFFDD")) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
   labs(x = "", y = "", title = "Core winter range: Aspen live stem tallies", fill = "n stems") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
@@ -7690,7 +7801,7 @@ asp.tally.ht.tidy %>% # distinct(RANGE_TYPE)
   # geom_text(aes(label = stemTally), size = 3) +
   # scale_fill_viridis_c() +
   # scale_fill_viridis_c(begin = .4, end = .95, direction = -1, option = "B") +
-  scale_fill_gradientn(colors = c("#26185F","#0095AF","#9ADCBB", "#FCFFDD")) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
   facet_wrap(~SITE_ID) +
   theme_minimal() +
   labs(x = "", y = "", title = "Non-core winter range: Aspen live stem tallies", fill = "n stems") +
@@ -8055,8 +8166,8 @@ plot.percTot.AC.UF <- full_join(ht.perc01,sort.ht2join) %>%
 plot.ac.fence2panel <- plot.percTot.AC.F + plot.percTot.AC.UF +
   plot_layout(widths = c(1, 2))
 
-ggsave("./output/figures_202107/revised_figs_aspen/AspPercTotXhtclass_ac_FxUf.png", width = 11, height = 5, dpi=300)
-# ggsave("./output/figures_202107/revised_figs_aspen/AsppercTotXhtclass_ac_FxUf.pdf", width = 11, height = 5)
+ggsave("./output/figures_202107/AspPercTotXhtclass_ac_FxUf.png", width = 11, height = 5, dpi=300)
+# ggsave("./output/figures_202107/AsppercTotXhtclass_ac_FxUf.pdf", width = 11, height = 5)
 
 ## ANC
 plot.percTot.ANC <- full_join(ht.perc01,sort.ht2join) %>% 
@@ -8075,8 +8186,8 @@ plot.percTot.ANC <- full_join(ht.perc01,sort.ht2join) %>%
 
 plot.percTot.ANC
 
-ggsave("./output/figures_202107/revised_figs_aspen/AspPercTotXhtclass_anc_FxUf.png", width = 7, height = 5, dpi=300)
-# ggsave("./output/figures_202107/revised_figs_aspen/AspPercTotXhtclass_anc_FxUf.pdf", width = 7, height = 5)
+ggsave("./output/figures_202107/AspPercTotXhtclass_anc_FxUf.png", width = 7, height = 5, dpi=300)
+# ggsave("./output/figures_202107/AspPercTotXhtclass_anc_FxUf.pdf", width = 7, height = 5)
 
 
 ## AK
@@ -8096,19 +8207,19 @@ plot.percTot.AK <- full_join(ht.perc01,sort.ht2join) %>%
 
 plot.percTot.AK
 
-ggsave("./output/figures_202107/revised_figs_aspen/AspPercTotXhtclass_ak.png", width = 5, height = 5, dpi=300)
-# ggsave("./output/figures_202107/revised_figs_aspen/AspPercTotXhtclass_ak.pdf", width = 5, height = 5)
+ggsave("./output/figures_202107/AspPercTotXhtclass_ak.png", width = 5, height = 5, dpi=300)
+# ggsave("./output/figures_202107/AspPercTotXhtclass_ak.pdf", width = 5, height = 5)
 
 ```
 
 ```{r}
 # panel plot
-plot.ac.fence2panel + plot.percTot.ANC + plot.percTot.ANC + plot.percTot.AK
+plot.ac.fence2panel + plot.percTot.ANC + plot.percTot.AK
 
 # alt
-plot.percTot.AC.F + plot.percTot.AC.UF + plot.percTot.ANC + plot.percTot.ANC + plot.percTot.AK
+plot.percTot.AC.F + plot.percTot.AC.UF + plot.percTot.ANC + plot.percTot.AK
 
-ggsave("./output/figures_202107/revised_figs_aspen/AspPercTotXhtclass_panel.png", width = 8, height = 6, dpi=300)
+ggsave("./output/figures_202107/AspPercTotXhtclass_panel.png", width = 8, height = 8, dpi=300)
 ```
 
 
@@ -8374,8 +8485,8 @@ asp.sign.summary %>%
   scale_fill_manual(values = c("grey20", "grey70")) +
   labs(x="", y = "Percent of plots", fill = "", caption = "2018 Data") 
 
-ggsave("./output/figures_202107/revised_figs_aspen/asp_animal_presence_2018.png", width=6, height = 5, dpi=300)
-ggsave("./output/figures_202107/revised_figs_aspen/asp_animal_presence_2018.pdf", width=6, height = 5)
+ggsave("./output/figures_202107/asp_animal_presence_2018.png", width=6, height = 5, dpi=300)
+ggsave("./output/figures_202107/asp_animal_presence_2018.pdf", width=6, height = 5)
   
 
 ## incorporating burned 2012
@@ -8406,8 +8517,8 @@ asp.sign.summary.b %>%
   scale_fill_manual(values = c("grey20", "grey70")) +
   labs(x="", y = "Percent of plots", fill = "", caption = "2018 Data. Burned refers to 2012, not ET fire. Labels = count of plots") 
 
-ggsave("./output/figures_202107/revised_figs_aspen/asp_animal_presence_2018_burned.png", width=6.5, height = 5, dpi=300)
-ggsave("./output/figures_202107/revised_figs_aspen/asp_animal_presence_2018_burned.pdf", width=6.5, height = 5)
+ggsave("./output/figures_202107/asp_animal_presence_2018_burned.png", width=6.5, height = 5, dpi=300)
+ggsave("./output/figures_202107/asp_animal_presence_2018_burned.pdf", width=6.5, height = 5)
 
 asp.sign.summary.b %>%
   select(-yr) %>% 
