@@ -1,5 +1,5 @@
 ---
-title: "Appendix C. EVMP Aspen Statistical Analyses"
+title: "Appendix B. EVMP Aspen Statistical Analyses"
 author: ""
 date: ""
 output: 
@@ -41,6 +41,7 @@ library(ggridges)
 library(shinystan)
 library(patchwork)
 library(bayesplot)
+library(summarytools)
 ```
 
 ```{r, functions, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}
@@ -483,7 +484,7 @@ pl.sapmean.ak <- tally.sapsize %>%
 pl.sapmean.ac + pl.sapmean.anc + pl.sapmean.ak + patchwork::plot_layout(ncol=3)
 
 # save plots
-# ggsave("./output/figures_exported/aspen_stem_count/asp_saplingmean_3panelalt.png", dpi = 300, width = 5.75, height = 6.75)
+ggsave("./output/figures_exported/aspen_stem_count/asp_saplingmean_3panelalt.png", dpi = 300, width = 5.75, height = 6.75)
 
 ```
 
@@ -598,7 +599,7 @@ posteriors.acanc.stcnt.sm.tidy %>%
 
 # save plots
 ggsave("./output/figures_exported/aspen_stem_count/postden_stemcnt_acanc_smsap.png", dpi = 300, width = 4.75, height = 3.75)
-ggsave("./output/figures_exported/aspen_stem_count/postden_stemcnt_acanc_smsap.pdf", width = 4.75, height = 3.75)
+
 ```
 
 #### Probability of Direction
@@ -615,7 +616,6 @@ plot.pdif.acanc.sm <- p_direction(stmod_stally2.acanc.sm) %>%
 plot.pdif.acanc.sm
 # save plots
 ggsave("./output/figures_exported/aspen_stem_count/pd_stemcnt_acanc_smsap.png", dpi = 300, width = 4.75, height = 3.75)
-ggsave("./output/figures_exported/aspen_stem_count/pd_stemcnt_acanc_smsap.pdf", width = 4.75, height = 3.75)
 
 ```
 

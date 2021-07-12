@@ -1,5 +1,5 @@
 ---
-title: "Appendix D. EVMP Upland Statistical Analyses"
+title: "Appendix C. EVMP Upland Statistical Analyses"
 author: ""
 date: ""
 output: 
@@ -51,6 +51,7 @@ library(bayestestR)
 library(gt)
 library(patchwork)
 library(ggtext)
+library(summarytools)
 
 ```
 
@@ -158,7 +159,7 @@ fun.desc.post1.gt.rope <- function(model){
 }
 
 ```
-# below check contrast plot spec to linerange color  
+ 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}
 #### Plotting functions
 
@@ -171,6 +172,39 @@ fun.contrast.plot <- function(df){
   labs(caption = "Point estimate displayed: median 
 HPD interval probability", x = "Estimate", y = "Estimate") +
   coord_flip()
+}
+
+
+library(rlang)
+fun.barplot1 <- function(mydf, myxcol, myycol, myfill, mytitle) {
+   ggplot2::ggplot(data = mydf, aes(x=reorder({{ myxcol }}, 
+      {{ myycol }}), y= {{ myycol }})) +
+    geom_col(color = "black", fill="#0072B2") +
+    xlab("") +
+    ylab("") +
+    coord_flip() +
+    ggtitle(mytitle) +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+}
+
+# geom tile in progress
+# 
+fun.gp3.ggtile <- function(df, gp1, gp2, gp3, var){
+  df %>%
+  group_by({{gp1}}, {{gp2}}, {{gp3}}) %>%
+  summarytools::descr(perc_cover, stats = "common") %>%
+  summarytools::tb() %>%
+  mutate(across(where(is.numeric), round, 1)) %>%
+  mutate(label = glue("{mean} ({sd})")) %>%
+  ggplot(aes({{gp1}}, {{gp2}})) +
+  geom_tile(aes(fill = mean)) +
+  geom_text(aes(label = label)) +
+  theme_minimal() +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
+  facet_wrap(~{{gp3}}) +
+  theme(legend.position = "bottom") #+
+  # labs(x=glue::glue("{gp1}"), y=glue::glue("{gp2}"), fill="Mean cover")
 }
 
 ```
@@ -223,7 +257,7 @@ and the original EVMP monitoring plan [@zeigenfuss2011].
 
 The code and results presented here start from and build upon derived
 data produced in a separate code document focused on ingesting,
-compiling, and cleaning raw data provided by RMNP staff. Raw files were combined and pre-processed in a separate code file (Appendix B for the main project report).
+compiling, and cleaning raw data provided by RMNP staff (Appendix B for the main project report).
 Packages included in the "Tidyverse"
 ecosystem of R packages were used for data transformation and
 visualization [@wickham2019], although specialized packages particular
@@ -236,9 +270,8 @@ winter range plots (WNC) with plots treated as random factors using the
 'stan_glmer' function in the rstanrm package
 [@goodrich2020][@brilleman2018]. Bayesian estimation was performed via
 MCMC adding independent weakly informed priors specific to the data type
-being modeled for regression coefficients for difference response
-variable types [@lemoine2019]. Zero-bounded continuous response variables (e.g.,
-shrub height) were fit with a Gamma distribution, count data were modeled as poisson processes, while proportion data (e.g.,
+being modeled [@lemoine2019]. Zero-bounded continuous response variables (e.g.,
+shrub height) were fit with a Gamma distribution, while proportion data (e.g.,
 cover) were modeled using a beta distribution (Ferrari and Cribari-Neto
 2004) that constrains values from 0 to 1.
 
@@ -395,10 +428,20 @@ cov.allshrubs %>%
 ggsave("./output/figures_202107_stats_upland/cover_valley_boxplot.png", dpi = 300, width = 6.75, height = 6.25)
 ```
 
+**Summary by Range Type**
+```{r}
+cov.allshrubs %>%
+  group_by(site_type, time_class, burned) %>% 
+  descr(perc_cover, stats = "common") %>% 
+  tb() %>% 
+  mutate(across(where(is.numeric), round, 1)) %>% 
+  datatable(caption = "Upland percent cover -- all shrub species pooled", filter = "bottom")
+
+```
 
 
 ### Modeling and Posterior Description
-```{r, cache=TRUE}
+```{r, cache=FALSE}
 ## add cover in 0-1 range
 cov.allshrubs <- cov.allshrubs %>%
   mutate(cover = perc_cover/100)
@@ -523,13 +566,13 @@ back-transformation to ratios goes hand-in-hand with that.
 # Results are given on the log (not the response) scale.
 emmeans(stmod_cov.allshr, ~ time_class) %>% 
   pairs() %>% 
-  plot(type="response") +
+  plot() +
+  # plot(type="response") +
   theme_minimal() +
-  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Point estimate displayed: median 
-HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range, All Shrub Cover")
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range, All Shrub Cover.Results are given on the log scale.")
 
-# ggsave("./output/figures_202107_stats_upland/emm_shrubcov_wcwnc.pdf", width = 4.5, height = 3.55) # save plot
 ggsave("./output/figures_202107_stats_upland/emm_shrubcov_wcwnc_unc.png", width = 4.5, height = 3.55) # save plot
 
 # table of contrasts
@@ -564,7 +607,7 @@ cov.allshrubs %>%
 ```
 
 ### Modeling and Posterior Description
-```{r, cache=TRUE}
+```{r, cache=FALSE}
 cov.allshrubs.uc <- cov.allshrubs %>% 
   filter(site_type == "core range") # add 
 
@@ -695,7 +738,7 @@ emmeans(stmod_cov.allshr.uc, ~ time_class) %>%
   pairs() %>% 
   plot(type="response") +
   theme_minimal() +
-  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range, All Shrub Cover")
 
@@ -721,7 +764,7 @@ emmeans(stmod_cov.allshr.uc, ~ time_class) %>%
 ```
 ## Upland Shrub Cover, Pooled Shrub Species - Noncore Winter Range
 ### Modeling and Posterior Description
-```{r, cache=TRUE}
+```{r, cache=FALSE}
 cov.allshrubs.unc <- cov.allshrubs %>% 
   filter(site_type == "non-core range") # add 
 
@@ -852,7 +895,7 @@ emmeans(stmod_cov.allshr.unc, ~ time_class) %>%
   pairs() %>% 
   plot(type="response") +
   theme_minimal() +
-  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range, All Shrub Cover")
 
@@ -887,39 +930,102 @@ pl.emm.upl.allshr.ucunc <- emmeans(stmod_cov.allshr, ~ time_class) %>%
   pairs() %>% 
   plot() +
   theme_minimal() +
-  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Combined Range", x = "Estimate", y = "Contrast")
 
 pl.emm.upl.allshr.uc <- emmeans(stmod_cov.allshr.uc, ~ time_class) %>% 
   pairs() %>% 
   plot() +
   theme_minimal() +
-  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Core Range", x = "Estimate", y = "Contrast")
 
 pl.emm.upl.allshr.unc <- emmeans(stmod_cov.allshr.unc, ~ time_class) %>% 
   pairs() %>% 
   plot() +
   theme_minimal() +
-  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Noncore Range", x = "Estimate", y = "Contrast")
 
 
 pl.emm.upl.allshr.ucunc + pl.emm.upl.allshr.uc + pl.emm.upl.allshr.unc + 
-  patchwork::plot_layout(ncol=1) +
+  patchwork::plot_layout(ncol=3) +
   plot_annotation('Upland Shrub Cover', caption = 'All Shrub Species Pooled')
 
 ```
 
-
-
-# Individual species
-
+# Individual species  
 ```{r}
 cov.byspp %>% 
   tabyl(shrub_species) %>% 
   arrange(-n) %>% 
   gt()
+
+```
+
+```{r}
+#### summary
+cov.byspp.summary <- cov.byspp %>% 
+  group_by(time_class, site_type, shrub_species) %>% 
+  summarytools::descr(perc_cover, stats = "common") %>% 
+  summarytools::tb() %>%
+  mutate(across(where(is.numeric), round, 1)) %>% 
+  mutate(label = glue("{mean} ({sd})"))
+
+
+# library(ggtext)
+## ggtext for ggrich text
+cov.byspp.summary %>% 
+  # filter(site_type == "")
+  filter(n.valid>=3) %>%
+  filter(shrub_species != "SYRO" & shrub_species != "CEFE"& shrub_species != "PRVI"& shrub_species != "") %>% 
+  ggplot(aes(time_class, shrub_species)) +
+  geom_tile(aes(fill = mean), color="grey80") +
+  geom_text(aes(label = label), size=.8) +
+  theme_minimal() +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
+  facet_wrap(~site_type) +
+  theme(legend.position = "bottom") +
+  labs(x="", y="Species", title = "Winter Range", fill="Mean cover")
+
+ggsave("./output/figures_202107_stats_upland/ucunc_tile_mean_sd_cov.png", dpi = 300, width = 6.75, height = 4.75)
+
+cov.byspp.summary %>% 
+  # filter(site_type == "")
+  filter(n.valid>=3) %>%
+  filter(shrub_species != "SYRO" & shrub_species != "CEFE"& shrub_species != "PRVI"& shrub_species != "") %>% 
+  ggplot(aes(time_class, shrub_species)) +
+  geom_tile(aes(fill = mean), color="grey80") +
+  # geom_text(aes(label = label)) +
+  theme_minimal() +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
+  facet_wrap(~site_type) +
+  theme(legend.position = "bottom") +
+  labs(x="", y="Species", title = "Winter Range", fill="Mean cover")
+
+ggsave("./output/figures_202107_stats_upland/ucunc_tile_mean_sd_cov_nolbl.png", dpi = 300, width = 6.75, height = 4.75)
+
+```
+
+```{r}
+cov.byspp.summary %>% 
+  # filter(site_type == "")
+  filter(n.valid>=3) %>%
+  filter(shrub_species != "SYRO" & shrub_species != "CEFE"& shrub_species != "PRVI"& shrub_species != "") %>% 
+  ggplot(aes(time_class, shrub_species)) +
+  geom_col(aes(fill = mean), color="grey80") +
+  # geom_text(aes(label = label)) +
+  theme_minimal() +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
+  facet_wrap(~site_type) +
+  theme(legend.position = "bottom") +
+  labs(x="", y="Species", title = "Winter Range", fill="Mean cover")
+
+ggsave("./output/figures_202107_stats_upland/ucunc_bar_mean_sd_cov_nolbl.png", dpi = 300, width = 6.75, height = 4.75)
+```
+
+
+```{r}
 
 ```
 
@@ -942,7 +1048,7 @@ cov.putr %>%
 ```
 
 ### Modeling and Posterior Description
-```{r, cache=TRUE}
+```{r, cache=FALSE}
 ## add cover in 0-1 range
 cov.putr <- cov.putr %>%
   mutate(cover = perc_cover/100)
@@ -994,7 +1100,7 @@ pp_check(stmod_cov.putr) +
 
 # save plots
 ggsave("./output/figures_202107_stats_upland/ppc_PUTR_putrubs_unc.png", dpi = 300, width = 4.75, height = 3.75)
-# ggsave("./output/figures_202107_stats_upland/ppc_PUTR_putrubs.pdf", width = 4.75, height = 3.75)
+
 ```
 
 ```{r}
@@ -1070,9 +1176,9 @@ emmeans(stmod_cov.putr, ~ time_class) %>%
   pairs() %>% 
   plot(type="response") +
   theme_minimal() +
-  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Point estimate displayed: median 
-HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range, All Shrub Cover")
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range, PUTR")
 
 ggsave("./output/figures_202107_stats_upland/emm_putr_cov_ucunc.png", width = 4.5, height = 3.55) # save plot
 
@@ -1108,7 +1214,7 @@ cov.putr %>%
 ```
 
 ### Modeling and Posterior Description
-```{r, cache=TRUE}
+```{r, cache=FALSE}
 cov.putr.uc <- cov.putr %>% 
   filter(site_type == "core range") # add 
 
@@ -1239,7 +1345,7 @@ emmeans(stmod_cov.putr.uc, ~ time_class) %>%
   pairs() %>% 
   plot(type="response") +
   theme_minimal() +
-  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range,PUTR")
 
@@ -1265,7 +1371,7 @@ emmeans(stmod_cov.putr.uc, ~ time_class) %>%
 ```
 ## Upland Shrub Cover, _Purshia tridentata_ - Noncore Winter Range
 ### Modeling and Posterior Description
-```{r, cache=TRUE}
+```{r, cache=FALSE}
 cov.putr.unc <- cov.putr %>% 
   filter(site_type == "non-core range") # add 
 
@@ -1396,7 +1502,7 @@ emmeans(stmod_cov.putr.unc, ~ time_class) %>%
   pairs() %>% 
   plot(type="response") +
   theme_minimal() +
-  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range,PUTR")
 
@@ -1439,7 +1545,7 @@ cov.rice %>%
 ```
 
 ### Modeling and Posterior Description
-```{r, cache=TRUE}
+```{r, cache=FALSE}
 ## add cover in 0-1 range
 cov.rice <- cov.rice %>%
   mutate(cover = perc_cover/100)
@@ -1567,7 +1673,7 @@ emmeans(stmod_cov.rice, ~ time_class) %>%
   pairs() %>% 
   plot(type="response") +
   theme_minimal() +
-  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range,RICE")
 
@@ -1606,7 +1712,7 @@ cov.rice %>%
 ```
 
 ### Modeling and Posterior Description
-```{r, cache=TRUE}
+```{r, cache=FALSE}
 cov.rice.uc <- cov.rice %>% 
   filter(site_type == "core range") # add 
 
@@ -1737,7 +1843,7 @@ emmeans(stmod_cov.rice.uc, ~ time_class) %>%
   pairs() %>% 
   plot(type="response") +
   theme_minimal() +
-  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range,RICE")
 
@@ -1763,7 +1869,7 @@ emmeans(stmod_cov.rice.uc, ~ time_class) %>%
 ```
 ## Upland Shrub Cover, _Ribes cereum_ - Noncore Winter Range
 ### Modeling and Posterior Description
-```{r, cache=TRUE}
+```{r, cache=FALSE}
 cov.rice.unc <- cov.rice %>% 
   filter(site_type == "non-core range") # add 
 
@@ -1894,7 +2000,7 @@ emmeans(stmod_cov.rice.unc, ~ time_class) %>%
   pairs() %>% 
   plot(type="response") +
   theme_minimal() +
-  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range,RICE")
 
@@ -1921,37 +2027,41 @@ emmeans(stmod_cov.rice.unc, ~ time_class) %>%
 
 # Additional plots
 ```{r}
-# Point estimate displayed: median 
-# HPD interval probability: 0.95
+# putr
 
 pl.emm.cov.putr.ucunc <- emmeans(stmod_cov.putr, ~ time_class) %>% 
   pairs() %>% 
   plot() +
   theme_minimal() +
-  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
-  labs(subtitle = "Combined Range", x = "Estimate", y = "Contrast")
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Combined Range", x = "", y = "Contrast")
 
 pl.emm.cov.putr.uc <- emmeans(stmod_cov.putr.uc, ~ time_class) %>% 
   pairs() %>% 
   plot() +
   theme_minimal() +
-  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
-  labs(subtitle = "Core Range", x = "Estimate", y = "Contrast")
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Core Range", x = "Estimate", y = "")
 
 pl.emm.cov.putr.unc <- emmeans(stmod_cov.putr.unc, ~ time_class) %>% 
   pairs() %>% 
   plot() +
   theme_minimal() +
-  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
-  labs(subtitle = "Noncore Range", x = "Estimate", y = "Contrast")
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Noncore Range", x = "", y = "")
 
 
-pl.emm.cov.putr.ucunc + pl.emm.cov.putr.uc + pl.emm.cov.putr.unc + 
-  patchwork::plot_layout(ncol=1) +
-  plot_annotation(title = 'Upland Shrub Cover', subtitle = expression(paste(italic("Pushia tridentata"))))
+pl.patch.putr <- pl.emm.cov.putr.ucunc + pl.emm.cov.putr.uc + pl.emm.cov.putr.unc + 
+  patchwork::plot_layout(ncol=3) +
+  plot_annotation(title = expression(paste(italic("Pushia tridentata"))))
+
+pl.patch.putr
+ggsave("./output/figures_202107_stats_upland/uplcov_3panel_putr.png", dpi = 300, width = 7.75, height = 2.75)
 ```
-# here
-```{r, eval=FALSE}
+
+### _Ribes cereum_
+
+```{r}
 # Point estimate displayed: median 
 # HPD interval probability: 0.95
 
@@ -1959,55 +2069,94 @@ pl.emm.cov.rice.ucunc <- emmeans(stmod_cov.rice, ~ time_class) %>%
   pairs() %>% 
   plot() +
   theme_minimal() +
-  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
-  labs(subtitle = "Combined Range", x = "Estimate", y = "Contrast")
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Combined Range", x = "", y = "Contrast")
 
 pl.emm.cov.rice.uc <- emmeans(stmod_cov.rice.uc, ~ time_class) %>% 
   pairs() %>% 
   plot() +
   theme_minimal() +
-  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
-  labs(subtitle = "Core Range", x = "Estimate", y = "Contrast")
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Core Range", x = "Estimate", y = "")
 
 pl.emm.cov.rice.unc <- emmeans(stmod_cov.rice.unc, ~ time_class) %>% 
   pairs() %>% 
   plot() +
   theme_minimal() +
-  geom_vline(aes(xintercept = 1), color= "black", size=1, lty="dashed") +
-  labs(subtitle = "Noncore Range", x = "Estimate", y = "Contrast")
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Noncore Range", x = "", y = "")
 
 
-pl.emm.cov.rice.ucunc + pl.emm.cov.rice.uc + pl.emm.cov.rice.unc + 
-  patchwork::plot_layout(ncol=1) +
-  plot_annotation(title = 'Upland Shrub Cover', subtitle = expression(paste(italic("Pushia tridentata"))))
+pl.patch.rice <- pl.emm.cov.rice.ucunc + pl.emm.cov.rice.uc + pl.emm.cov.rice.unc + 
+  patchwork::plot_layout(ncol=3) +
+  plot_annotation(title = expression(paste(italic("Ribes cereum"))))
+
+pl.patch.rice
+# pl.patch.putr + pl.patch.rice + plot_layout(ncol=1)
+
+ggsave("./output/figures_202107_stats_upland/uplcov_3panel_rice.png", dpi = 300, width = 7.75, height = 3.75)
 ```
 
+
+
+```{r, eval=FALSE}
+# rice
+# pl.emm.cov.rice.ucunc <- emmeans(stmod_cov.rice, ~ time_class) %>% 
+#   pairs() %>% 
+#   plot() +
+#   theme_minimal() +
+#   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+#   labs(title= "Combined Range", subtitle = expression(paste(italic("Ribes cereum"))), x = "", y = "Contrast")
+# 
+# pl.emm.cov.rice.uc <- emmeans(stmod_cov.rice.uc, ~ time_class) %>% 
+#   pairs() %>% 
+#   plot() +
+#   theme_minimal() +
+#   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+#   labs(title= "Core Range", subtitle = expression(paste(italic("Ribes cereum"))), x = "Estimate", y = "")
+# 
+# pl.emm.cov.rice.unc <- emmeans(stmod_cov.rice.unc, ~ time_class) %>% 
+#   pairs() %>% 
+#   plot() +
+#   theme_minimal() +
+#   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+#   labs(title= "Noncore Range", subtitle = expression(paste(italic("Ribes cereum"))), x = "", y = "")
+# 
+# 
+# pl.emm.cov.rice.ucunc + pl.emm.cov.rice.uc + pl.emm.cov.rice.unc + 
+#   patchwork::plot_layout(ncol=3) +
+#   plot_annotation(title = 'Upland Shrub Cover', subtitle = expression(paste(italic("RICE"))))
+# 
+# ggsave("./output/figures_202107_stats_upland/uplcov_3panel_rice.png", dpi = 300, width = 7.75, height = 3.75)
+```
+ 
 **Combined range**
 ```{r}
-pl.emm.upl.allshr + pl.emm.cov.putr.ucunc + pl.emm.cov.rice.ucunc + 
-  patchwork::plot_layout(ncol=1) +
-  plot_annotation(title = 'Upland Shrub Cover', subtitle = 'Combined Range', tag_levels = "A")
+(pl.emm.upl.allshr.ucunc + labs(x="", subtitle="All shrubs")) + (pl.emm.cov.putr.ucunc + labs(x="Estimate",subtitle="PUTR")) + (pl.emm.cov.rice.ucunc + labs(subtitle="RICE")) + 
+  patchwork::plot_layout(ncol=3) +
+  plot_annotation(title = 'Combined Range')
 
-ggsave("./output/figures_202107_stats_upland/uplcov_3panel_ucunc.png", dpi = 300, width = 7.75, height = 3.75)
+ggsave("./output/figures_202107_stats_upland/uplcov_3panel_ucunc_allshr_putr_rice.png", dpi = 300, width = 7.75, height = 3.75)
 ```
 
 **Core range**
 ```{r}
-(pl.emm.upl.allshr.uc + labs(subtitle="")) + pl.emm.cov.putr.uc + pl.emm.cov.rice.uc + 
-  patchwork::plot_layout(ncol=1) +
-  plot_annotation(title = 'Upland Shrub Cover', subtitle = 'Core Range',  tag_levels = "A")
+(pl.emm.upl.allshr.uc + labs(subtitle="All shrubs")) + (pl.emm.cov.putr.uc + labs(subtitle="PUTR"))+ (pl.emm.cov.rice.uc + labs(subtitle="RICE")) + 
+  patchwork::plot_layout(ncol=3) +
+  plot_annotation(title = 'Core Range')
 
-ggsave("./output/figures_202107_stats_upland/uplcov_3panel_uc.png", dpi = 300, width = 7.75, height = 3.75)
+ggsave("./output/figures_202107_stats_upland/uplcov_3panel_uc_allshr_putr_rice.png", dpi = 300, width = 7.75, height = 1.75)
 ```
 
 **Noncore range**
 ```{r}
-pl.emm.upl.allshr.ucunc + pl.emm.cov.putr.ucunc + pl.emm.cov.rice.ucunc + 
-  patchwork::plot_layout(ncol=1) +
-  plot_annotation(title = 'Upland Shrub Cover', subtitle = 'Noncore Range',  tag_levels = "A")
+(pl.emm.upl.allshr.unc + labs(subtitle="All shrubs")) + (pl.emm.cov.putr.unc + labs(subtitle="PUTR")) + (pl.emm.cov.rice.unc + labs(subtitle="RICE")) + 
+  patchwork::plot_layout(ncol=3) +
+  plot_annotation(title = 'Noncore Range')
 
-ggsave("./output/figures_202107_stats_upland/uplcov_3panel_unc.png", dpi = 300, width = 7.75, height = 3.75)
+ggsave("./output/figures_202107_stats_upland/uplcov_3panel_unc_allshr_putr_rice.png", dpi = 300, width = 7.75, height = 3.75)
 ```
+
 
 # Session info
 
