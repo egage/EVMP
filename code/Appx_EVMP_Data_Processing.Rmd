@@ -1,5 +1,5 @@
 ---
-title: "Appendix B. EVMP Data Processing"
+title: "Appendix A. EVMP Data Processing"
 author: ""
 date: ""
 output: 
@@ -6264,6 +6264,198 @@ ggsave("./output/figures_202107/AC_burned_live_only_TCxF_mean.png", width = 6, h
 ```
 
 ```{r}
+## add just burned plots
+asp.tally.dbh.tidy %>%
+  filter(SITE_TYPE == "AC") %>% 
+  filter(BURNED == "Burned") %>% 
+  filter(LIVE_DEAD == 'LIVE') %>%
+  # filter(RANGE_TYPE == "core winter range") %>% 
+  group_by(timeClass,DBHclGp01, FENCED) %>%
+  descr(stemDen.ac, stats="common") %>%
+  tb() %>% 
+  mutate(across(where(is.numeric), round, 0)) %>% 
+  ggplot(aes(timeClass, DBHclGp01)) +  
+  geom_tile(aes(fill = mean), color = "grey80") +
+  # geom_tile(fill = "grey90", color = "grey80", alpha = .2) +
+  geom_text(aes(label = mean), size = 3) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
+  facet_wrap(~FENCED) +
+  theme(legend.position = "bottom") +
+  theme_minimal() +
+  labs(x = "", y = "", fill = "Mean density (stems/acre)", title = "Mean tree density in burned plots", caption = "Plots burned in 2012, AC, live trees only") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("./output/figures_202107/AC_burned_live_DBH_only_TCxF_meanDen_lbl.png", width = 6, height = 3.75)
+
+
+```
+
+```{r}
+asp.tally.ht.tidy %>%
+  filter(SITE_TYPE == "AC") %>% 
+  filter(BURNED == "Burned") %>% 
+  filter(LIVE_DEAD == 'LIVE') %>%
+  # filter(RANGE_TYPE == "core winter range") %>% 
+  group_by(timeClass,shortTall, FENCED) %>%
+  descr(stemDen.ac, stats="common") %>%
+  tb() %>% 
+  mutate(across(where(is.numeric), round, 0)) %>% 
+  datatable(caption = "Burned plots")
+```
+
+
+```{r}
+asp.tally.ht.tidy %>%
+  filter(SITE_TYPE == "AC") %>% 
+  filter(BURNED == "Burned") %>% 
+  filter(LIVE_DEAD == 'LIVE') %>%
+  # filter(RANGE_TYPE == "core winter range") %>% 
+  group_by(timeClass,shortTall, FENCED) %>%
+  descr(stemDen.ac, stats="common") %>%
+  tb() %>% 
+  mutate(across(where(is.numeric), round, 0)) %>% 
+  ggplot(aes(timeClass, mean)) + 
+  geom_col(aes(fill=FENCED), position='dodge', color="grey80") +
+  facet_wrap(~shortTall) +
+  theme_minimal() +
+  scale_fill_manual(values = colfunc3(2)) +
+  labs(fill="", x="", y="Stem density (stems/acre)", caption = "burned plots only") 
+ggsave("./output/figures_202107/AC_burned_live_sapHt_only_TCxF_meanDen_bar.png", width = 7.5, height = 5.75)
+
+asp.tally.ht.tidy %>%
+  # filter(SITE_TYPE == "AC") %>% 
+  filter(SITE_TYPE != "AK") %>%
+  filter(BURNED == "Burned") %>% 
+  filter(LIVE_DEAD == 'LIVE') %>%
+  # filter(RANGE_TYPE == "core winter range") %>% 
+  group_by(timeClass,shortTall, FENCED, SITE_TYPE) %>%
+  descr(stemDen.ac, stats="common") %>%
+  tb() %>% 
+  mutate(across(where(is.numeric), round, 0)) %>% 
+  ggplot(aes(timeClass, mean)) + 
+  geom_col(aes(fill=FENCED), position='dodge', color="grey80") +
+  # facet_wrap(~shortTall) +
+  facet_grid(shortTall~SITE_TYPE) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  scale_fill_manual(values = colfunc3(2)) +
+  labs(fill="", x="", y="Stem density (stems/acre)", title = "Short and tall sapling density in burned plots") 
+ggsave("./output/figures_202107/ACANC_burned_live_sapHt_only_TCxF_meanDen_bar.png", width = 7.75, height = 6.75)
+
+```
+
+```{r}
+asp.tally.ht.tidy %>%
+  filter(SITE_TYPE == "AC") %>% 
+  filter(BURNED == "Burned") %>% 
+  filter(LIVE_DEAD == 'LIVE') %>%
+  # filter(RANGE_TYPE == "core winter range") %>% 
+  group_by(timeClass,shortTall, FENCED) %>%
+  descr(stemDen.ac, stats="common") %>%
+  tb() %>% 
+  mutate(across(where(is.numeric), round, 0)) %>% 
+  ggplot(aes(timeClass, shortTall)) +  
+  geom_tile(aes(fill = mean), color = "grey80") +
+  # geom_tile(fill = "grey90", color = "grey80", alpha = .2) +
+  geom_text(aes(label = mean), size = 3) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
+  facet_wrap(~FENCED) +
+  theme_minimal() +
+  labs(x = "", y = "", fill = "Mean density (stems/acre)", title = "Tall and short sapling density in burned plots", caption = "Plots burned in 2012, AC, live trees only") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("./output/figures_202107/AC_burned_live_sapHt_only_TCxF_meanDen_lbl.png", width = 6, height = 3.75)
+
+asp.tally.ht.tidy %>%
+  filter(SITE_TYPE == "AC") %>% 
+  filter(BURNED == "Burned") %>% 
+  filter(LIVE_DEAD == 'LIVE') %>%
+  # filter(RANGE_TYPE == "core winter range") %>% 
+  group_by(timeClass,shortTall, FENCED) %>%
+  descr(stemDen.ac, stats="common") %>%
+  tb() %>% 
+  mutate(across(where(is.numeric), round, 0)) %>% 
+  ggplot(aes(timeClass, shortTall)) +  
+  geom_tile(aes(fill = mean), color = "grey80") +
+  # geom_tile(fill = "grey90", color = "grey80", alpha = .2) +
+  # geom_text(aes(label = mean), size = 3) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
+  facet_wrap(~FENCED) +
+  theme_minimal() +
+  labs(x = "", y = "", fill = "Mean density (stems/acre)", title = "Tall and short sapling density in burned plots", caption = "Plots burned in 2012, AC, live trees only") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("./output/figures_202107/AC_burned_live_sapHt_only_TCxF_meanDen_nolbl.png", width = 6, height = 3.75)
+
+```
+
+
+```{r}
+asp.tally.ht.tidy %>%
+  filter(SITE_TYPE == "AC") %>% 
+  filter(BURNED == "Burned") %>% 
+  filter(LIVE_DEAD == 'LIVE') %>%
+  # filter(RANGE_TYPE == "core winter range") %>% 
+  group_by(timeClass,HTclass2, FENCED) %>%
+  descr(stemDen.ac, stats="common") %>%
+  tb() %>% 
+  mutate(across(where(is.numeric), round, 0)) %>% 
+  ggplot(aes(timeClass, HTclass2)) +  
+  geom_tile(aes(fill = mean), color = "grey80") +
+  # geom_tile(fill = "grey90", color = "grey80", alpha = .2) +
+  geom_text(aes(label = mean), size = 3) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
+  facet_wrap(~FENCED) +
+  theme_minimal() +
+  labs(x = "", y = "", fill = "Mean density (stems/acre)", title = "Tall and short sapling density in burned plots", caption = "Plots burned in 2012, AC, live trees only") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("./output/figures_202107/AC_burned_live_sapHt2_only_TCxF_meanDen_lbl.png", width = 6, height = 3.75)
+
+asp.tally.ht.tidy %>%
+  filter(SITE_TYPE == "AC") %>% 
+  filter(BURNED == "Burned") %>% 
+  filter(LIVE_DEAD == 'LIVE') %>%
+  # filter(RANGE_TYPE == "core winter range") %>% 
+  group_by(timeClass,HTclass2, FENCED) %>%
+  descr(stemDen.ac, stats="common") %>%
+  tb() %>% 
+  mutate(across(where(is.numeric), round, 0)) %>% 
+  ggplot(aes(timeClass, HTclass2)) +  
+  geom_tile(aes(fill = mean), color = "grey80") +
+  # geom_tile(fill = "grey90", color = "grey80", alpha = .2) +
+  # geom_text(aes(label = mean), size = 3) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
+  facet_wrap(~FENCED) +
+  theme_minimal() +
+  labs(x = "", y = "", fill = "Mean density (stems/acre)", title = "Tall and short sapling density in burned plots", caption = "Plots burned in 2012, AC, live trees only") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("./output/figures_202107/AC_burned_live_sapHt2_only_TCxF_meanDen_nolbl.png", width = 6, height = 3.75)
+
+```
+
+
+```{r}
+pl.burn.count.ac.f <- asp.tally.dbh.tidy %>%
+  filter(SITE_TYPE == "AC") %>% 
+  filter(BURNED == "Burned") %>% 
+  filter(LIVE_DEAD == 'LIVE') %>%
+  # filter(RANGE_TYPE == "core winter range") %>% 
+  group_by(timeClass,DBHclGp01, FENCED) %>%
+  summarise(mean.tally = round(mean(stemTally, na.rm=TRUE),1)) %>% 
+  ungroup() %>% 
+  ggplot(aes(timeClass, DBHclGp01)) +  
+  geom_tile(aes(fill = mean.tally), color = "grey80") +
+  # geom_tile(fill = "grey90", color = "grey80", alpha = .2) +
+  # geom_text(aes(label = mean.tally), size = 3) +
+  scale_fill_gradientn(colors = c("#0095AF","#9ADCBB", "#FCFFDD")) +
+  facet_wrap(~FENCED) +
+  theme_minimal() +
+  labs(x = "", y = "", fill = "Mean tally", title = "Mean aspen count in burned plots", caption = "Plots burned in 2012, AC, live stems only") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+pl.burn.count.ac.f
+ggsave("./output/figures_202107/AC_burned_live_only_TCxF_mean.png", width = 6, height = 3.75)
+```
+
+
+```{r}
 asp.tally.dbh.tidy %>% 
   filter(LIVE_DEAD == 'LIVE') %>% 
   mutate(timeClass = fct_drop(timeClass)) %>% 
@@ -8349,6 +8541,31 @@ ht.perc01 %>%
 
 # ggsave("./output/figures_202107/AC_Live_Fenced_heightClass_heatmap3b.png", width = 8.5, height = 4, dpi = 300)
 
+ht.perc01 %>%
+  mutate(percentTot = 100*round(percentTot,1)) %>% 
+  filter(FENCED == "Fenced") %>%
+  filter(SITE_ID != "AC33") %>% 
+  filter(SITE_ID != "AC67") %>% 
+  filter(!is.nan(percentTot)) %>%
+  ggplot(aes(HTclass2, SITE_ID)) +
+  geom_tile(aes(fill = percentTot), color = 'white', alpha = .8) +
+  # geom_text(aes(label = percentTot), size = 3) +
+  # facet_grid(.~timeClass) +
+  facet_wrap(~timeClass) +
+  scale_fill_gradientn(colours = c("#FCFFDD","#0095AF")) +
+  # scale_fill_viridis_c(begin = .4, end = .95, direction = -1, option = "B") +
+  theme_minimal() +
+  labs(x = "Height class", y = "", fill = "% total stems", caption = "")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggsave("./output/figures_202107/AC_Live_Fenced_heightClass_heatmap3b.png", width = 8.5, height = 4, dpi = 300)
+
+
+
+
+```
+
+```{r}
 ## heatmap: unfenced
 pl.hmap.ac.uf <- ht.perc01 %>%
   mutate(percentTot = 100*round(percentTot,1)) %>% 
@@ -8357,19 +8574,44 @@ pl.hmap.ac.uf <- ht.perc01 %>%
   filter(SITE_ID != "AC07") %>% 
   filter(SITE_ID != "AC68") %>% 
   filter(!is.nan(percentTot)) %>%
-  filter(SITE_ID == "AC") %>% 
+  filter(SITE_TYPE == "AC") %>% 
   ggplot(aes(HTclass2, SITE_ID)) +
-  geom_tile(aes(fill = percentTot), color = 'white', alpha = .8) +
+  geom_tile(aes(fill = percentTot), color = 'grey80', alpha = 1) +
   # geom_text(aes(label = percentTot), size = 3) +
   facet_grid(.~timeClass) +
   scale_fill_gradientn(colours = c("#FCFFDD","#0095AF")) +
   # scale_fill_viridis_c(begin = .4, end = .95, direction = -1, option = "B") +
   theme_minimal() +
-  labs(x = "Height class", y = "", fill = "% total stems", title = "Proportion of Live Aspen Stems by Height Class", subtitle = "Unfenced plots")+
+  labs(x = "Height class", y = "", fill = "% total stems", title = "Core range", subtitle = "Unfenced plots") +
+  theme(legend.position = "bottom") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 pl.hmap.ac.uf
-ggsave("./output/figures_202107/AC_Live_unFenced_heightClass_heatmap.png", width = 8.5, height = 6, dpi = 300)
+ggsave("./output/figures_202107/AC_unfenced_Live_HTclassXSiteID_heatmap_nolbl.png", width = 8.5, height = 6, dpi = 300)
 
+
+ht.perc01 %>%
+  mutate(percentTot = 100*round(percentTot,1)) %>% 
+  filter(FENCED == "Unfenced") %>%
+  # filter() %>% # live dead
+  filter(SITE_ID != "AC07") %>% 
+  filter(SITE_ID != "AC68") %>% 
+  filter(!is.nan(percentTot)) %>%
+  filter(SITE_TYPE == "AC") %>% 
+  ggplot(aes(HTclass2, SITE_ID)) +
+  geom_tile(aes(fill = percentTot), color = 'grey80', alpha = 1) +
+  geom_text(aes(label = percentTot), size = 3) +
+  facet_grid(.~timeClass) +
+  scale_fill_gradientn(colours = c("#FCFFDD","#0095AF")) +
+  # scale_fill_viridis_c(begin = .4, end = .95, direction = -1, option = "B") +
+  theme_minimal() +
+  labs(x = "Height class", y = "", fill = "% total stems", title = "Core range", subtitle = "Unfenced plots")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggsave("./output/figures_202107/AC_unfenced_Live_HTclassXSiteID_heatmap_lbl.png", width = 8.5, height = 10, dpi = 300)
+
+```
+
+```{r}
 pl.hmap.ac.f <- ht.perc01 %>%
   mutate(percentTot = 100*round(percentTot,1)) %>% 
   filter(FENCED == "Fenced") %>%
@@ -8377,22 +8619,40 @@ pl.hmap.ac.f <- ht.perc01 %>%
   filter(SITE_ID != "AC07") %>% 
   filter(SITE_ID != "AC68") %>% 
   filter(!is.nan(percentTot)) %>%
-  filter(SITE_ID == "AC") %>% 
+  filter(SITE_TYPE == "AC") %>% 
   ggplot(aes(HTclass2, SITE_ID)) +
-  geom_tile(aes(fill = percentTot), color = 'white', alpha = .8) +
+  geom_tile(aes(fill = percentTot), color = 'grey80', alpha = 1) +
   # geom_text(aes(label = percentTot), size = 3) +
   facet_grid(.~timeClass) +
   scale_fill_gradientn(colours = c("#FCFFDD","#0095AF")) +
   # scale_fill_viridis_c(begin = .4, end = .95, direction = -1, option = "B") +
   theme_minimal() +
-  labs(x = "Height class", y = "", fill = "% total stems", title = "Proportion of Live Aspen Stems by Height Class", subtitle = "Unfenced plots")+
+  labs(x = "Height class", y = "", fill = "% total stems", title = "Core range", subtitle = "Fenced plots")+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 pl.hmap.ac.f
-ggsave("./output/figures_202107/AC_Live_fenced_heightClass_heatmap.png", width = 8.5, height = 6, dpi = 300)
+ggsave("./output/figures_202107//AC_fenced_Live_HTclassXSiteID_heatmap.png", width = 8.5, height = 6, dpi = 300)
+
+ht.perc01 %>%
+  mutate(percentTot = 100*round(percentTot,1)) %>% 
+  filter(FENCED == "Fenced") %>%
+  # filter() %>% # live dead
+  filter(SITE_ID != "AC07") %>% 
+  filter(SITE_ID != "AC68") %>% 
+  filter(!is.nan(percentTot)) %>%
+  filter(SITE_TYPE == "AC") %>% 
+  ggplot(aes(HTclass2, SITE_ID)) +
+  geom_tile(aes(fill = percentTot), color = 'grey80', alpha = 1) +
+  geom_text(aes(label = percentTot), size = 3) +
+  facet_grid(.~timeClass) +
+  scale_fill_gradientn(colours = c("#FCFFDD","#0095AF")) +
+  # scale_fill_viridis_c(begin = .4, end = .95, direction = -1, option = "B") +
+  theme_minimal() +
+  labs(x = "Height class", y = "", fill = "% total stems", title = "Core range", subtitle = "Fenced plots")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("./output/figures_202107/AC_fenced_Live_HTclassXSiteID_heatmap_lbl.png", width = 8.5, height = 6, dpi = 300)
 
 
 pl.hmap.ac.f + pl.hmap.ac.uf + plot_layout(ncol=1)
-
 ```
 
 ```{r}
@@ -9215,10 +9475,10 @@ wb.evmp18 <- bind_rows(wbasin.sel, willow.mcro.evmp18) %>%
 wb.evmp18 %>%
   filter(str_detect(species, "^S")) %>% 
   ggplot() +
-  geom_density(aes(fill = site_type, color = site_type, lty = site_type, x = plant_ht_cm), alpha = 0.05) +
+  geom_density(aes(fill = site_type, color = site_type, lty = site_type, x = plant_ht_cm), size=1, alpha = .2) +
   theme_minimal() +
-  scale_fill_manual(values = colfunc2(4)) +
-  scale_color_manual(values = colfunc2(4)) +
+  scale_fill_manual(values = colfunc3_RdBu(4)) +
+  scale_color_manual(values = colfunc3_RdBu(4)) +
   labs(x = "Willow height (cm)", y  = "Density", lty= "Site type", color = "Site type", fill = "Site type", caption = "willow height, WB + EVMP, Salix only")
 
 ggsave("./output/figures_202107/WB_EVMP_willow_height.png", dpi = 300, width = 4.75, height = 3.75)
@@ -9226,16 +9486,76 @@ ggsave("./output/figures_202107/WB_EVMP_willow_height.png", dpi = 300, width = 4
 
 ```{r}
 wb.evmp18 <- wb.evmp18 %>%
-  mutate(site_type = case_when(site_type == "WB" ~ "Wild Basin",
-                               site_type == "WC" ~ "core winter range",
-                               site_type == "WNC" ~ "non-core winter range",
+  mutate(site_type.lbl = case_when(site_type == "WB" ~ "Wild Basin",
+                               site_type == "WC" ~ "Core winter range",
+                               site_type == "WNC" ~ "Noncore winter range",
                                site_type == "WK" ~ "Kawuneeche Valley",
-                               TRUE ~ "other"))
+                               TRUE ~ "other")) %>% 
+  mutate(fenced = case_when(fenced == "N" ~ "Unfenced",
+                            fenced == "Y" ~ "Fenced",
+                            TRUE ~ fenced)) %>% 
+  mutate(site.type.fenced = paste0(site_type.lbl,":",fenced))
 
-
+# wb.evmp18 %>% distinct(site.type.fenced)
 wb.evmp18.willows <- wb.evmp18 %>% 
   filter(str_detect(species, "^S"))
 
+```
+
+```{r}
+wb.evmp18 %>%
+  filter(str_detect(species, "^S")) %>% 
+  ggplot(aes(x=reorder(site.type.fenced, plant_ht_cm), plant_ht_cm)) +
+  geom_boxplot(aes(fill=site_type)) +
+  # geom_density(aes(fill = site_type, color = site_type, lty = site_type, x = plant_ht_cm), alpha = 0.05) +
+  theme_minimal() +
+  scale_fill_manual(values = colfunc2(4)) +
+  scale_color_manual(values = colfunc2(4)) +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "", y  = "Height (cm)", lty= "Site type", color = "Site type", fill = "Site type", caption = "willow height, WB + EVMP, Salix only")
+
+ggsave("./output/figures_202107/WB_EVMP_willow_height_boxplot.png", dpi = 300, width = 5.75, height = 4.75)
+
+wb.evmp18 %>%
+  filter(str_detect(species, "^S")) %>% 
+  ggplot(aes(x=reorder(site.type.fenced, plant_ht_cm), plant_ht_cm)) +
+  geom_boxplot(aes(fill=site_type)) +
+  # geom_density(aes(fill = site_type, color = site_type, lty = site_type, x = plant_ht_cm), alpha = 0.05) +
+  theme_minimal() +
+  scale_fill_manual(values = colfunc2(4)) +
+  scale_color_manual(values = colfunc2(4)) +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "", y  = "Height (cm)", lty= "Site type", color = "Site type", fill = "Site type", caption = "willow height, WB + EVMP, Salix only") +
+  facet_wrap(~fenced, scales = "free_x")
+```
+
+```{r}
+wb.evmp18 %>%
+  group_by(location.fenced, fenced) %>%
+  descr(plant_ht_cm) %>% 
+  tb() %>% 
+  mutate(across(where(is.numeric), round, 1)) %>% 
+  arrange(-mean) %>%
+  datatable() %>%
+  datatable(caption = "All willow species combined")
+  
+```
+
+
+```{r}
+wb.evmp18 %>%
+  group_by(location.fenced, fenced) %>%
+  descr(plant_ht_cm, species) %>% 
+  tb() %>% 
+  mutate(across(where(is.numeric), round, 1)) %>% 
+  arrange(-mean) %>%
+  datatable(caption = "By willow species")
+```
+
+
+```{r}
 wb.evmp18.willows.loc <- wb.evmp18.willows %>% 
   select(-yr) %>% 
   group_by(site_id,location) %>% 
@@ -9271,8 +9591,8 @@ wb.evmp18.willows.rt <- wb.evmp18.willows %>%
 #   gt() %>% 
 #   gt::gtsave(filename = "./output/tables/WB_vs_EVMP_willowHt_site_type.rtf")
 
-
 ```
+
 
 ```{r}
 ## write the combined WB18 and winter range/KV plots
