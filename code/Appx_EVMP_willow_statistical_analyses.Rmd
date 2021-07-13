@@ -555,7 +555,7 @@ plot.mcmcareas_cov.wcwnc <- mcmc_areas(stmod_ht.wc.wnc.TCxFxB,
 
 plot.mcmcareas_cov.wcwnc
 
-ggsave("./output/figures_202107/willow_cover/mcmcarea_wilwht_TCxFxB_wcwnc.png", dpi = 300, width = 6.75, height = 6.75)
+ggsave("./output/figures_202107/willow_cover/mcmcarea_wilwht_TCxFxB_wcwnc.png", dpi = 300, width = 6.75, height = 11.75)
 
 ```
 
@@ -1869,13 +1869,217 @@ wbasin.loc <- wbasin %>%
 
 ## Wild Basin Comparisons
 
+
 ```{r}
-## write the combined WB18 and winter range/KV plots
-wb.evmp18.willows <- read_csv("./data/EVMP_derived/wildbasin_evmp2018.csv")
+# read in data and preprocess for joining with EVMP data
+wbasin <- read_csv("./data/wild_basin/Wild Basin willow data survey 2018.csv")
+
+wbasin <- wbasin %>%
+  janitor::clean_names()
+  
+wbasin.sel <- wbasin %>% 
+  rename(plant_ht_cm = max_ht_cm) %>% 
+  mutate(yr = 2018) %>% 
+  mutate(fenced = "N") %>% 
+  mutate(site_type = "WB") %>% 
+  mutate(site_id = paste0("WB",point)) %>% 
+  dplyr::select(c(yr, site_type, site_id, plant_ht_cm, species, fenced, location)) %>% 
+  distinct()
+  
+```
+
+```{r}
+## process the evmp into a bindable format with wb data
+willow.mcro.evmp <- willow.ht %>% 
+  rename(species = species_code) %>% 
+  dplyr::select(yr, site_type, species, site_id, plant_ht_cm, fenced, location) %>% 
+  distinct() %>% 
+  filter(yr == 2018)
+
+#### bind wb with 2018 evmp
+wb.evmp18 <- bind_rows(wbasin.sel, willow.mcro.evmp) %>% 
+  distinct()
 
 ```
 
 
+```{r}
+### Willow height comparison among Wild Basin and EVMP plots
+## compare WILLOW height
+
+wb.evmp18 %>%
+  filter(str_detect(species, "^S")) %>% 
+  ggplot() +
+  geom_density(aes(fill = site_type, color = site_type, lty = site_type, x = plant_ht_cm), size=1, alpha = .25) +
+  theme_minimal() +
+  scale_fill_manual(values = colfunc1(4)) +
+  scale_color_grey() +
+  # scale_fill_manual(values = colfunc3_RdBu(4)) +
+  # scale_color_manual(values = colfunc3_RdBu(4)) +
+  labs(x = "Willow height (cm)", y  = "Density", lty= "Site type", color = "Site type", fill = "Site type", caption = "willow height, WB + EVMP, Salix only")
+
+ggsave("./output/figures_202107/WB_EVMP_willow_height.png", dpi = 300, width = 4.75, height = 3.75)
+
+```
+
+```{r}
+wb.evmp18 <- wb.evmp18 %>%
+  mutate(site_type.lbl = case_when(site_type == "WB" ~ "Wild Basin",
+                               site_type == "WC" ~ "Core winter range",
+                               site_type == "WNC" ~ "Noncore winter range",
+                               site_type == "WK" ~ "Kawuneeche Valley",
+                               TRUE ~ "other")) %>% 
+  mutate(fenced = case_when(fenced == "N" ~ "Unfenced",
+                            fenced == "Y" ~ "Fenced",
+                            TRUE ~ fenced)) %>% 
+  mutate(site.type.fenced = paste0(site_type.lbl,"\n",fenced))
+
+# wb.evmp18 %>% distinct(site.type.fenced)
+wb.evmp18.willows <- wb.evmp18 %>% 
+  filter(str_detect(species, "^S"))
+
+```
+
+```{r}
+wb.evmp18 %>%
+  filter(str_detect(species, "^S")) %>% 
+  ggplot(aes(x=reorder(site.type.fenced, plant_ht_cm), plant_ht_cm)) +
+  geom_boxplot(aes(fill=site_type)) +
+  # geom_density(aes(fill = site_type, color = site_type, lty = site_type, x = plant_ht_cm), alpha = 0.05) +
+  theme_minimal() +
+  scale_fill_manual(values = colfunc2(4)) +
+  scale_color_manual(values = colfunc2(4)) +
+  theme(legend.position = "none") +
+  # theme(axis.text.x = element_text(angle = 0, hjust = 1)) +
+  labs(x = "", y  = "Height (cm)", lty= "Site type", color = "Site type", fill = "Site type", caption = "willow height, WB + EVMP, Salix only")
+
+ggsave("./output/figures_202107/WB_EVMP_willow_height_boxplot.png", dpi = 300, width = 6.75, height = 4.75)
+
+```
+
+```{r}
+wb.evmp18 %>%
+  group_by(site.type.fenced) %>%
+  descr(plant_ht_cm, stat="common") %>% 
+  tb() %>% 
+  mutate(across(where(is.numeric), round, 1)) %>% 
+  arrange(-mean) %>%
+  datatable(caption = "All willow species combined")
+  
+```
+
+
+```{r}
+wb.evmp18 %>%
+  group_by(site.type.fenced, species) %>%
+  descr(plant_ht_cm) %>% 
+  tb() %>% 
+  mutate(across(where(is.numeric), round, 1)) %>% 
+  arrange(-mean) %>%
+  datatable(caption = "By willow species")
+```
+
+
+```{r}
+wb.evmp18.willows.loc <- wb.evmp18.willows %>% 
+  select(-yr) %>% 
+  group_by(site_id,location) %>% 
+  summarytools::descr(stats = "common") %>% 
+  tb() %>%
+  select(c(location,mean)) %>% 
+  group_by(location) %>% 
+  descr(mean,stats = "common") %>% 
+  tb() %>% 
+  mutate(across(where(is.numeric), round, 1)) %>% 
+  select(-pct.valid)
+
+wb.evmp18.willows.loc %>%
+  arrange(-mean) %>% 
+  gt() 
+# %>%
+#   gt::gtsave(filename = "./output/tables/WB_vs_EVMP_willowHt_loc.rtf")
+
+```
+
+```{r}
+#### range type
+wb.evmp18.willows.rt <- wb.evmp18.willows %>% 
+  select(-yr) %>% 
+  group_by(site_id,site_type) %>% 
+  summarytools::descr(stats = "common") %>% 
+  tb() %>%
+  select(c(site_type,mean)) %>% 
+  group_by(site_type) %>% 
+  descr(mean,stats = "common") %>% 
+  tb() %>% 
+  mutate(across(where(is.numeric), round, 1)) %>% 
+  select(-pct.valid)
+
+wb.evmp18.willows.rt %>%
+  arrange(-mean) %>%
+  select(-variable) %>%
+  gt() #%>%
+  # gt::gtsave(filename = "./output/tables/WB_vs_EVMP_willowHt_site_type.rtf")
+
+```
+
+```{r}
+wb.evmp18 %>%
+  filter(str_detect(species, "^S")) %>% 
+  ggplot(aes(x=reorder(site.type.fenced, plant_ht_cm), plant_ht_cm)) +
+  geom_boxplot(aes(fill=site_type)) +
+  # geom_density(aes(fill = site_type, color = site_type, lty = site_type, x = plant_ht_cm), alpha = 0.05) +
+  theme_minimal() +
+  scale_fill_manual(values = colfunc2(4)) +
+  scale_color_manual(values = colfunc2(4)) +
+  theme(legend.position = "none") +
+  # theme(axis.text.x = element_text(angle = 35, hjust = 1)) +
+  labs(x = "", y  = "Height (cm)", lty= "Site type", color = "Site type", fill = "Site type", caption = "willow height, WB + EVMP, Salix only")
+
+ggsave("./output/figures_202107/WB_EVMP_willow_height_boxplot.png", dpi = 300, width = 5.75, height = 4.75)
+```
+
+
+```{r}
+# 2 panel
+pl.boxht.wc.f <- wb.evmp18 %>%
+  filter(str_detect(species, "^S")) %>% 
+  filter(site_type == "WC" & fenced == "Fenced") %>% 
+  ggplot(aes(x=reorder(site.type.fenced, plant_ht_cm), plant_ht_cm)) +
+  geom_boxplot(aes(fill=site_type)) +
+  # geom_density(aes(fill = site_type, color = site_type, lty = site_type, x = plant_ht_cm), alpha = 0.05) +
+  theme_minimal() +
+  scale_fill_manual(values = colfunc2(5)) +
+  scale_color_manual(values = colfunc2(5)) +
+  theme(legend.position = "none") +
+  # theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "", y  = "Height (cm)", lty= "Site type", color = "Site type", fill = "Site type", caption = "willow height,  all willow spp") +
+  ylim(0,600) +
+  facet_wrap(~fenced, scales = "free_x")
+
+pl.boxht.uf.all <- wb.evmp18 %>%
+  filter(str_detect(species, "^S")) %>% 
+  filter(fenced == "Unfenced") %>% 
+  ggplot(aes(x=reorder(site.type.fenced, plant_ht_cm), plant_ht_cm)) +
+  geom_boxplot(aes(fill=site_type)) +
+  # geom_density(aes(fill = site_type, color = site_type, lty = site_type, x = plant_ht_cm), alpha = 0.05) +
+  theme_minimal() +
+  scale_fill_manual(values = colfunc2(4)) +
+  scale_color_manual(values = colfunc2(4)) +
+  theme(legend.position = "none") +
+  # theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "", y  = "", lty= "Site type", color = "Site type", fill = "Site type") +
+  ylim(0,600) +
+  facet_wrap(~fenced, scales = "free_x")
+
+
+pl.boxht.wc.f + pl.boxht.uf.all + plot_layout(widths = c(.55,2))
+
+ggsave("./output/figures_202107/WB_EVMP_willow_height_boxplot2.png", dpi = 300, width = 6.75, height = 4.75)
+
+```
+
+### Modeling and Posterior Description
 ```{r, cache=TRUE}
 wb_rt2stan <- wb.evmp18.willows %>% 
   select(-yr) %>% 

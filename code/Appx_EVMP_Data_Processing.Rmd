@@ -6290,16 +6290,33 @@ ggsave("./output/figures_202107/AC_burned_live_DBH_only_TCxF_meanDen_lbl.png", w
 ```
 
 ```{r}
+asp.tally.ht.tidy <- asp.tally.ht.tidy %>%
+  mutate(shortTall = case_when(HTclass == 'HT_0_50_CM' ~ "Short",
+                               HTclass == 'HT_51_100_CM' ~ "Short",
+                               HTclass == 'HT_101_150_CM' ~ "Short",
+                               HTclass == 'HT_151_200_CM' ~ "Tall",
+                               HTclass == 'HT_201_250_CM' ~ "Tall")
+         ) %>%  
+  mutate(HTclass.lbl = case_when(HTclass == "HT_0_50_CM" ~ "0-50 cm",
+                                 HTclass == "HT_51_100_CM" ~ "51-100 cm",
+                                 HTclass == "HT_101_150_CM" ~ "101-150 cm",
+                                 HTclass == "HT_151_200_CM" ~ "151-200 cm",
+                                 HTclass == "HT_201_250_CM" ~ "201+ cm",
+                                 TRUE ~ "other")) %>% 
+  mutate(HTclass.lbl =as_factor(HTclass.lbl))
+
+
 asp.tally.ht.tidy %>%
   filter(SITE_TYPE == "AC") %>% 
   filter(BURNED == "Burned") %>% 
   filter(LIVE_DEAD == 'LIVE') %>%
   # filter(RANGE_TYPE == "core winter range") %>% 
-  group_by(timeClass,shortTall, FENCED) %>%
+  group_by(timeClass,shortTall, FENCED) %>% 
   descr(stemDen.ac, stats="common") %>%
   tb() %>% 
-  mutate(across(where(is.numeric), round, 0)) %>% 
-  datatable(caption = "Burned plots")
+  mutate(across(where(is.numeric), round, 0))
+
+
 ```
 
 
@@ -6310,7 +6327,7 @@ asp.tally.ht.tidy %>%
   filter(LIVE_DEAD == 'LIVE') %>%
   # filter(RANGE_TYPE == "core winter range") %>% 
   group_by(timeClass,shortTall, FENCED) %>%
-  descr(stemDen.ac, stats="common") %>%
+  summarytools::descr(stemDen.ac, stats="common") %>%
   tb() %>% 
   mutate(across(where(is.numeric), round, 0)) %>% 
   ggplot(aes(timeClass, mean)) + 
@@ -9494,7 +9511,7 @@ wb.evmp18 <- wb.evmp18 %>%
   mutate(fenced = case_when(fenced == "N" ~ "Unfenced",
                             fenced == "Y" ~ "Fenced",
                             TRUE ~ fenced)) %>% 
-  mutate(site.type.fenced = paste0(site_type.lbl,":",fenced))
+  mutate(site.type.fenced = paste0(site_type.lbl,"\n",fenced))
 
 # wb.evmp18 %>% distinct(site.type.fenced)
 wb.evmp18.willows <- wb.evmp18 %>% 
@@ -9512,13 +9529,30 @@ wb.evmp18 %>%
   scale_fill_manual(values = colfunc2(4)) +
   scale_color_manual(values = colfunc2(4)) +
   theme(legend.position = "none") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(axis.text.x = element_text(angle = 35, hjust = 1)) +
   labs(x = "", y  = "Height (cm)", lty= "Site type", color = "Site type", fill = "Site type", caption = "willow height, WB + EVMP, Salix only")
 
 ggsave("./output/figures_202107/WB_EVMP_willow_height_boxplot.png", dpi = 300, width = 5.75, height = 4.75)
 
-wb.evmp18 %>%
+# 2 panel
+pl.boxht.wc.f <- wb.evmp18 %>%
   filter(str_detect(species, "^S")) %>% 
+  filter(site_type == "WC" & fenced == "Fenced") %>% 
+  ggplot(aes(x=reorder(site.type.fenced, plant_ht_cm), plant_ht_cm)) +
+  geom_boxplot(aes(fill=site_type)) +
+  # geom_density(aes(fill = site_type, color = site_type, lty = site_type, x = plant_ht_cm), alpha = 0.05) +
+  theme_minimal() +
+  scale_fill_manual(values = colfunc2(5)) +
+  scale_color_manual(values = colfunc2(5)) +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "", y  = "Height (cm)", lty= "Site type", color = "Site type", fill = "Site type", caption = "willow height,  all willow spp") +
+  ylim(0,600) +
+  facet_wrap(~fenced, scales = "free_x")
+
+pl.boxht.uf.all <- wb.evmp18 %>%
+  filter(str_detect(species, "^S")) %>% 
+  filter(fenced == "Unfenced") %>% 
   ggplot(aes(x=reorder(site.type.fenced, plant_ht_cm), plant_ht_cm)) +
   geom_boxplot(aes(fill=site_type)) +
   # geom_density(aes(fill = site_type, color = site_type, lty = site_type, x = plant_ht_cm), alpha = 0.05) +
@@ -9527,8 +9561,15 @@ wb.evmp18 %>%
   scale_color_manual(values = colfunc2(4)) +
   theme(legend.position = "none") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  labs(x = "", y  = "Height (cm)", lty= "Site type", color = "Site type", fill = "Site type", caption = "willow height, WB + EVMP, Salix only") +
+  labs(x = "", y  = "", lty= "Site type", color = "Site type", fill = "Site type") +
+  ylim(0,600) +
   facet_wrap(~fenced, scales = "free_x")
+
+
+pl.boxht.wc.f + pl.boxht.uf.all + plot_layout(widths = c(.5,2))
+
+ggsave("./output/figures_202107/WB_EVMP_willow_height_boxplot2.png", dpi = 300, width = 6.75, height = 4.75)
+
 ```
 
 ```{r}
