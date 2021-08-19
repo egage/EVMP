@@ -212,11 +212,40 @@ Bayesian repeated measures analyses were fit separately for combined
 core and noncore winter range, core winter range, and noncore
 winter range plots with plots treated as random factors using the
 'stan_glmer' function in the rstanrm package
-[@goodrich2020][@brilleman2018]. Bayesian estimation was performed via
+[@goodrich2020][@brilleman2018]. In addition, models were fit to particular subgroups of data (e.g., short saplings vs tall saplings).
+
+Bayesian estimation was performed via
 MCMC adding independent weakly informed priors specific to the data type
 being modeled. Count data like aspen stem counts were modeled as poisson processes, while
 proportion data (e.g., cover) were modeled using a beta distribution
 (Ferrari and Cribari-Neto 2004), which constrains values from 0 to 1.
+
+Bayesian models view a model parameter $\theta$ as a [*random variable*]. In contrast, frequentist models treat model parameters as unknown *constant*. Rather than estimating an unknown constant, Bayesian modeling focuses on an unknown distribution of parameter values.
+
+Using *Bayes' Law*, model parameters are estimated:
+
+$$
+\begin{equation} \label{eq:bayeslaw}
+P(\theta | y, X) = \frac{P(y|\theta,X) \cdot P(\theta)}{P(y)} \propto P(y|\theta,X) \cdot P(\theta).
+\end{equation}
+$$
+
+Where:
+
++ $X$: The observed data
++ $y$: The outcomes
++ $P(\theta|y,X)$: Our view of the possible value of our model parameters after seeing the data
++ $P(y|\theta,X)$: The likelihood of seeing the current outcome conditioned on the data we have and a specific parameter value
++ $P(\theta)$: Our view of the possible values of our model parameters before observing any actual data, i.e. the *prior*
++ $P(y)$: The unconditional probability of the outcome, i.e. the probability after considering all possible parameter.
+The objective is to estimate the posterior density of parameter $P(\theta|y,X)$, typically described in terms of a point estimate of the expected value of posterior density (e.g., the median of the distribution) and a measure of the variance. To solve for $P(\theta|y,X)$ analytically, the data likelihood $P(y|\theta,X)$, prior $P(\theta)$, and marginal likelihood of outcome $P(y)$ are needed, but because there is usually no closed-form analystical solution, Markov chain Monte Carlo methods are used to numerically solve the posterior density by directly generating random draws of parameters.
+The general steps in a Bayesian analysis followed included:
+*Specify a joint distribution for the outcome(s) and all the unknowns, which proportional to a posterior distribution of the unknowns conditional on the observed data    
+*Use Markov Chain Monte Carlo (MCMC) to draw from posterior distribution.    
+*Evaluation of model fit and revise the model as appropriate.  
+
+### Aspen count
+
 
 The Probability of Direction (PD) was used to represent certainty
 associated with the most probable direction (positive or negative) of
