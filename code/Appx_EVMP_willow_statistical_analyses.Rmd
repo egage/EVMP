@@ -208,27 +208,104 @@ visualization [@wickham2019], although specialized packages particular
 to specific tasks (e.g., the "bayesplot" plot for visualization of
 Bayesian posterior distributions) were also used [@gabry2019].
 
+Bayesian models view a model parameter $\theta$ as a [*random variable*]. In constrast, frequentist models treat model parameters as unknown *constant*. Rather than estimating an unknown constant, Bayesian modeling focuses on an unknown distribution of parameter values.
+
+Using *Bayes' Law*, model parameters are estimated:
+
+$$
+\begin{equation} \label{eq:bayeslaw}
+P(\theta | y, X) = \frac{P(y|\theta,X) \cdot P(\theta)}{P(y)} \propto P(y|\theta,X) \cdot P(\theta).
+\end{equation}
+$$
+
+Where:
+
++ $X$: The observed data
++ $y$: The outcomes
++ $P(\theta|y,X)$: Our view of the possible value of our model parameters after seeing the data
++ $P(y|\theta,X)$: The likelihood of seeing the current outcome conditioned on the data we have and a specific parameter value
++ $P(\theta)$: Our view of the possible values of our model parameters before observing any actual data, i.e. the *prior*
++ $P(y)$: The unconditional probability of the outcome, i.e. the probability after considering all possible parameter.
+The objective is to estimate the posterior density of parameter $P(\theta|y,X)$, typically described in terms of a point estimate of the expected value of posterior density (e.g., the median of the distribution) and a measure of the variance. To solve for $P(\theta|y,X)$ analytically, the data likelihood $P(y|\theta,X)$, prior $P(\theta)$, and marginal likelihood of outcome $P(y)$ are needed, but because there is usually no closed-form analystical solution, Markov chain Monte Carlo methods are used to numerically solve the posterior density by directly generating random draws of parameters.
+The general steps in a Bayesian analysis followed included:
+*Specify a joint distribution for the outcome(s) and all the unknowns, which proportional to a posterior distribution of the unknowns conditional on the observed data    
+*Use Markov Chain Monte Carlo (MCMC) to draw from posterior distribution.    
+*Evaluation of model fit and revise the model as appropriate.  
+
 Bayesian repeated measures analyses were fit separately for combined
 core and non-core winter range, core winter range (WC) and non-core
 winter range plots (WNC). For willow height, models were fit using
-weekly informative priors and a gamma distribution with the "stan_lmer"
-function in the "rstanarm" package [@goodrich2020][@brilleman2018].
+weekly informative priors and a gamma distribution with the "stan_glmer"
+function in the "rstanarm" package [@goodrich2020][@brilleman2018]. Gamma regression is commonly used when the response variable is continuous and positive.
 
-For continuous proportions such as plant cover, a common approach to modeling is to transform data
-then use ordinary linear models, but this creates problems for
-interpretation and inference [@douma2019]. Techniques relying on
-transformations make estimates on the transformed scale, requiring
-back‐transformation for reporting and interpretation. However, the
-relationship between the original and transformed proportions is often
-non‐linear, creating issues for interpretation [@douma2019]. Alternative
-approaches using beta regression [@cribari-neto2009][@ferrari2004] have
-been developed and are relied on here for modeling continuous
-proportions (e.g., willow cover). After fitting appropriate models using
-"rstanarm" functions, comparisons of estimated marginal means were made
-between time classes and management classes (e.g., fencing) using
-functions in the "emm" R package [@lenth2020].
+For the simplest case a GLM for a continuous outcome is simply a linear model 
+and the likelihood for one observation is a conditionally normal probability density function.  
+$$\frac{1}{\sigma \sqrt{2 \pi}} e^{-\frac{1}{2} 
+\left(\frac{y - \mu}{\sigma}\right)^2},$$
+where $\mu = \alpha + \mathbf{x}^\top \boldsymbol{\beta}$ is a linear predictor
+and $\sigma$ is the standard deviation of the error in predicting
+the outcome, $y$. A linear predictor $\eta = \alpha + \mathbf{x}^\top 
+\boldsymbol{\beta}$ can more generally be related to the conditional mean of the outcome via a 
+link function $g$. This maps the range of values on which the 
+outcome is defined. For the gamma distribution used in the modeling of willow height, 
+the log link function was used. The likelihood is the product of the likelihood contributions of individual observations.
 
-The Probability of Direction (PD) was used to represent certainty associated with the most probable direction (positive or negative) of the effect (e.g., time class, fencing). The PD is correlated with the frequentist p-value, with a two-sided p-value of respectively .1, .05, and .01 approximated by a PD of 95%, 97.5%, and 99.5% [@makowski2019]. the “region of practical equivalence” (ROPE) to evaluate the probability of a parameter being outside a range that can be considered as “practically no effect”, i.e., a region enclosing values that are equivalent to the null value for practical purposes [@kruschke2018], with the proportion of the 95% HDI credible interval falling within the ROPE was used as an index for an analog to frequentist "null-hypothesis" testing.
+Bayesian analysis requires specifying prior distributions $f(\alpha)$ and
+$f(\boldsymbol{\beta})$ for the intercept and vector of regression coefficients.
+Prior distributions were represented by normal distributions with a mean zero and a small standard deviation (scale)). The joint posterior distribution for
+$\alpha$ and $\boldsymbol{\beta}$ is proportional to the product of the priors 
+and the $N$ likelihood contributions:
+
+$$f\left(\boldsymbol{\beta} | \mathbf{y},\mathbf{X}\right) \propto
+  f\left(\alpha\right) \times \prod_{k=1}^K f\left(\beta_k\right) \times
+  \prod_{i=1}^N {f(y_i|\eta_i)},$$
+  
+where $\mathbf{X}$ is the matrix of predictors and $\eta$ the linear predictor, i.e., the posterior distribution that `stan_glmer` draws from using MCMC.
+
+Willow cover data were modeled using the beta distribution as the likelihood for the data,
+$$
+f(y_i | a, b) = \frac{y_i^{(a-1)}(1-y_i)^{(b-1)}}{B(a,b)}
+$$
+where $B(\cdot)$ is the beta function. The shape parameters for the distribution
+are $a$ and $b$ and enter into the model according to the following transformations,
+$$
+a = \mu\cdot\phi \\
+b = (1-\mu)\cdot\phi
+$$
+
+If $g_1(\cdot)$ is some link function, the specification of the shape
+parameters, $\mu = g_1^{-1}(\mathbf{X}\boldsymbol{\beta})$, where $\boldsymbol{X}$
+is a $N\times K$ dimensional matrix of predictors, and $\boldsymbol{\beta}$, is a $K$
+dimensional vector of parameters associated with each predictor. $\phi$ is a scalar parameter. With the shape parameter values included, the likelihood takes the
+form:
+$$
+f(y_i | \mu, \phi) = \frac{y_i^{(\mu\phi-1)}(1-y_i)^{((1-\mu)\phi-1)}}{B(\mu\phi,(1-\mu)\phi)}
+$$
+
+Bayesian analysis requires specifying prior distributions $f(\boldsymbol{\beta})$ and $f(\phi)$ for the vector of regression coefficients and $\phi$. 
+When modeling $\phi$ with a linear predictor a full Bayesian analysis requires
+specifying the prior distributions $f(\boldsymbol{\beta})$ and $f(\boldsymbol{\gamma})$.
+
+With a single set of explanatory variables, the posterior distribution of
+$\boldsymbol{\beta}$ and $\phi$ is proportional to the product of the likelihood
+contributions, the $K$ priors on the $\beta_k$ parameters, and $\phi$,
+$$
+f(\boldsymbol{\beta},\phi|\mathbf{y},\mathbf{X}) \propto 
+\prod_{i=1}^N f(y_i | a, b) \times 
+\prod_{k=1}^K f(\beta_k) \times
+f(\phi)
+$$
+
+With two sets of explanatory variables, the posterior distribution of $\boldsymbol{\beta}$ and
+$\boldsymbol{\gamma}$ is proportional to the product of the likelihood contribution, the $K$
+priors on the $\beta_k$ parameters, and the $J$ priors on the $\gamma_j$ parameters,
+
+$$
+f(\boldsymbol{\beta},\boldsymbol{\gamma}|\mathbf{y},\mathbf{X}) \propto 
+\prod_{i=1}^N f(y_i | a, b) \times 
+\prod_{k=1}^K f(\beta_k) \times
+\prod_{j=1}^J f(\gamma_j)
+$$
 
 ```{r}
 #### Data import and munging
@@ -310,6 +387,17 @@ willow.ht.wk <- willow %>%
 
 ```
 
+# BASELINE ADDITION
+```{r}
+# Baseline data for KV were not provided in in the initial data trasnfer.
+# The following reads in these missing observations.
+# read in the missing KV baseline data
+
+
+
+```
+
+
 # Results
 
 ## Willow Height - Combined Winter Range Macroplot Data
@@ -338,7 +426,7 @@ ggsave("./output/figures_202107/willow_height/hist_willowht_TC_wcwnc.png", dpi =
 ## run with gamma
 wc.wnc.stmod_TCxF <- stan_glmer(plant_ht_cm ~ time_class*fenced +  (1 | site_id), data = willow.ht.wc.wnc,
                       family=Gamma(link="log"),
-                      iter = 5000,
+                      iter = 8000,
                       )
 ```
 
@@ -514,7 +602,7 @@ ggsave("./output/figures_202107/willow_height/mcmcarea_willowht_TCxF_wcwnc.png",
 stmod_ht.wc.wnc.TCxFxB <- stan_glmer(plant_ht_cm ~ time_class*fenced*burned + (1 | site_id), 
                       data = willow.ht.wc.wnc,
                       family=Gamma(link="log"),
-                      iter = 5000,
+                      iter = 8000,
                       seed = 1234
                       )
 
@@ -632,7 +720,7 @@ ggsave("./output/figures_202107/willow_height/hist_willowht_TCxF_wc.png", dpi = 
 # Previously run for comparisons but not otherwise reported
 stmod_ht.0 <- stan_glmer(plant_ht_cm ~ 1 + (1 | site_id), data = willow.ht.wc,
                       family=Gamma(link="log"),
-                      iter = 5000,
+                      iter = 8000,
                       seed = 1234
                       )
 
@@ -643,7 +731,7 @@ pp_check(stmod_ht.0)
 ## Run, but not used for reporting after model comparisons
 stmod_ht1 <- stan_glmer(plant_ht_cm ~ time_class + fenced + (1 | site_id), data = willow.ht.wc,
                       family=Gamma(link="log"),
-                      iter = 5000,
+                      iter = 8000,
                       seed = 1234
                       )
 
@@ -657,7 +745,7 @@ pp_check(stmod_ht1)
 # After model comparisons, this is the selected model reported
 stmod_ht2 <- stan_glmer(plant_ht_cm ~ time_class*fenced + (1 | site_id), data = willow.ht.wc,
                       family=Gamma(link="log"),
-                      iter = 5000,
+                      iter = 8000,
                       seed = 1234
                       )
 
@@ -877,7 +965,7 @@ ggsave("./output/figures_202107/willow_height/hist_willowht_TC_wnc.pdf", width =
 ## run with gamma
 nc.stmod_ht1 <- stan_glmer(plant_ht_cm ~ time_class +  (1 | site_id), data = willow.ht.nc,
                        family=Gamma(link="log"),
-                      iter = 5000,
+                      iter = 8000,
                       )
 posteriors.nc.ht <- insight::get_parameters(nc.stmod_ht1)
 ```
@@ -1089,13 +1177,13 @@ willow.ht.wk %>%
 #### TC only (no fenced)
 stmod_ht_wk_TC <- stan_glmer(plant_ht_cm ~ time_class + (1 | site_id), data = willow.ht.wk,
                       family=Gamma(link="log"),
-                      iter = 5000,
+                      iter = 8000,
                       seed = 1234
                       )
 # # TCxF need the full data for fencing
 # stmod_ht_wk_TCxF <- stan_glmer(plant_ht_cm ~ time_class * fenced + (1 | site_id), data = willow.ht.wk,
 #                       family=Gamma(link="log"),
-#                       iter = 5000,
+#                       iter = 8000,
 #                       seed = 1234
 #                       )
 
@@ -1338,7 +1426,7 @@ stmod_cov.wc.wnc <- stan_glmer(cover_allwillow ~ time_class * fenced + (1 | site
                       data = cov.wc.wnc,
                       family = mgcv::betar,
                       prior_aux = exponential(1),
-                      iter = 5000,
+                      iter = 8000,
                       seed = 1234)
 
 ```
@@ -1739,7 +1827,7 @@ stmod_cov.wnc <- stan_glmer(cover_allwillow ~ time_class + (1 | site_id),
                       data = cov.wnc,
                       family = mgcv::betar,
                       # prior_aux = exponential(2),
-                      iter = 15000,
+                      iter = 10000,
                       seed = 1234)
 
 
@@ -2090,7 +2178,7 @@ wb_rt2stan <- wb.evmp18.willows %>%
 
 wb_stanaov <- stan_aov(mean ~ site_type, data = wb_rt2stan, 
                   prior = R2(location = 0.25), adapt_delta = 0.999,
-                  iter = 5000,
+                  iter = 8000,
                   seed = 12345)
 wb_stanaov
 
