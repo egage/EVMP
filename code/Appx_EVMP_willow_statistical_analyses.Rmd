@@ -1,15 +1,18 @@
 ---
 title: "Appendix D. EVMP Willow Statistical Analyses"
-author: ""
-date: ""
-output: 
-  html_document: 
+author: ''
+date: ''
+output:
+  word_document:
+    toc: yes
+    toc_depth: '2'
+  html_document:
     theme: journal
     toc: yes
     toc_depth: 2
     code_folding: hide
-editor_options: 
-  markdown: 
+editor_options:
+  markdown:
     wrap: 72
 bibliography: references.bib
 ---
@@ -114,6 +117,23 @@ fun.desc.post1.gt.rope <- function(model){
   gt() %>% 
   tab_header(title = "Posterior description")
 }
+```
+
+```{r}
+## custom ggplot emm
+
+emm.func.tc.x.fenced <- function(model){
+  emmeans(model, ~ time_class | fenced) %>% 
+  pairs(reverse = TRUE) %>% 
+  as_tibble() %>% 
+  ggplot() +
+  geom_linerange(aes(y=contrast, xmin=lower.HPD, xmax=upper.HPD), color="#babefa", size=2.5) +
+  geom_point(aes(x=estimate, y=contrast)) +
+  theme_minimal() +
+  geom_vline(xintercept = 0, lty="dashed", size=1) +
+  facet_wrap(~fenced, ncol=1)
+}
+
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}
@@ -374,29 +394,28 @@ willow.ht.wc.wnc <- willow.ht %>%
   mutate(time_class = fct_drop(time_class))
 
 # kw (note: different munging workflow needed b/c of different sampling yrs)
+# willow.ht.wk <- willow %>%
+#   clean_names() %>%
+#   filter(str_detect(species_code, pattern = "SA")) %>% 
+#   filter(site_type == "WK") %>% 
+#   mutate(fenced = as.factor(fenced)) %>% 
+#   filter(plant_ht_cm > 0) %>% 
+#   mutate(time_class = as.factor(time_class)) %>% 
+#   mutate(fenced = fct_rev(fenced)) %>% 
+#   mutate(time_class = fct_drop(time_class))
+
+#   Making time class == year
 willow.ht.wk <- willow %>%
   clean_names() %>%
   filter(str_detect(species_code, pattern = "SA")) %>% 
   filter(site_type == "WK") %>% 
   mutate(fenced = as.factor(fenced)) %>% 
   filter(plant_ht_cm > 0) %>% 
-  mutate(time_class = as.factor(time_class)) %>% 
+  mutate(time_class = as.factor(yr)) %>% 
   mutate(fenced = fct_rev(fenced)) %>% 
   mutate(time_class = fct_drop(time_class))
-  
 
 ```
-
-# BASELINE ADDITION
-```{r}
-# Baseline data for KV were not provided in in the initial data trasnfer.
-# The following reads in these missing observations.
-# read in the missing KV baseline data
-
-
-
-```
-
 
 # Results
 
@@ -416,8 +435,8 @@ willow.ht.wc.wnc %>%
   facet_wrap(~time_class) +
   coord_flip()
 
-ggsave("./output/figures_202107/willow_height/hist_willowht_TC_wcwnc.png", dpi = 300, width = 6.75, height = 3.75)
-# ggsave("./output/figures_202107/willow_height/hist_willowht_TC_wcwnc.pdf", width = 6.75, height = 3.75)
+ggsave("./output/figures_202108/willow_height_stats/hist_willowht_TC_wcwnc.png", dpi = 300, width = 6.75, height = 3.75)
+# ggsave("./output/figures_202108/willow_height_stats/hist_willowht_TC_wcwnc.pdf", width = 6.75, height = 3.75)
 
 ```
 
@@ -441,8 +460,8 @@ prior_summary(wc.wnc.stmod_TCxF)
 ppc.plot(wc.wnc.stmod_TCxF) +
   labs(caption = "WC+WNC: willow_ht~TCxF")
 
-ggsave("./output/figures_202107/willow_height/ppc_willowht_wcwnc.png", dpi = 300, width = 4.75, height = 3.75)
-# ggsave("./output/figures_202107/willow_height/ppc_willowht_wcwnc.pdf", width = 4.75, height = 3.75)
+ggsave("./output/figures_202108/willow_height_stats/ppc_willowht_wcwnc.png", dpi = 300, width = 4.75, height = 3.75)
+# ggsave("./output/figures_202108/willow_height_stats/ppc_willowht_wcwnc.pdf", width = 4.75, height = 3.75)
 ```
 
 ```{r}
@@ -496,8 +515,8 @@ plot(pd.wc.wnc) +
   labs(caption = "Willow height, Combined Core and Non-core Winter Range") +
   scale_fill_manual(values = colfunc3(2))
 
-ggsave("./output/figures_202107/willow_height/pd_willowht_wcwnc.png", width = 6.75, height =3.75, dpi = 300)
-ggsave("./output/figures_202107/willow_height/pd_willowht_wcwnc.png", width = 6.75, height =3.75)
+ggsave("./output/figures_202108/willow_height_stats/pd_willowht_wcwnc.png", width = 6.75, height =3.75, dpi = 300)
+ggsave("./output/figures_202108/willow_height_stats/pd_willowht_wcwnc.png", width = 6.75, height =3.75)
 
 ```
 
@@ -550,16 +569,16 @@ wc.wnc.pairs.fenced <- pairs(wc.wnc.emm.fenced)
 emmeans(wc.wnc.stmod_TCxF, ~ time_class | fenced) %>% 
   pairs(reverse=TRUE) 
 
-emmeans(wc.wnc.stmod_TCxF, ~ time_class | fenced) %>% 
-  pairs(reverse=TRUE) %>% 
-  plot(type = "response") +
-  theme_minimal() +
-  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
-  labs(subtitle = "Point estimate displayed: median 
-HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Core and Noncore Winter Range, Willow Height")
-
-# ggsave("./output/figures_202107/willow_height/emm_willowht_TCxF_wcwnc.pdf", width = 4.5, height = 3.55) # save plot
-ggsave("./output/figures_202107/willow_height/emm_willowht_TCxF_wcwnc.png", width = 4.5, height = 3.55) # save plot
+# emmeans(wc.wnc.stmod_TCxF, ~ time_class | fenced) %>% 
+#   pairs(reverse=TRUE) %>% 
+#   plot(type = "response") +
+#   theme_minimal() +
+#   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+#   labs(subtitle = "Point estimate displayed: median 
+# HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Core and Noncore Winter Range, Willow Height")
+# 
+# # ggsave("./output/figures_202108/willow_height_stats/emm_willowht_TCxF_wcwnc.pdf", width = 4.5, height = 3.55) # save plot
+# ggsave("./output/figures_202108/willow_height_stats/emm_willowht_TCxF_wcwnc.png", width = 4.5, height = 3.55) # save plot
 
 # table of contrasts
 emmeans(wc.wnc.stmod_TCxF, ~ time_class | fenced) %>% 
@@ -580,6 +599,17 @@ emmeans(wc.wnc.stmod_TCxF, ~ time_class | fenced) %>%
 ```
 
 ```{r}
+emm.func.tc.x.fenced(wc.wnc.stmod_TCxF) +
+  xlim(-0.5, 1.25) +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Core and Noncore Winter Range, Willow Height \n emm_willowht_TCxF_wcwnc.png")
+
+ggsave("./output/figures_202108/willow_height_stats/emm_willowht_TCxF_wcwnc.png", width = 6.5, height = 3.55, dpi=300)
+  
+```
+
+
+```{r}
 color_scheme_set("teal")
 
 plot.mcmcareas_ht.wcwnc <- mcmc_areas(posteriors.wc.wnc.ht,
@@ -590,8 +620,8 @@ plot.mcmcareas_ht.wcwnc <- mcmc_areas(posteriors.wc.wnc.ht,
 
 plot.mcmcareas_ht.wcwnc
 
-ggsave("./output/figures_202107/willow_height/mcmcarea_willowht_TCxF_wcwnc.png", dpi = 300, width = 6.75, height = 3.75)
-# ggsave("./output/figures_202107/willow_height/mcmcarea_willowht_TCxF_wcnc.pdf", width = 6.75, height = 3.75)
+ggsave("./output/figures_202108/willow_height_stats/mcmcarea_willowht_TCxF_wcwnc.png", dpi = 300, width = 6.75, height = 3.75)
+# ggsave("./output/figures_202108/willow_height_stats/mcmcarea_willowht_TCxF_wcnc.pdf", width = 6.75, height = 3.75)
 ```
 
 ### Effects of Burning
@@ -618,8 +648,8 @@ pp_check(stmod_ht.wc.wnc.TCxFxB) +
   labs(x = "Value", y = "Density") +
   theme_minimal()
 # 
-ggsave("./output/figures_202107/wc_wnc_willowcover_ppc_TCxFxB.png", dpi = 300, width = 4.75, height = 3.75)
-# ggsave("./output/figures_202107/wc_wnc_willowcover_ppc_TCxFxB.pdf", width = 4.75, height = 3.75)
+ggsave("./output/figures_202108/willow_cover_stats/wc_wnc_willowcover_ppc_TCxFxB.png", dpi = 300, width = 4.75, height = 3.75)
+# ggsave("./output/figures_202108/willow_cover_stats/wc_wnc_willowcover_ppc_TCxFxB.pdf", width = 4.75, height = 3.75)
 
 ```
 
@@ -643,7 +673,7 @@ plot.mcmcareas_cov.wcwnc <- mcmc_areas(stmod_ht.wc.wnc.TCxFxB,
 
 plot.mcmcareas_cov.wcwnc
 
-ggsave("./output/figures_202107/willow_cover/mcmcarea_wilwht_TCxFxB_wcwnc.png", dpi = 300, width = 6.75, height = 11.75)
+ggsave("./output/figures_202108/willow_cover_stats/mcmcarea_wilwht_TCxFxB_wcwnc.png", dpi = 300, width = 6.75, height = 11.75)
 
 ```
 
@@ -669,7 +699,7 @@ emmeans(stmod_ht.wc.wnc.TCxFxB, ~ time_class | fenced | burned) %>%
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range, Willow Height")
 
-ggsave("./output/figures_202107/willow_height/emm_willowht_TCxFxB_wcwnc.png", width = 4.5, height = 3.55) # save plot
+ggsave("./output/figures_202108/willow_height_stats/emm_willowht_TCxFxB_wcwnc.png", width = 4.5, height = 3.55) # save plot
 
 # table of contrasts
 emmeans(wcwnc.emm.TCxFxB, ~ time_class | fenced) %>% 
@@ -707,8 +737,8 @@ willow.ht.wc %>%
   facet_wrap(~time_class) +
   coord_flip()
 
-ggsave("./output/figures_202107/willow_height/hist_willowht_TCxF_wc.png", dpi = 300, width = 6.75, height = 3.75)
-# ggsave("./output/figures_202107/willow_height/hist_willowht_TCxF_wc.pdf", width = 6.75, height = 3.75)
+ggsave("./output/figures_202108/willow_height_stats/hist_willowht_TCxF_wc.png", dpi = 300, width = 6.75, height = 3.75)
+# ggsave("./output/figures_202108/willow_height_stats/hist_willowht_TCxF_wc.pdf", width = 6.75, height = 3.75)
 
 ```
 
@@ -775,8 +805,8 @@ print(comp, simplify = FALSE, digits = 2)
 ppc.plot(stmod_ht2) +
   labs(x = "Value", y = "Density") +
   theme_minimal()
-ggsave("./output/figures_202107/willow_height/ppc_willowht_wc.png", width = 4.75, height = 3.75, dpi = 300)
-# ggsave("./output/figures_202107/willow_height/ppc_willowht_wc.pdf", width = 4.75, height = 3.75)
+ggsave("./output/figures_202108/willow_height_stats/ppc_willowht_wc.png", width = 4.75, height = 3.75, dpi = 300)
+ggsave("./output/figures_202108/willow_height_stats/ppc_willowht_wc.pdf", width = 4.75, height = 3.75)
 
 ```
 
@@ -791,8 +821,8 @@ fun.desc.post1.gt.rope(stmod_ht2) %>%
 #### PP check plot
 ppc.plot(stmod_ht2) +
   labs(caption = "WC: willow_ht~TCxF")
-# ggsave("./output/figures_202107/willow_height/ppc_willowht_wc.png", dpi = 300, width = 4.75, height = 3.75)
-# ggsave("./output/figures_202107/willow_height/ppc_willowht_wc.pdf", width = 4.75, height = 3.75)
+# ggsave("./output/figures_202108/willow_height_stats/ppc_willowht_wc.png", dpi = 300, width = 4.75, height = 3.75)
+# ggsave("./output/figures_202108/willow_height_stats/ppc_willowht_wc.pdf", width = 4.75, height = 3.75)
 ```
 
 ### Effect Description
@@ -825,8 +855,8 @@ plot(pd.wc) +
   labs(caption = "Willow height, core winter range") +
   scale_fill_manual(values = colfunc3(2))
 
-ggsave("./output/figures_202107/willow_height/pd_willowht_wc.png", width = 6.75, height =3.75, dpi = 300)
-# ggsave("./output/figures_202107/willow_height/pd_willowht_wc.pdf", width = 6.75, height =3.75)
+ggsave("./output/figures_202108/willow_height_stats/pd_willowht_wc.png", width = 6.75, height =3.75, dpi = 300)
+# ggsave("./output/figures_202108/willow_height_stats/pd_willowht_wc.pdf", width = 6.75, height =3.75)
 
 ```
 
@@ -887,9 +917,26 @@ emmeans(stmod_ht2, ~ time_class | fenced) %>%
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Willow Height")
 
-ggsave("./output/figures_202107/willow_height/emm_willowht_TCxF_wc.pdf", width = 4.5, height = 3.55) # save plot
-ggsave("./output/figures_202107/willow_height/emm_willowht_TCxF_wc.png", width = 4.5, height = 3.55) # save plot
+ggsave("./output/figures_202108/willow_height_stats/emm_willowht_TCxF_wc.pdf", width = 4.5, height = 3.55) # save plot
+# ggsave("./output/figures_202108/willow_height_stats/emm_willowht_TCxF_wc.png", width = 4.5, height = 3.55) # save plot
 
+## alt per hanem
+emm.wc.ht <- emmeans(stmod_ht2, ~ fenced | time_class) %>% 
+  pairs(reverse = TRUE) %>% 
+  plot(type="response") + 
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Willow Height")
+
+# emm.wc.ht
+# ggsave("./output/figures_202108/willow_height_stats/emm_willowht_TCxF_wc_new.pdf", width = 4.5, height = 3.55) # save plot
+# ggsave("./output/figures_202108/willow_height_stats/emm_willowht_TCxF_wc_new.png", width = 4.5, height = 3.55) # save plot
+
+
+```
+
+```{r}
 # table of contrasts
 emmeans(stmod_ht2, ~ time_class | fenced) %>% 
   pairs(reverse = TRUE) %>% 
@@ -908,6 +955,7 @@ emmeans(stmod_ht2, ~ time_class | fenced) %>%
 
 ```
 
+
 ```{r}
 color_scheme_set("teal")
 
@@ -919,8 +967,8 @@ plot.mcmcareas_ht.wc <- mcmc_areas(posteriors.wc.ht,
 
 plot.mcmcareas_ht.wc
 
-ggsave("./output/figures_202107/willow_height/mcmcarea_willowht_TCxF_wc.png", dpi = 300, width = 6.75, height = 3.75)
-ggsave("./output/figures_202107/willow_height/mcmcarea_willowht_TCxF_wc.pdf", width = 6.75, height = 3.75)
+ggsave("./output/figures_202108/willow_height_stats/mcmcarea_willowht_TCxF_wc.png", dpi = 300, width = 6.75, height = 3.75)
+ggsave("./output/figures_202108/willow_height_stats/mcmcarea_willowht_TCxF_wc.pdf", width = 6.75, height = 3.75)
 ```
 
 
@@ -932,8 +980,8 @@ bayesplot::mcmc_areas(posteriors.wc.ht,
   theme_minimal() +
   labs(title = "Posterior distributions", subtitle = "with medians and 90% intervals", caption = "Willow height, WC")
 
-ggsave("./output/figures_202107/willow_height/mcmcarea_willowht_TCxF_wc.png", dpi = 300, width = 6.75, height = 3.75)
-ggsave("./output/figures_202107/willow_height/mcmcarea_willowht_TCxF_wc.pdf", width = 6.75, height = 3.75)
+ggsave("./output/figures_202108/willow_height_stats/mcmcarea_willowht_TCxF_wc.png", dpi = 300, width = 6.75, height = 3.75)
+ggsave("./output/figures_202108/willow_height_stats/mcmcarea_willowht_TCxF_wc.pdf", width = 6.75, height = 3.75)
 
 ```
 
@@ -953,8 +1001,8 @@ willow.ht.nc %>%
   facet_wrap(~time_class) +
   coord_flip()
 
-ggsave("./output/figures_202107/willow_height/hist_willowht_TC_wnc.png", dpi = 300, width = 6.75, height = 3.75)
-ggsave("./output/figures_202107/willow_height/hist_willowht_TC_wnc.pdf", width = 6.75, height = 3.75)
+ggsave("./output/figures_202108/willow_height_stats/hist_willowht_TC_wnc.png", dpi = 300, width = 6.75, height = 3.75)
+ggsave("./output/figures_202108/willow_height_stats/hist_willowht_TC_wnc.pdf", width = 6.75, height = 3.75)
 
 ```
 
@@ -981,7 +1029,7 @@ prior_summary(nc.stmod_ht1)
 #### PP check plot
 ppc.plot(nc.stmod_ht1) +
   labs(caption = "WNC: willow_ht~TC")
-ggsave("./output/figures_202107/willow_height/ppc_willowht_wnc.png", dpi = 300, width = 4.75, height = 3.75)
+ggsave("./output/figures_202108/willow_height_stats/ppc_willowht_wnc.png", dpi = 300, width = 4.75, height = 3.75)
 
 ```
 
@@ -1027,7 +1075,7 @@ p_direction(nc.stmod_ht1) %>%
   labs(caption = "Willow height, Noncore winter range") +
   scale_fill_manual(values = colfunc3(2))
 
-ggsave("./output/figures_202107/willow_height/pd_willowht_wnc.png", width = 6.75, height =3.75, dpi = 300)
+ggsave("./output/figures_202108/willow_height_stats/pd_willowht_wnc.png", width = 6.75, height =3.75, dpi = 300)
 
 ```
 
@@ -1068,7 +1116,7 @@ nc.emm %>%
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Non-core Winter Range, Willow Height")
 
-ggsave("./output/figures_202107/willow_height/emm_willowht_TC_wnc.png", width = 4.5, height = 3.55) # save plot
+ggsave("./output/figures_202108/willow_height_stats/emm_willowht_TC_wnc.png", width = 4.5, height = 3.55) # save plot
 
 # table of contrasts
 emmeans(nc.stmod_ht1, ~ time_class) %>% 
@@ -1100,7 +1148,7 @@ plot.mcmcareas_ht.wnc <- mcmc_areas(posteriors.nc.ht,
 
 plot.mcmcareas_ht.wnc
 
-ggsave("./output/figures_202107/willow_height/mcmcarea_willowht_TCxF_wnc.png", dpi = 300, width = 6.75, height = 3.75)
+ggsave("./output/figures_202108/willow_height_stats/mcmcarea_willowht_TCxF_wnc.png", dpi = 300, width = 6.75, height = 3.75)
 
 ```
 
@@ -1112,8 +1160,8 @@ ggsave("./output/figures_202107/willow_height/mcmcarea_willowht_TCxF_wnc.png", d
 #   theme_minimal() +
 #   labs(title = "Posterior distributions", subtitle = "with medians and 90% intervals", caption = "Willow height, WNC")
 # 
-# ggsave("./output/figures_202107/willow_height/mcmcarea_willowht_TC_wnc.png", dpi = 300, width = 6.75, height = 3.75)
-# ggsave("./output/figures_202107/willow_height/mcmcarea_willowht_TC_wnc.pdf", width = 6.75, height = 3.75)
+# ggsave("./output/figures_202108/willow_height_stats/mcmcarea_willowht_TC_wnc.png", dpi = 300, width = 6.75, height = 3.75)
+# ggsave("./output/figures_202108/willow_height_stats/mcmcarea_willowht_TC_wnc.pdf", width = 6.75, height = 3.75)
 
 ```
 
@@ -1139,81 +1187,155 @@ nc.emm %>%
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Non-core Winter Range, Willow Height")
 
-ggsave("./output/figures_202107/willow_height/emm_willowht_TC_wnc.png", width = 4.5, height = 3.55) # save plot
+ggsave("./output/figures_202108/willow_height_stats/emm_willowht_TC_wnc.png", width = 4.5, height = 3.55) # save plot
 
 
 ```
 
+
+```{r}
+emm.wc <- plot(wc.pairs.fenced) +
+  theme_minimal() +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Willow Height")
+
+# emm.wnc.ht
+emm.wnc <- nc.emm %>% 
+  pairs(reverse = TRUE) %>% 
+  plot(type="response") +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Non-core Winter Range, Willow Height") +
+  xlim(-0.5, 1.5)
+emm.wnc
+ggsave("./output/figures_202108/willow_height_stats/emm_willowht_TC_wnc.png", width = 7.5, height = 3.55) # save plot
+
+
+# emm.wc.ht + emm.wnc +
+#   plot_layout(ncol = 2) +
+#   plot_annotation(caption = "emm_willowht_TC_wcwnc.png")
+
+
+```
+
+```{r}
+## two panel
+xxx.wc <- emm.func.tc.x.fenced(stmod_ht2) +
+  labs(x = "Estimate", y = "Contrast", Title = "Core Range")
+
+
+xxx.wnc <- nc.emm %>% 
+  pairs(reverse = TRUE) %>% 
+  plot(type="response") +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Noncore Range", x = "Estimate", y = "Contrast") +
+  xlim(-0.5, 1.5)
+
+xxx.wc + xxx.wnc +
+  plot_layout(ncol = 1, heights = c(2,1)) +
+  plot_annotation(caption = "Willow height \n emm_willowht_wcwnc_2panel.png")
+
+ggsave("./output/figures_202108/willow_height_stats/emm_willowht_wcwnc_2panel.png", width = 4.5, height = 6.55) # save plot
+
+
+```
 
 ## Willow Height - Kawuneeche Valley Macroplot Data
 
 **Histograms of Willow Height**
 
 ```{r}
+
+willow.ht.wk <- willow.ht.wk %>% 
+  mutate(time_class = fct_relevel(time_class, "BL"))
+
 willow.ht.wk %>% 
   ggplot() +
   geom_histogram(aes(plant_ht_cm, fill = fenced), color = "grey50") +
   # viridis::scale_fill_viridis(discrete=TRUE) +
-  scale_fill_manual(values = colfunc3(1)) +
+  scale_fill_manual(values = colfunc3(2)) +
   labs(x="Plant height (cm)", y = "Count", fill = "", caption = "KV. Macroplot heights") +
   theme_minimal() +
   facet_wrap(~time_class) +
   coord_flip() +
   theme(legend.position = "none")
 
-ggsave("./output/figures_202107/willow_height/hist_willowht_TC_WK.png", dpi = 300, width = 6.75, height = 3.75)
+ggsave("./output/figures_202108/willow_height_stats/hist_willowht_TC_WK.png", dpi = 300, width = 6.75, height = 4.75)
+
+willow.ht.wk %>% 
+  ggplot() +
+  geom_histogram(aes(plant_ht_cm, fill = fenced), color = "grey50") +
+  # viridis::scale_fill_viridis(discrete=TRUE) +
+  # scale_fill_manual(values = colfunc3(2)) +
+  scale_fill_manual(values=c("grey80", "grey40")) +
+  labs(x="Plant height (cm)", y = "Count", fill = "", caption = "KV. Macroplot heights") +
+  theme_minimal() +
+  facet_grid(time_class ~ fenced) +
+  # facet_wrap(~time_class) +
+  coord_flip() +
+  theme(legend.position = "none")
+
+ggsave("./output/figures_202108/willow_height_stats/hist_willowht_TC_WK_bw.png", dpi = 300, width = 6.75, height = 6.75)
 ```
 
 ### Modeling and Posterior Description
 
-```{r}
-willow.ht.wk %>% 
-  distinct(yr)
+```{r, echo=FALSE, eval=FALSE}
+willow.ht.wk %>%
+  # tabyl(time_class)
+  tabyl(yr)
   # glimpse()
+
+
+willow.ht.wk %>%
+  # tabyl(time_class)
+  tabyl(fenced)
 ```
 
 
 ```{r, cache=TRUE}
 #### TC only (no fenced)
-stmod_ht_wk_TC <- stan_glmer(plant_ht_cm ~ time_class + (1 | site_id), data = willow.ht.wk,
-                      family=Gamma(link="log"),
-                      iter = 8000,
-                      seed = 1234
-                      )
-# # TCxF need the full data for fencing
-# stmod_ht_wk_TCxF <- stan_glmer(plant_ht_cm ~ time_class * fenced + (1 | site_id), data = willow.ht.wk,
+# stmod_ht_wk_TC <- stan_glmer(plant_ht_cm ~ time_class + (1 | site_id), data = willow.ht.wk,
 #                       family=Gamma(link="log"),
 #                       iter = 8000,
 #                       seed = 1234
 #                       )
+# TCxF need the full data for fencing
+stmod_ht_wk_TCxF <- stan_glmer(plant_ht_cm ~ time_class * fenced + (1 | site_id), data = willow.ht.wk,
+                      family=Gamma(link="log"),
+                      iter = 8000,
+                      seed = 1234
+                      )
 
 ## extract posterior
-posteriors.wk.ht <- insight::get_parameters(stmod_ht_wk_TC)
+posteriors.wk.ht <- insight::get_parameters(stmod_ht_wk_TCxF)
 # posteriors.wk.ht.tc.f <- insight::get_parameters(stmod_ht_wk_TCxF)
 
 ```
 
-**Prior summary**: plant_ht_cm ~ time_class + (1 | site_id)  
+**Prior summary**: plant_ht_cm ~ time_class * fenced + (1 | site_id)  
 ```{r}
 ## prior summary
-prior_summary(stmod_ht_wk_TC)
+prior_summary(stmod_ht_wk_TCxF)
 ```
 
 ```{r, echo = TRUE, eval=TRUE}
 #### PP check plot
-ppc.plot(stmod_ht_wk_TC) +
-  labs(caption = "WK: willow_ht~TC")
+ppc.plot(stmod_ht_wk_TCxF) +
+  labs(caption = "WK: willow_ht~TCxF")
 
-ggsave("./output/figures_202107/willow_height/ppc_willowht_wk.png", dpi = 300, width = 4.75, height = 3.75)
+ggsave("./output/figures_202108/willow_height_stats/ppc_willowht_wk.png", dpi = 300, width = 4.75, height = 3.75)
 
 ```
 
 ### Effect Description
 ```{r}
 # use function defined above
-fun.sexit.gt(stmod_ht_wk_TC) 
+fun.sexit.gt(stmod_ht_wk_TCxF) 
 
-fun.sexit.gt(stmod_ht_wk_TC) %>% 
+fun.sexit.gt(stmod_ht_wk_TCxF) %>% 
   tab_header(title = "Kawuneeche Valley", subtitle = "Willow Height Posterior Description") %>% 
   gt::gtsave(filename = "./output/tables/willow_height/xpostdesc_willowht_TC_wk.rtf") 
 
@@ -1221,36 +1343,36 @@ fun.sexit.gt(stmod_ht_wk_TC) %>%
 
 ```{r, echo=FALSE, eval=FALSE}
 # full posterior description
-fun.desc.post1.gt.rope(stmod_ht_wk_TC) %>% 
+fun.desc.post1.gt.rope(stmod_ht_wk_TCxF) %>% 
   tab_header(title = "Kawuneeche Valley", subtitle = "Willow Height Posterior Description")
 
 ```
 
 ```{r, echo=FALSE, eval=FALSE}
 ### Model posterior parameters to table
-fun.desc.post1.gt.rope(stmod_ht_wk_TC) %>% 
+fun.desc.post1.gt.rope(stmod_ht_wk_TCxF) %>% 
   tab_header(title = "Kawuneeche Valley", subtitle = "Willow Height Posterior Description") %>% 
-  gt::gtsave(filename = "./output/tables/willow_height/postdesc_willowht_TC_wk.rtf")
+  gt::gtsave(filename = "./output/tables/willow_height/postdesc_willowht_TCxF_wk.rtf")
 ```
 
 #### Probability of Direction
 ```{r}
-pdkv <- p_direction(stmod_ht_wk_TC)
+pdkv <- p_direction(stmod_ht_wk_TCxF)
 # Visualise the pd
 plot(pdkv) +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
-  labs(caption = "Willow height, KV") +
+  labs(caption = "Willow height, KV \n pd_willowht_wk.png") +
   scale_fill_manual(values = colfunc3(2))
 
-ggsave("./output/figures_202107/willow_height/pd_willowht_wk.png", width = 6.75, height =3.75, dpi = 300)
+ggsave("./output/figures_202108/willow_height_stats/pd_willowht_wk.png", width = 6.75, height =3.75, dpi = 300)
 
 ```
 
 #### Region of Practical Equivalence (ROPE)
 
 ```{r}
-p.in.rope.kv <- rope(stmod_ht_wk_TC, ci=0.9)
+p.in.rope.kv <- rope(stmod_ht_wk_TCxF, ci=0.9)
 
 pd.tab.kv <- p.in.rope.kv %>% 
   gt() %>%
@@ -1271,19 +1393,70 @@ pd.tab.kv %>%
 
 ```{r}
 ## contrasts
-emmeans(stmod_ht_wk_TC, ~ time_class) %>% 
-  pairs() %>% 
+# emmeans(stmod_ht_wk_TCxF, ~ time_class) %>% 
+#   pairs() %>% 
+#   # plot() + # on the lm predict scale
+#   plot(type = "response") +
+#   theme_minimal() +
+#   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+#   labs(subtitle = "Point estimate displayed: median 
+# HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "KV, Willow Height")
+# 
+# ggsave("./output/figures_202108/willow_height_stats/emm_willowht_TC_wk.png", width = 4.5, height = 3.55) # save plot
+
+emmeans(stmod_ht_wk_TCxF, ~ fenced | time_class)
+
+emmeans(stmod_ht_wk_TCxF, ~ fenced | time_class) %>% 
+  pairs(reverse=TRUE) %>% 
   # plot() + # on the lm predict scale
   plot(type = "response") +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  xlim(-1, 5) +
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "KV, Willow Height")
 
-ggsave("./output/figures_202107/willow_height/emm_willowht_TC_wk.png", width = 4.5, height = 3.55) # save plot
+ggsave("./output/figures_202108/willow_height_stats/emm_willowht_TC_wk.png", width = 4.5, height = 3.55) # save plot
+# ggsave("./output/figures_202108/willow_height_stats/emm_willowht_TC_wk.pdf", width = 6.5, height = 4.55) # save plot
 
+emmeans(stmod_ht_wk_TCxF, ~ time_class | fenced) %>% 
+  pairs(reverse=TRUE) %>% 
+  # plot() + # on the lm predict scale
+  plot(type = "response") +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  xlim(-2, 5) +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "KV, Willow Height")
+
+ggsave("./output/figures_202108/willow_height_stats/emm_willowht_TC_wk_alt.png", width = 4.5, height = 3.55) # save plot
+ggsave("./output/figures_202108/willow_height_stats/emm_willowht_TC_wk_alt.pdf", width = 6.5, height = 4.55) # save plot
+
+
+```
+
+```{r}
+## custom
+emmeans(stmod_ht_wk_TCxF, ~ time_class | fenced) %>% 
+  pairs(reverse = TRUE) %>% 
+  as_tibble() %>% 
+  ggplot() +
+  geom_linerange(aes(y=contrast, xmin=lower.HPD, xmax=upper.HPD), color="#babefa", size=2.5) +
+  geom_point(aes(x=estimate, y=contrast)) +
+  theme_minimal() +
+  geom_vline(xintercept = 0, lty="dashed", size=1) +
+  facet_wrap(~fenced, ncol=1) +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "KV, Willow Height")
+  # labs(x= "Estimate", y="Contrast", caption = "KV")
+
+ggsave("./output/figures_202108/willow_height_stats/emm_willowht_TC_wk_revised.png", width = 4.5, height = 3.75) # save plot
+```
+
+
+```{r}
 # table of contrasts. Results are given on the log (not the response) scale.
-emmeans(stmod_ht_wk_TC, ~ time_class) %>% 
+emmeans(stmod_ht_wk_TCxF, ~ time_class | fenced) %>% 
   pairs(reverse = TRUE) %>% 
   as_tibble() %>% 
   mutate(across(where(is.numeric),round, 2)) %>% 
@@ -1291,7 +1464,7 @@ emmeans(stmod_ht_wk_TC, ~ time_class) %>%
   tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the log (not the response) scale.")
 
 # table of contrasts. Results are given on the response scale.
-emmeans(stmod_ht_wk_TC, ~ time_class) %>% 
+emmeans(stmod_ht_wk_TCxF, ~ time_class) %>% 
   pairs(reverse = TRUE, type="response") %>% 
   as_tibble() %>% 
   mutate(across(where(is.numeric),round, 2)) %>% 
@@ -1300,6 +1473,7 @@ emmeans(stmod_ht_wk_TC, ~ time_class) %>%
 
 # EMM summaries with type = "response", the tests and confidence intervals are done before back-transforming. The ratios estimated here are actually ratios of geometric means. In general, a model with a log response is in fact a model for relative effects of any of its linear predictors, and this back-transformation to ratios goes hand-in-hand with that.
 ```
+
 
 ```{r}
 color_scheme_set("teal")
@@ -1313,7 +1487,7 @@ plot.mcmcareas_ht.wk <- mcmc_areas(posteriors.wk.ht,
 
 plot.mcmcareas_ht.wk
 
-ggsave("./output/figures_202107/willow_height/mcmcarea_willowht_TC_wk.png", dpi = 300, width = 6.75, height = 3.75)
+ggsave("./output/figures_202108/willow_height_stats/mcmcarea_willowht_TC_wk.png", dpi = 300, width = 6.75, height = 3.75)
 ```
 
 ## Willow Cover - Combined Winter Range Macroplot Data
@@ -1322,23 +1496,36 @@ ggsave("./output/figures_202107/willow_height/mcmcarea_willowht_TC_wk.png", dpi 
 # canopy.all.willow.sum <- read_csv("./output/exported_data/willow_cover_20200725.csv") %>% 
 #   janitor::clean_names()
 
-canopy.all.willow.sum <- read_csv("./output/exported_data/willow_macroplot_cover_BLto2018.csv") %>% 
+canopy.all.willow.sum <- read_csv("./output/exported_data/willow_macroplot_cover_BLto2018b.csv") %>% 
   janitor::clean_names()
 
 ```
 
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 # munge
 canopy.all.willow.sum <- canopy.all.willow.sum %>% 
   mutate(burned = case_when(burned == "Y" ~ "Burned",
                             burned == "N" ~ "Unburned",
                             is.na(burned) ~ "Unburned",
                             TRUE ~ burned)) %>% 
+  mutate(fenced = case_when(site_id == "WK01" ~ "Fenced",
+                            site_id == "WK02" ~ "Fenced",
+                            site_id == "WK03" ~ "Unfenced",
+                            site_id == "WK04" ~ "Unfenced",
+                            site_id == "WK05" ~ "Fenced",
+                            site_id == "WK06" ~ "Unfenced",
+                            site_id == "WK07" ~ "Unfenced",
+                            site_id == "WK08" ~ "Unfenced",
+                            site_id == "WK09" ~ "Unfenced",
+                            site_id == "WK10" ~ "Fenced",
+                            TRUE ~ fenced)) %>% 
   mutate(time_class = as_factor(time_class)) %>%
   mutate(fenced = as_factor(fenced)) %>%
   mutate(burned = as_factor(burned)) %>% 
-  mutate(time_class = fct_rev(time_class)) %>% 
-  mutate(fenced = fct_rev(fenced))
+  mutate(time_class = fct_rev(time_class))
+
+# canopy.all.willow.sum %>% 
+#   tabyl(site_type,time_class)
 
 ```
 
@@ -1346,10 +1533,9 @@ canopy.all.willow.sum <- canopy.all.willow.sum %>%
 ### create subsets of data for modeling
 # pull out WK, note different years of data
 cov.wk <- canopy.all.willow.sum %>% 
-  filter(site_type == "WK") %>%
-  mutate(time_class = as.character(time_class)) %>% 
-  filter(time_class == "2016" | time_class == "2017" | time_class == "2018") %>% 
-  mutate(time_class = as.factor(time_class))
+  filter(site_type == "WK") %>% 
+  filter(!is.na(cover_allwillow)) %>% 
+  mutate(cover_allwillow = cover_allwillow/100)
 
 # pull out the core plus noncore winter range plots
 cov.wc.wnc <- canopy.all.willow.sum %>% 
@@ -1395,6 +1581,14 @@ cov.wc.wnc %>%
   gt() %>% 
   tab_header(title = "Combined WC and WNC macroplot data: willow cover ~ burned + fenced + time_class")
 
+cov.wk %>% 
+  group_by(time_class, fenced) %>% 
+  summarytools::descr(cover_allwillow, stats = "common", na.rm=TRUE) %>% 
+  summarytools::tb() %>%
+  mutate_if(.predicate = is.numeric,.funs = round, digits = 2) %>% 
+  gt() %>% 
+  tab_header(title = "WK macroplot data: willow cover ~ fenced * time_class")
+
 ```
 
 ### Histograms of Willow Cover
@@ -1404,13 +1598,14 @@ cov.wc.wnc %>%
   ggplot(aes(cover_allwillow)) +
   geom_histogram(color="grey50") +
   facet_grid(time_class~site_type) +
-  theme_minimal()
+  theme_minimal() +
+  labs(x="Cover", y = "Count")
 
-ggsave("./output/figures_202107/willow_cover/hist_willowht_TC_wcwnc.png", dpi = 300, width = 6.75, height = 3.75)
+ggsave("./output/figures_202108/willow_cover_stats/hist_willowht_TC_wcwnc.png", dpi = 300, width = 6.75, height = 3.75)
+
 ```
 
 ### Modeling and Posterior Description
-
 
 ```{r, cache=TRUE}
 # cover_allwillow \~ time_class \* fenced + (1 \| site_id)
@@ -1469,8 +1664,8 @@ pp_check(stmod_cov.wc.wnc) +
   theme_minimal() +
   labs(caption = "WC & WNC: cover_allwillow ~ time_class * fenced + (1 | site_id)")
 
-ggsave("./output/figures_202107/willow_cover/ppc_willowcov_wcwnc.png", dpi = 300, width = 4.75, height = 3.75)
-# ggsave("./output/figures_202107/willow_cover/ppc_willowcov_wcwnc.pdf", width = 4.75, height = 3.75)
+ggsave("./output/figures_202108/willow_cover_stats/ppc_willowcov_wcwnc.png", dpi = 300, width = 4.75, height = 3.75)
+# ggsave("./output/figures_202108/willow_cover_stats/ppc_willowcov_wcwnc.pdf", width = 4.75, height = 3.75)
 
 ```
 
@@ -1514,7 +1709,7 @@ plot.mcmcareas_cov.wcwnc <- mcmc_areas(posteriors.cov.wcwnc,
 
 plot.mcmcareas_cov.wcwnc
 
-ggsave("./output/figures_202107/willow_cover/mcmcarea_willowcov_TC_wcwnc.png", dpi = 300, width = 6.75, height = 3.75)
+ggsave("./output/figures_202108/willow_cover_stats/mcmcarea_willowcov_TC_wcwnc.png", dpi = 300, width = 6.75, height = 3.75)
 
 ```
 
@@ -1528,8 +1723,8 @@ p_direction(stmod_cov.wc.wnc) %>%
   labs(caption = "Willow cover, Core and noncore winter range") +
   scale_fill_manual(values = colfunc3(2))
 
-ggsave("./output/figures_202107/willow_cover/pd_willowht_wcwnc.png", width = 6.75, height =3.75, dpi = 300)
-# ggsave("./output/figures_202107/willow_cover/pd_willowht_wcwnc.pdf", width = 6.75, height =3.75)
+ggsave("./output/figures_202108/willow_cover_stats/pd_willowht_wcwnc.png", width = 6.75, height =3.75, dpi = 300)
+# ggsave("./output/figures_202108/willow_cover_stats/pd_willowht_wcwnc.pdf", width = 6.75, height =3.75)
 
 ```
 
@@ -1560,8 +1755,8 @@ emmeans(stmod_cov.wc.wnc, ~ time_class | fenced) %>%
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Core and Noncore Winter Range, Willow Cover")
 
-ggsave("./output/figures_202107/willow_cover/emm_willowht_TCxF_wcwnc.png", width = 6.75, height =3.75, dpi = 300)
-# ggsave("./output/figures_202107/willow_cover/emm_willowht_TCxF_wcwnc.pdf", width = 6.75, height =3.75)
+ggsave("./output/figures_202108/willow_cover_stats/emm_willowht_TCxF_wcwnc.png", width = 6.75, height =3.75, dpi = 300)
+# ggsave("./output/figures_202108/willow_cover_stats/emm_willowht_TCxF_wcwnc.pdf", width = 6.75, height =3.75)
 
 
 # table of contrasts
@@ -1589,8 +1784,8 @@ emmeans(stmod_cov.wc.wnc, ~ time_class | fenced) %>%
 #   theme_minimal() +
 #   labs(title = "Posterior distributions", subtitle = "with medians and 90% intervals", caption = "Willow height, WC & WNC")
 # 
-# ggsave("./output/figures_202107/willow_cover/mcmcarea_willowcov_TCxF_wcwnc.png", dpi = 300, width = 6.75, height = 3.75)
-# ggsave("./output/figures_202107/willow_cover/mcmcarea_willowcov_TCxF_wcwnc.pdf", width = 6.75, height = 3.75)
+# ggsave("./output/figures_202108/willow_cover_stats/mcmcarea_willowcov_TCxF_wcwnc.png", dpi = 300, width = 6.75, height = 3.75)
+# ggsave("./output/figures_202108/willow_cover_stats/mcmcarea_willowcov_TCxF_wcwnc.pdf", width = 6.75, height = 3.75)
 ```
 
 
@@ -1646,7 +1841,7 @@ plot.mcmcareas_cov.wcwnc.TCxFxB <- mcmc_areas(posteriors.cov.wcwnc.TCxFxB,
 
 plot.mcmcareas_cov.wcwnc.TCxFxB
 
-ggsave("./output/figures_202107/willow_cover/mcmcarea_willowcov_wcwnc_TCxFxB.png", dpi = 300, width = 6.75, height = 3.75)
+ggsave("./output/figures_202108/willow_cover_stats/mcmcarea_willowcov_wcwnc_TCxFxB.png", dpi = 300, width = 6.75, height = 3.75)
 
 ```
 
@@ -1707,8 +1902,8 @@ pp_check(stmod_cov.wc) +
   theme_minimal() +
   labs(caption = "WC: cover_allwillow ~ time_class * fenced + (1 | site_id)")
 
-ggsave("./output/figures_202107/willow_cover/ppc_willowcov_wc.png", dpi = 300, width = 4.75, height = 3.75)
-# ggsave("./output/figures_202107/willow_cover/ppc_willowcov_wc.pdf", width = 4.75, height = 3.75)
+ggsave("./output/figures_202108/willow_cover_stats/ppc_willowcov_wc.png", dpi = 300, width = 4.75, height = 3.75)
+# ggsave("./output/figures_202108/willow_cover_stats/ppc_willowcov_wc.pdf", width = 4.75, height = 3.75)
 
 ```
 ### Effect Description
@@ -1744,8 +1939,8 @@ p_direction(stmod_cov.wc) %>%
   labs(caption = "Willow cover, Core winter range") +
   scale_fill_manual(values = colfunc3(2))
 
-ggsave("./output/figures_202107/willow_cover/pd_willowht_wc.png", width = 6.75, height =3.75, dpi = 300)
-# ggsave("./output/figures_202107/willow_cover/pd_willowht_wc.pdf", width = 6.75, height =3.75)
+ggsave("./output/figures_202108/willow_cover_stats/pd_willowht_wc.png", width = 6.75, height =3.75, dpi = 300)
+# ggsave("./output/figures_202108/willow_cover_stats/pd_willowht_wc.pdf", width = 6.75, height =3.75)
 
 ```
 
@@ -1772,15 +1967,19 @@ Results are given on the the response scale.
 # library(emmeans)
 wc.cov.emm.TCxF <- emmeans(stmod_cov.wc, ~ time_class | fenced)
 
-pairs(wc.cov.emm.TCxF, reverse = TRUE, type="response") %>% 
-  plot() +
-  theme_minimal() +
-  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+# pairs(wc.cov.emm.TCxF, reverse = TRUE, type="response") %>% 
+#   plot() +
+#   theme_minimal() +
+#   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+#   labs(subtitle = "Point estimate displayed: median 
+# HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Willow Cover")
+
+emm.func.tc.x.fenced(stmod_cov.wc) +
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Willow Cover")
 
-ggsave("./output/figures_202107/willow_cover/emm_willowht_TCxF_wc.png", width = 6.75, height =3.75, dpi = 300)
-# ggsave("./output/figures_202107/willow_cover/emm_willowht_TCxF_wc.pdf", width = 6.75, height =3.75)
+ggsave("./output/figures_202108/willow_cover_stats/emm_willowht_TCxF_wc.png", width = 6.75, height =3.75, dpi = 300)
+# ggsave("./output/figures_202108/willow_cover_stats/emm_willowht_TCxF_wc.pdf", width = 6.75, height =3.75)
 
 # table of contrasts
 emmeans(stmod_cov.wc, ~ time_class | fenced) %>% 
@@ -1800,8 +1999,6 @@ emmeans(stmod_cov.wc, ~ time_class | fenced) %>%
 ```
 
 ## Willow Cover - Noncore Winter Range Macroplot Data
-
-
 ```{r}
 #### summary tables: time class and fenced
 cov.wnc %>% 
@@ -1853,8 +2050,8 @@ pp_check(stmod_cov.wnc) +
   theme_minimal() +
   labs(caption = "WNC: cover_allwillow ~ time_class * fenced + (1 | site_id)")
 
-ggsave("./output/figures_202107/willow_cover/ppc_willowcov_wc.png", dpi = 300, width = 4.75, height = 3.75)
-# ggsave("./output/figures_202107/willow_cover/ppc_willowcov_wc.pdf", width = 4.75, height = 3.75)
+ggsave("./output/figures_202108/willow_cover_stats/ppc_willowcov_wc.png", dpi = 300, width = 4.75, height = 3.75)
+# ggsave("./output/figures_202108/willow_cover_stats/ppc_willowcov_wc.pdf", width = 4.75, height = 3.75)
 
 ```
 
@@ -1890,8 +2087,8 @@ p_direction(stmod_cov.wnc) %>%
   labs(caption = "Willow cover, Nnoncore winter range") +
   scale_fill_manual(values = colfunc3(2))
 
-ggsave("./output/figures_202107/willow_cover/pd_willowht_wnc.png", width = 6.75, height =3.75, dpi = 300)
-# ggsave("./output/figures_202107/willow_cover/pd_willowht_wnc.pdf", width = 6.75, height =3.75)
+ggsave("./output/figures_202108/willow_cover_stats/pd_willowht_wnc.png", width = 6.75, height =3.75, dpi = 300)
+# ggsave("./output/figures_202108/willow_cover_stats/pd_willowht_wnc.pdf", width = 6.75, height =3.75)
 
 ```
 
@@ -1922,7 +2119,7 @@ pairs(wnc.cov.emm.TC, reverse = TRUE, type="response") %>%
   labs(subtitle = "Point estimate displayed: median 
 HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Noncore Winter Range, Willow Cover. Results are given on the response scale.")
 
-# ggsave("./output/figures_202107/willow_cover/emm_willowht_TCxF_wnc.png", width = 6.75, height =3.75, dpi = 300)
+# ggsave("./output/figures_202108/willow_cover_stats/emm_willowht_TCxF_wnc.png", width = 6.75, height =3.75, dpi = 300)
 
 # table of contrasts
 emmeans(stmod_cov.wnc, ~ time_class) %>% 
@@ -1941,6 +2138,130 @@ emmeans(stmod_cov.wnc, ~ time_class) %>%
 
 ```
 
+## Willow Cover - Kawuneeche Valley Macroplot Data
+
+```{r}
+#### summary tables: time class and fenced
+cov.wk %>% 
+  group_by(time_class, fenced) %>% 
+  summarytools::descr(cover_allwillow,stats = "common") %>% 
+  summarytools::tb() %>%
+  mutate_if(.predicate = is.numeric,.funs = round, digits = 2) %>% 
+  gt() %>% 
+  tab_header(title = "WNC macroplot data: willow cover")
+
+```
+
+### Modeling and Posterior Description
+
+```{r, cache=TRUE}
+#### Model
+## add to min and subtract from max to conform
+cov.wk <- cov.wk %>% 
+  mutate(cover_allwillow = cover_allwillow/100) %>% 
+  mutate(cover_allwillow = case_when(cover_allwillow == 1 ~ 0.999999,
+                                     cover_allwillow == 0 ~ 0.000001,
+                                     TRUE ~ cover_allwillow)) 
+  
+
+stmod_cov.wk <- stan_glmer(cover_allwillow ~ time_class*fenced + (1 | site_id), 
+                      data = cov.wk,
+                      family = mgcv::betar,
+                      # prior_aux = exponential(2),
+                      iter = 8000,
+                      seed = 1234)
+
+```
+
+**Prior summary**      
+```{r}
+prior_summary(stmod_cov.wk)
+```
+
+```{r, echo=FALSE, eval=FALSE}
+#### PP check plot
+# summary(stmod_cov.wc)
+# prior_summary(stmod_cov.wnc)
+
+pp_check(stmod_cov.wk) +
+  labs(x = "Value", y = "Density") +
+  theme_minimal() +
+  labs(caption = "WK: cover_allwillow ~ time_class * fenced + (1 | site_id)")
+
+ggsave("./output/figures_202108/willow_cover_stats/ppc_willowcov_wk.png", dpi = 300, width = 4.75, height = 3.75)
+
+```
+
+### Effect Description
+```{r}
+fun.sexit.gt(stmod_cov.wk$stanfit)
+
+fun.sexit.gt(stmod_cov.wk$stanfit) %>% 
+  tab_header(title = "Kawuneeche Valley", subtitle = "Willow Cover Posterior Description") %>% 
+  gt::gtsave(filename = "./output/tables/willow_cover/xposterior_willowht_wk.rtf")
+```
+
+```{r, echo=FALSE, eval=FALSE}
+#### Model posterior parameters to table
+fun.desc.post1.gt.rope(stmod_cov.wk$stanfit)
+```
+
+```{r, echo=FALSE, eval=FALSE}
+## save rtf
+fun.desc.post1.gt.rope(stmod_cov.wk$stanfit) %>%
+  tab_header(title = "KV", subtitle = "Willow Cover Posterior Description") %>% 
+  gt::gtsave(filename = "./output/tables/willow_cover/posterior_willowht_wk.rtf")
+
+```
+
+#### Probability of Direction  
+```{r}
+# Visualize the pd
+p_direction(stmod_cov.wk) %>% 
+  plot() +
+  theme_minimal() +
+  geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
+  labs(caption = "Willow cover, KV") +
+  scale_fill_manual(values = colfunc3(2))
+
+ggsave("./output/figures_202108/willow_cover_stats/pd_willowht_wk.png", width = 6.75, height =3.75, dpi = 300)
+
+```
+
+#### Region of Practical Equivalence (ROPE) 
+```{r}
+rope.cov.wk.gt <- rope(stmod_cov.wk$stanfit, ci=0.9) %>% 
+  gt() %>%
+  tab_header(title = "Percent in ROPE") %>% 
+  fmt_number(
+    columns = 5,
+    decimals = 2,
+    suffixing = TRUE
+  ) 
+
+rope.cov.wk.gt %>%
+  gt::gtsave(filename = "./output/tables/willow_cover/rope_willowcov_wk.rtf")
+```
+
+### Contrasts
+```{r}
+# library(emmeans)
+
+emm.func.tc.x.fenced(stmod_cov.wk) +
+  labs(subtitle = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Kawuneeche Valley, Willow Cover. Results are given on the response scale.")
+
+ggsave("./output/figures_202108/willow_cover_stats/emm_willowht_TCxF_wk.png", width = 6.75, height =3.75, dpi = 300)
+
+emm.func.tc.x.fenced(stmod_cov.wk) +
+  labs(caption = "Point estimate displayed: median 
+HPD interval probability: 0.95 \n Willow Cover. Results are given on the response scale.", title = "Kawuneeche Valley", x = "Estimate", y = "Contrast")
+
+ggsave("./output/figures_202108/willow_cover_stats/emm_willowht_TCxF_wk_alt.png", width = 5.75, height =5.75, dpi = 300)
+
+```
+
+## Wild Basin Comparisons
 ```{r, wbasin_ht, echo=FALSE, eval=FALSE}
 ## Wild basin
 # Wild Basin willow data survey 2018.csv
@@ -1954,9 +2275,6 @@ wbasin.loc <- wbasin %>%
   filter(!is.na(utm_e_nad83_end_point))
 
 ```
-
-## Wild Basin Comparisons
-
 
 ```{r}
 # read in data and preprocess for joining with EVMP data

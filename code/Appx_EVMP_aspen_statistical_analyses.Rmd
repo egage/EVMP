@@ -1,15 +1,18 @@
 ---
 title: "Appendix B. EVMP Aspen Statistical Analyses"
-author: ""
-date: ""
-output: 
-  html_document: 
+author: ''
+date: ''
+output:
+  word_document:
+    toc: yes
+    toc_depth: '2'
+  html_document:
     theme: journal
     toc: yes
     toc_depth: 2
     code_folding: hide
-editor_options: 
-  markdown: 
+editor_options:
+  markdown:
     wrap: 72
 bibliography: references.bib
 ---
@@ -235,18 +238,55 @@ Where:
 + $X$: The observed data
 + $y$: The outcomes
 + $P(\theta|y,X)$: Our view of the possible value of our model parameters after seeing the data
-+ $P(y|\theta,X)$: The likelihood of seeing the current outcome conditioned on the data we have and a specific parameter value
++ $P(y|\theta,X)$: The likelihood of seeing the current outcome conditioned on the data in hand and a specific parameter value
 + $P(\theta)$: Our view of the possible values of our model parameters before observing any actual data, i.e. the *prior*
 + $P(y)$: The unconditional probability of the outcome, i.e. the probability after considering all possible parameter.
-The objective is to estimate the posterior density of parameter $P(\theta|y,X)$, typically described in terms of a point estimate of the expected value of posterior density (e.g., the median of the distribution) and a measure of the variance. To solve for $P(\theta|y,X)$ analytically, the data likelihood $P(y|\theta,X)$, prior $P(\theta)$, and marginal likelihood of outcome $P(y)$ are needed, but because there is usually no closed-form analystical solution, Markov chain Monte Carlo methods are used to numerically solve the posterior density by directly generating random draws of parameters.
-The general steps in a Bayesian analysis followed included:
-*Specify a joint distribution for the outcome(s) and all the unknowns, which proportional to a posterior distribution of the unknowns conditional on the observed data    
-*Use Markov Chain Monte Carlo (MCMC) to draw from posterior distribution.    
-*Evaluation of model fit and revise the model as appropriate.  
 
-### Aspen count
+The objective is to estimate the posterior density of parameter $P(\theta|y,X)$, typically described in terms of a point estimate of the expected value of posterior density (e.g., the median of the distribution) and a measure of the variance. To solve for $P(\theta|y,X)$ analytically, the data likelihood $P(y|\theta,X)$, prior $P(\theta)$, and marginal likelihood of outcome $P(y)$ are needed, but because there is usually no closed-form analytic solution, Markov chain Monte Carlo (MCMC) methods are used to numerically solve the posterior density by directly generating random draws of parameters.  
+General steps in a Bayesian analysis include:
 
+*Specify a joint distribution for the outcome(s) and unknowns, which is proportional to a posterior distribution of the unknowns conditional on the observed data.  
+*Use Markov Chain Monte Carlo (MCMC) to draw from posterior distribution.  
+*Evaluation of model fit and revise the model as appropriate.   
 
+Bayesian models view a model parameter $\theta$ as a [*random variable*]. In contrast, frequentist models treat model parameters as unknown *constant*. Rather than estimating an unknown constant, Bayesian modeling focuses on an unknown distribution of parameter values.
+
+Bayesian analyses were fit separately for combined
+core and non-core winter range, core winter range (WC) and non-core
+winter range plots (WNC) with plots treated as random factors using the
+'stan_glmer' function in the rstanrm package [@goodrich2020][@brilleman2018]. 
+Bayesian estimation was performed via MCMC adding independent weakly informed priors specific to the data type being modeled. 
+
+# Likelihood
+
+If the outcome for an observation $y$ is assumed to follow a Poisson
+distribution (e.g., aspen stem count data), the likelihood for one observation can be written as:
+
+$$\tfrac{1}{y!} \lambda^y e^{-\lambda},$$
+
+where $\lambda = E(y | \mathbf{x}) = g^{-1}(\eta)$ and $\eta = \alpha +
+\mathbf{x}^\top \boldsymbol{\beta}$ is a linear predictor. For the Poisson 
+distribution it is also true that $\lambda = Var(y | \mathbf{x})$, i.e. the 
+mean and variance are both $\lambda$. The rate parameter $\lambda$ must be positive, so with a Poisson GLM, the _link_ function $g$ maps between the positive real numbers $\mathbb{R}^+$ (thesupport of $\lambda$) and the set of all real numbers $\mathbb{R}$. When applied to a linear predictor $\eta$ with values in $\mathbb{R}$, the inverse link
+function $g^{-1}(\eta)$ returns a positive real number.
+
+The standard link function for a Poisson GLM is the log link $g(x) = \ln{(x)}$. With the log link, the inverse link function is the exponential function and the likelihood for a single observation is:
+
+$$\frac{g^{-1}(\eta)^y}{y!} e^{-g^{-1}(\eta)} = 
+\frac{e^{\eta y}}{y!} e^{-e^\eta}.$$
+
+# Posterior
+
+With independent prior distributions, the joint posterior distribution for 
+$\alpha$ and $\boldsymbol{\beta}$ in the Poisson model is proportional to the
+product of the priors and the $N$ likelihood contributions:
+
+$$f\left(\alpha,\boldsymbol{\beta} | \mathbf{y},\mathbf{X}\right) \propto
+  f\left(\alpha\right) \times \prod_{k=1}^K f\left(\beta_k\right) \times
+  \prod_{i=1}^N {
+  \frac{g^{-1}(\eta_i)^{y_i}}{y_i!} e^{-g^{-1}(\eta_i)}}.$$
+  
+This is the posterior distribution drawn from when using MCMC.  
 The Probability of Direction (PD) was used to represent certainty
 associated with the most probable direction (positive or negative) of
 the effect (e.g., time class, fencing). The PD is correlated with the
@@ -260,8 +300,7 @@ The proportion of the 95% HDI credible interval falling within the
 ROPE was used as an index for an analog to frequentist "null-hypothesis"
 testing.
 
-
-
+### Aspen count
 
 ```{r}
 ## read in data
@@ -1500,6 +1539,7 @@ emmeans(stmod_stally2.acanc.lg, ~ time_class | fenced) %>%
 
 
 ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_acanc_lgsap.pdf", width = 4.5, height = 3.55) # save plot
+
 ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_acanc_lgsap.png", width = 4.5, height = 3.55) # save plot
 
 # table of contrasts. Results are given on the log (not the response) scale.

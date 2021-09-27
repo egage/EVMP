@@ -1,15 +1,18 @@
 ---
 title: "Appendix C. EVMP Upland Statistical Analyses"
-author: ""
-date: ""
-output: 
-  html_document: 
+author: ''
+date: ''
+output:
+  word_document:
+    toc: yes
+    toc_depth: '2'
+  html_document:
     theme: journal
     toc: yes
     toc_depth: 2
     code_folding: hide
-editor_options: 
-  markdown: 
+editor_options:
+  markdown:
     wrap: 72
 bibliography: references.bib
 ---
@@ -54,6 +57,7 @@ library(ggtext)
 library(summarytools)
 
 ```
+
 
 ```{r, palletes}
 # custom gradients and palettes
