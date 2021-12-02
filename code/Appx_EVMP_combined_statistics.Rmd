@@ -48,8 +48,16 @@ library(bayesplot)
 library(summarytools)
 ```
 
+
 ```{r, functions, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}
 ### Table functions
+
+fun.sexit.2plot <- function(model){
+  bayestestR::sexit(model, ci=0.9) %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric), round, 2))
+  }
+
 
 fun.sexit.gt <- function(model){
   bayestestR::sexit(model, ci=0.9) %>% 
@@ -138,16 +146,6 @@ plotF.emmip_FxTC_response <- function(model){
   # theme(legend.position = c(.15, .15))
 }
 
-
-
-# plot.emmip.smsap.acanc <- emmip(stmod_stally2.acanc.sm, fenced ~ time_class, type = "reponse",
-#   breaks = seq(0.50, 1, by = 0.10)) +
-#   theme_minimal() +
-#   scale_color_manual(values = colfunc3(2)) +
-#   labs(color="") +
-#   theme(legend.position = c(.15, .15))
-# 
-# plot.emmip.smsap.acanc
 
 ## describe posterior to DT
 desc.post1 <- function(model){
@@ -285,6 +283,25 @@ equivalent to the null value for practical purposes [@kruschke2018].
 The proportion of the 95% HDI credible interval falling within the
 ROPE was used as an index for an analog to frequentist "null-hypothesis"
 testing.
+
+
+# update below
+
+For anayses of aspen count data, entailing separate models for combined winter range, core and noncore winter range subsets of plots, a random effects model was used for inference:
+
+µi = exp(α + β1x1,i + β2x2,i + β3x3,i + γi) γi ∼ Normal(0, σ2)
+yi ∼ Poisson(µi)
+
+
+
+
+where yi is the count of aspen stems in the ith plot; x1,i is a indicator variable that equals one if the observation in plot i was from 2013 and zero otherwise; x2,i is an indicator variable that equals one if the observation in plot i was from 2018 and zero otherwise; x3 is an indicator variable that equals one if the fenced and zero otherwise. Separate models were developed with inclusion of burning as a factor. Otherwise, analyses included both burned and unburned plots.
+
+Interpreation of model coefficients: The exponentiated intercept (exp(α)) is the mean count
+of aspen in unfenced plots during the baseline year; exp(β1) is the multiplicative change in mean counts that occurred during the time interval between the baseline year and 2013; exp(β2) is the multiplicative change in mean counts that occurred during the time interval between the baseline year and 2018; and exp(β2) is the multiplicative change in mean counts that was caused by fencing. Not exponentiating the coefficients makes them more difficult to interpret: α is mean of the log of counts in open plots in the first year and the coefficients are the additive change in the log of counts attributable to the year class or fence treatment.
+Inferences were made on the difference between means. 
+
+So, for example, the mean of counts in year 2013 in the fenced plots could be computed as µˆfence, 2013  = exp(α + β1 + β3) and in unfenced plots as µˆopen, 2013  = exp(α + β1),  and a contrast showing the difference between the means is then µˆfence, 2013 − µˆopen, 2013.  Differences between year classes were computed similarly.
 
 
 ## Willow and Upland Data  
@@ -824,6 +841,16 @@ plot.emmip.smsap.acanc
 
 ```
 
+# mean plots
+```{r}
+# stmod_stally2.acanc.sm
+# posteriors.acanc.stcnt.sm
+fun.sexit.2plot(stmod_stally2.acanc.sm) %>%
+  mutate(across(.cols = 2:5, exp))
+  mutate(across(where(is.numeric), exp))
+  across(.cols = everything(), .fns = exp)
+```
+
 
 ### Short Saplings (<=1.5m Tall) - Core Winter Range (AC)
 ```{r}
@@ -861,7 +888,7 @@ posteriors.ac.stcnt.sm <- insight::get_parameters(stmod_stally2.ac.sm) %>%
   rename('2013:Fenced' = `time_class2013:fencedFenced`) %>%
   rename('2018:Fenced' = `time_class2018:fencedFenced`)
 
-# names(posteriors.ac.stcnt.sm)
+names(posteriors.ac.stcnt.sm)
 
 # tidy
 posteriors.ac.stcnt.sm.tidy <- posteriors.ac.stcnt.sm %>%
