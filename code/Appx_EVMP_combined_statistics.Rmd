@@ -46,9 +46,12 @@ library(shinystan)
 library(patchwork)
 library(bayesplot)
 library(summarytools)
+library(flextable)
+
 ```
 
 
+# asp funcs
 ```{r, functions, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}
 ### Table functions
 
@@ -67,14 +70,26 @@ fun.sexit.gt <- function(model){
   tab_header(title = "Effect Existence and Significance Testing") 
   }
 
-## model summary to DT
+## model summary to gt
 fun.model.summary <- function(model){
   summary(model,
           probs = c(0.1, 0.5, 0.9),
           digits = 1) %>%
   as_tibble(rownames = "Parameter") %>%
+  dplyr::filter(!grepl('site_id', Parameter)) %>% 
+  mutate(across(where(is.numeric),round,3)) %>%
+  gt()
+}
+
+## model summary to kable
+fun.model.summary.kable <- function(model){
+  summary(model,
+          probs = c(0.1, 0.5, 0.9),
+          digits = 1) %>%
+  as_tibble(rownames = "Parameter") %>%
+  dplyr::filter(!grepl('site_id', Parameter)) %>% 
   mutate(across(where(is.numeric),round,2)) %>%
-  datatable(caption = "Model summary")
+  kable(caption = "Model summary")
 }
 
 ## function to describe model output
@@ -84,38 +99,58 @@ fun.desc.post1 <- function(model){
   effects = "fixed",
   component = "all",
   ci_method = "hdi",
+  # priors = TRUE,
   ci=0.9,
   test = c("p_direction", "p_significance"),
   centrality = "all"
 ) %>% 
     as_tibble() %>% 
-    DT::datatable(caption = "Posterior description")
+    mutate(across(where(is.numeric),round,2)) %>%
+    kable()
+    # DT::datatable(caption = "Posterior description")
 }
 
-## gt
-# describe posterior
-fun.desc.post1.gt.rope <- function(model){
+fun.desc.post1.flextable <- function(model){
   describe_posterior(
   model,
   effects = "fixed",
   component = "all",
   ci_method = "hdi",
+  # priors = TRUE,
   ci=0.9,
-  test = c("p_direction", "p_significance","rope"),
-  #rope_range(c(-0.1,0.1)),
-  rope_range("default"),
-  rope_ci = 0.95,
-  centrality = "median"
+  test = c("p_direction", "p_significance"),
+  centrality = "all"
 ) %>% 
     as_tibble() %>% 
-    gt() %>% 
-    tab_header(title = "Posterior description") %>% 
-    fmt_number(
-    columns = 2:14,
-    decimals = 2,
-    suffixing = TRUE
-  )
+    mutate(across(where(is.numeric),round,2)) %>%
+    flextable()
+    # DT::datatable(caption = "Posterior description")
 }
+
+## gt
+# describe posterior
+# fun.desc.post1.gt.rope <- function(model){
+#   describe_posterior(
+#   model,
+#   effects = "fixed",
+#   component = "all",
+#   ci_method = "hdi",
+#   ci=0.9,
+#   test = c("p_direction", "p_significance","rope"),
+#   #rope_range(c(-0.1,0.1)),
+#   rope_range("default"),
+#   rope_ci = 0.95,
+#   centrality = "median"
+# ) %>% 
+#     as_tibble() %>% 
+#     gt() %>% 
+#     tab_header(title = "Posterior description") %>% 
+#     fmt_number(
+#     columns = 2:14,
+#     decimals = 2,
+#     suffixing = TRUE
+#   )
+# }
 
 #### Plotting functions
 fun.contrast.plot <- function(df){
@@ -146,6 +181,14 @@ plotF.emmip_FxTC_response <- function(model){
   # theme(legend.position = c(.15, .15))
 }
 
+plotF.emmip_TC_response <- function(model){
+  emmip(model, time_class, type = "response") +
+  theme_minimal() +
+  scale_color_manual(values = colfunc3(2)) +
+  labs(color="") +
+  theme(legend.position = "top")
+  # theme(legend.position = c(.15, .15))
+}
 
 ## describe posterior to DT
 desc.post1 <- function(model){
@@ -178,6 +221,140 @@ pal.7a <- colfunc1(7)
 
 # palette3 <- RColorBrewer::brewer.pal(6,"RdBu")
 # RColorBrewer::display.brewer.pal(6,"RdBu")
+
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}
+### Table functions
+
+
+# flextable as option??
+set_flextable_defaults(
+  font.size = 10, theme_fun = theme_vanilla,
+  padding = 6,
+  background.color = "#EFEFEF")
+# flextable(world_phones)
+
+## Functions for summarizing posterior distributions, creating tables with the gt
+fun.sexit.gt <- function(model){
+  bayestestR::sexit(model, ci=0.9) %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric), round, 2)) %>% 
+  gt() %>% 
+  tab_header(title = "Effect Existence and Significance Testing") }
+
+fun.sexit.kable <- function(model){
+  bayestestR::sexit(model, ci=0.9) %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric), round, 2)) %>% 
+  kable() }
+
+fun.sexit.flextable <- function(model){
+  bayestestR::sexit(model, ci=0.9) %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric), round, 2)) %>% 
+  flextable() }
+
+## original optimized for html
+fun.desc.post1.gt.rope <- function(model){
+  describe_posterior(
+  model,
+  effects = "fixed",
+  component = "all",
+  ci_method = "hdi",
+  ci=0.9,
+  test = c("p_direction", "p_significance","rope"),
+  #rope_range(c(-0.1,0.1)),
+  rope_range("default"),
+  rope_ci = 0.9,
+  centrality = "median") %>%
+  as_tibble() %>%
+  mutate(across(where(is.numeric), round, 1)) %>%
+  gt() %>%
+  tab_header(title = "Posterior description")
+}
+
+## b/c word desired
+fun.desc.post1.kable.rope <- function(model){
+  describe_posterior(
+  model,
+  effects = "fixed",
+  component = "all",
+  ci_method = "hdi",
+  ci=0.9,
+  test = c("p_direction", "p_significance","rope"),
+  #rope_range(c(-0.1,0.1)),
+  rope_range("default"),
+  rope_ci = 0.9,
+  centrality = "median") %>% 
+  as_tibble() %>% 
+  mutate(across(where(is.numeric), round, 1)) %>% 
+  kable()
+}
+
+
+```
+
+```{r}
+## custom ggplot emm
+
+emm.func.tc.x.fenced <- function(model){
+  emmeans(model, ~ time_class | fenced) %>% 
+  pairs(reverse = TRUE) %>% 
+  as_tibble() %>% 
+  ggplot() +
+  geom_linerange(aes(y=contrast, xmin=lower.HPD, xmax=upper.HPD), color="#babefa", size=2.5) +
+  geom_point(aes(x=estimate, y=contrast)) +
+  theme_minimal() +
+  geom_vline(xintercept = 0, lty="dashed", size=1) +
+  facet_wrap(~fenced, ncol=1)
+}
+
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}
+
+#### Plotting functions
+fun.contrast.plot <- function(df){
+  df %>% 
+  ggplot(aes(x = contrast)) +
+  geom_linerange(aes(ymin = lower.HPD, ymax = upper.HPD), color = "lightblue", size = 2) +
+  geom_point(aes(y = estimate), size = 2.5) +
+  theme_minimal() +
+  labs(caption = "Point estimate displayed: median 
+HPD interval probability: 0.95", x = "Estimate", y = "Estimate") +
+  coord_flip()
+}
+
+## ppcheck.plot
+ppc.plot <- function(model){
+  pp_check(model) +
+  labs(x = "Value", y = "Density") +
+  theme_minimal()
+}
+
+# session info: verbose
+package_versions <- function(packages=NULL, base=FALSE, sort=FALSE) {
+    #' Determine package versions.
+    #' 
+    #' @param packages Packages to query; if not specified (or \code{NULL}),
+    #' all currently attached packages are queried.
+    #' @param base If \code{TRUE}, include the base package (R version).
+    #' @param sort If \code{TRUE}, sort package names alphabetically. 
+    #' @return Data frame with package names and corresponding versions.
+    if (is.null(packages))
+        packages <- names(sessionInfo()$otherPkgs)
+    if (base)
+        packages <- c("base", packages)
+    if (sort)
+        packages <- sort(packages)
+    if (!is.null(packages)) {
+        tmp <- data.frame(sapply(sapply(packages, packageVersion, simplify=FALSE), as.character))
+        colnames(tmp) <- "version"
+        data.frame(package=rownames(tmp), version=tmp[1], row.names=NULL)
+    }
+}
+
 ```
 
 # Introduction
@@ -287,24 +464,24 @@ testing.
 
 # update below
 
-For anayses of aspen count data, entailing separate models for combined winter range, core and noncore winter range subsets of plots, a random effects model was used for inference:
+For analyses of aspen count data, entailing separate models for combined winter range, core and noncore winter range subsets of plots, a random effects model was used for inference:
 
-µi = exp(α + β1x1,i + β2x2,i + β3x3,i + γi) γi ∼ Normal(0, σ2)
-yi ∼ Poisson(µi)
+\mu_i\ =\ \exp\left(\alpha+\beta_1x_{1,i}\ +\beta_2x_{2,i}\ +\ \beta_3x_{3,i}\ +\ \beta_4x_{4,i}\ +\ \beta_5x_{5,i}\ +\ \gamma_i\right)
 
+\gamma_i\ \sim\ Normal\ \left(0\ ,\ \sigma^2\right)
 
-
+y_i\ \sim\ Poisson\left(\mu_i\right)
 
 where yi is the count of aspen stems in the ith plot; x1,i is a indicator variable that equals one if the observation in plot i was from 2013 and zero otherwise; x2,i is an indicator variable that equals one if the observation in plot i was from 2018 and zero otherwise; x3 is an indicator variable that equals one if the fenced and zero otherwise. Separate models were developed with inclusion of burning as a factor. Otherwise, analyses included both burned and unburned plots.
 
-Interpreation of model coefficients: The exponentiated intercept (exp(α)) is the mean count
-of aspen in unfenced plots during the baseline year; exp(β1) is the multiplicative change in mean counts that occurred during the time interval between the baseline year and 2013; exp(β2) is the multiplicative change in mean counts that occurred during the time interval between the baseline year and 2018; and exp(β2) is the multiplicative change in mean counts that was caused by fencing. Not exponentiating the coefficients makes them more difficult to interpret: α is mean of the log of counts in open plots in the first year and the coefficients are the additive change in the log of counts attributable to the year class or fence treatment.
+Interpretation of model coefficients: The intercept (exp(α)) represents the mean count of aspen in unfenced plots during the baseline year; exp(β1) is the multiplicative change in mean counts that occurred during the time interval between the baseline year and 2013; exp(β2) is the multiplicative change in mean counts that occurred during the time interval between the baseline year and 2018; and exp(β2) is the multiplicative change in mean counts that was caused by fencing. 
+
 Inferences were made on the difference between means. 
 
 So, for example, the mean of counts in year 2013 in the fenced plots could be computed as µˆfence, 2013  = exp(α + β1 + β3) and in unfenced plots as µˆopen, 2013  = exp(α + β1),  and a contrast showing the difference between the means is then µˆfence, 2013 − µˆopen, 2013.  Differences between year classes were computed similarly.
 
 
-## Willow and Upland Data  
+## Willow plot and Upland plot data  
 
 ### Height
 
@@ -677,6 +854,33 @@ stmod_stally2.acanc.sm <- stan_glmer(stem_tally ~ time_class * fenced + (1 | sit
 
 ```
 
+```{r, eval=FALSE}
+# additive model, main factors only
+stmod_stally0.acanc.sm <- stan_glmer(stem_tally ~ time_class + fenced + (1 | site_id), data = asp.sm.acanc,
+                      family= poisson,
+                      iter = 8000,
+                      seed = 1234
+)
+
+# loo
+loo1 <- loo(stmod_stally2.acanc.sm,
+            k_threshold = 0.7) 
+loo2 <- loo(stmod_stally0.acanc.sm,
+            k_threshold = 0.7) 
+comp <- loo_compare(loo2, loo1)
+
+## create table of comparisons
+modcomp_ac <- print(comp, simplify = TRUE, digits = 2)
+
+modcomp_ac %>% 
+  gt()
+
+```
+
+
+# up
+
+
 **Prior summary**: stem_tally ~ time_class * fenced + (1 | site_id)  
 ```{r}
 prior_summary(stmod_stally2.acanc.sm)
@@ -684,7 +888,25 @@ prior_summary(stmod_stally2.acanc.sm)
 
 ```{r}
 ## model summary
-fun.model.summary(stmod_stally2.acanc.sm)
+# fun.model.summary(stmod_stally2.acanc.sm)
+# fun.model.summary.kable(stmod_stally2.acanc.sm)
+# fun.desc.post1(stmod_stally2.acanc.sm)
+fun.desc.post1.flextable(stmod_stally2.acanc.sm)
+```
+
+```{r}
+#posterior interval
+
+```
+
+# kable
+```{r}
+fun.desc.post1(stmod_stally2.acanc.sm)
+```
+
+# flex table
+```{r}
+fun.desc.post1.flextable(stmod_stally2.acanc.sm)
 ```
 
 ```{r}
@@ -791,6 +1013,8 @@ rope.stemcnt.acanc.sm %>%
 ```
 
 #### Contrasts
+
+# see contrast below
 ```{r}
 #### Contrasts
 # EMMs for later factor levels are subtracted from those for earlier levels; if you want the comparisons to go in the other direction, use pairs.
@@ -798,13 +1022,17 @@ rope.stemcnt.acanc.sm %>%
 # library(emmeans)
 emmeans(stmod_stally2.acanc.sm, ~ time_class | fenced) %>% 
   pairs(reverse = FALSE) %>% 
-  # plot(type = "response") +
-  plot() +
+  as_tibble() 
+
+emmeans(stmod_stally2.acanc.sm, ~ time_class | fenced) %>% 
+  pairs(reverse = FALSE) %>%
+  plot(type = "response") +
+  # plot() +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   # labs(title= "Core winter range", caption = "Point estimate displayed: median 
 # HPD interval probability: 0.95, Results on log scale", x = "Estimate", y = "Contrast")
-  labs(subtitle = "Point estimate displayed: median HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range, Aspen Stem Count, Small Saplings. Results are given on the log scale") 
+  labs(subtitle = "Point estimate displayed: median HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Combined Winter Range, Aspen Stem Count, Small Saplings. Results are given on the response scale") 
 
 ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_acanc_smsap.pdf", width = 4.5, height = 3.55) # save plot
 ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_acanc_smsap.png", width = 4.5, height = 3.55) # save plot
@@ -827,8 +1055,23 @@ emmeans(stmod_stally2.acanc.sm, ~ time_class | fenced) %>%
 
 # EMM summaries with type = "response", the tests and confidence intervals are done before back-transforming. The ratios estimated here are actually ratios of geometric means. In general, a model with a log response is in fact a model for relative effects of any of its linear predictors, and this back-transformation to ratios goes hand-in-hand with that.
 
+
+
 ```
 
+```{r, eval=FALSE}
+emmeans(stmod_stally2.acanc.sm, ~ time_class + fenced) %>%
+  # pairs(reverse = FALSE, type="response") %>%
+  pairs(reverse = FALSE) %>%
+  as_tibble() %>%
+  #mutate(across(where(is.numeric),round, 2)) %>%
+  mutate(across(where(is.numeric),exp)) %>%
+  mutate(across(where(is.numeric),round, 2)) %>%
+  gt() %>%
+  tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the log scale.")
+```
+
+# emmip
 ```{r}
 plot.emmip.smsap.acanc <- emmip(stmod_stally2.acanc.sm, fenced ~ time_class, type = "reponse",
   breaks = seq(0.50, 1, by = 0.10)) +
@@ -841,15 +1084,48 @@ plot.emmip.smsap.acanc
 
 ```
 
-# mean plots
+#### Mean plots
 ```{r}
+
+# So, for example, the mean of counts in year 2013 in the fenced plots could be computed as µˆfence, 2013  = exp(α + β1 + β3) and in unfenced plots as µˆopen, 2013  = exp(α + β1),  and a contrast showing the difference between the means is then µˆfence, 2013 − µˆopen, 2013.  Differences between year classes were computed similarly.
+
 # stmod_stally2.acanc.sm
 # posteriors.acanc.stcnt.sm
 fun.sexit.2plot(stmod_stally2.acanc.sm) %>%
-  mutate(across(.cols = 2:5, exp))
-  mutate(across(where(is.numeric), exp))
-  across(.cols = everything(), .fns = exp)
+  mutate(across(.cols = 2:5, exp)) %>% 
+  gt()
+
+mean.wide <- fun.sexit.2plot(stmod_stally2.acanc.sm) %>%
+  select(c(Parameter, Median)) %>% 
+  pivot_wider(names_from = Parameter, names_sep = ".", values_from = Median) %>% 
+  # mutate(across(.cols = where(is.numeric), exp)) %>%
+  clean_names()
+
+fun.sexit.2plot(stmod_stally2.acanc.sm) %>%
+  select(c(Parameter, Median, CI, CI_low, CI_high)) %>% 
+  pivot_wider(names_from = Parameter, names_sep = ".", values_from = c(Median, CI, CI_low, CI_high)) %>% 
+  # mutate(across(.cols = where(is.numeric), exp)) %>%
+  clean_names() %>% 
+  pivot_longer(cols = !contains('intercept'), names_to = "parameter", values_to = "beta_transformed") %>% 
+  mutate(int_plus_beta_transformed = median_intercept + beta_transformed) %>%
+  mutate(int_plus_beta_backtransformed = exp(int_plus_beta_transformed)) %>%
+  mutate(int_backtransformed = exp(median_intercept)) %>% 
+  gt()
+
+#
+mean.wide %>% #glimpse()
+  pivot_longer(cols = 2:6, names_to = "parameter", values_to = "mean_transformed") %>% 
+  mutate(int_plus_beta_transformed = intercept + mean_transformed) %>%
+  mutate(Int_plus_beta = exp(int_plus_beta_transformed)) %>%
+  mutate(int_backtransformed = exp(intercept)) %>% 
+  gt()
+
+# Example, the mean of counts in year 2013 in the fenced plots could be computed as µˆfence, 2013  = exp(α + β1 + β3) and in unfenced plots as µˆopen, 2013  = exp(α + β1),  and a contrast showing the difference between the means is then µˆfence, 2013 − µˆopen, 2013.  Differences between year classes were computed similarly.
+
 ```
+
+**Calculation of means**
+
 
 
 ### Short Saplings (<=1.5m Tall) - Core Winter Range (AC)
@@ -1663,11 +1939,20 @@ emmeans(stmod_stally2.acanc.lg, ~ time_class | fenced) %>%
 
 ```
 
-```{r, echo=FALSE, eval=FALSE}
-pl.emmip.lg <- plotF.emmip_FxTC_response(stmod_stally2.acanc.lg)
-pl.emmip.sm <- plotF.emmip_FxTC_response(stmod_stally2.acanc.sm)
-pl.emmip.sm + pl.emmip.lg
+# emmip
+```{r, echo=TRUE, eval=TRUE}
 
+pl.emmip.sm <- plotF.emmip_FxTC_response(stmod_stally2.acanc.sm) +
+  labs(title="Short saplings") +
+  theme(legend.position = "none")
+
+pl.emmip.lg <- plotF.emmip_FxTC_response(stmod_stally2.acanc.lg) +
+  labs(title="Tall saplings") +
+  theme(legend.position = c(.15, .85))
+pl.emmip.sm + pl.emmip.lg +
+  plot_annotation(tag_levels = 'A', title = "Combined winter range", caption = "Panel A: large saplings; panel B: small saplings")
+
+ggsave("./output/figures_exported/emmip_TCxF_acanc_lg_sm_sap.png", width = 6.5, height = 3.55) # save plot
 ```
 
 
@@ -1690,12 +1975,14 @@ stmod_stally2.ac.lg <- stan_glmer(stem_tally ~ time_class * fenced + (1 | site_i
 
 **Prior summary**: stem_tally ~ time_class * fenced + (1 | site_id)  
 ```{r}
-prior_summary(stmod_stally2.ac.lg)
+prior_summary(stmod_stally2.ac.lg) 
+
 ```
 
 ```{r}
 ## model summary
 fun.model.summary(stmod_stally2.ac.lg)
+fun.desc.post1.flextable(stmod_stally2.ac.lg)
 ```
 
 ```{r}
@@ -1852,6 +2139,28 @@ emmeans(stmod_stally2.ac.lg, ~ time_class | fenced) %>%
 
 ```
 
+# emmip
+```{r, echo=TRUE, eval=TRUE}
+# pl.emmip.ac.lg <- plotF.emmip_FxTC_response(stmod_stally2.ac.lg) 
+# pl.emmip.ac.sm <- plotF.emmip_FxTC_response(stmod_stally2.ac.sm)
+# pl.emmip.ac.sm + pl.emmip.ac.lg +
+#   plot_annotation(tag_levels = 'A', title = "Core winter range", caption = "Panel A: large saplings; panel B: small saplings")
+
+
+pl.emmip.ac.sm <- plotF.emmip_FxTC_response(stmod_stally2.ac.sm) +
+  labs(title="Short saplings") +
+  theme(legend.position = "none")
+
+pl.emmip.ac.lg <- plotF.emmip_FxTC_response(stmod_stally2.ac.lg) +
+  labs(title="Tall saplings") +
+  theme(legend.position = c(.15, .85))
+
+pl.emmip.ac.sm + pl.emmip.ac.lg +
+  plot_annotation(tag_levels = 'A', title = "Core winter range", caption = "Panel A: large saplings; panel B: small saplings")
+
+ggsave("./output/figures_exported/emmip_TCxF_ac_lg_sm_sap.png", width = 6.5, height = 3.55) # save plot
+```
+
 ### Tall Saplings (1.5-2.5m Tall) - Noncore Winter Range (ANC)
 
 ```{r}
@@ -1991,8 +2300,8 @@ rope.stemcnt.anc.lg %>%
 # library(emmeans)
 emmeans(stmod_stally2.anc.lg, ~ time_class) %>% 
   pairs(reverse = FALSE) %>% 
-  # plot(type = "response") +
-  plot() +
+  plot(type = "response") +
+  # plot() +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   # labs(title= "Core winter range", caption = "Point estimate displayed: median 
@@ -2001,6 +2310,7 @@ emmeans(stmod_stally2.anc.lg, ~ time_class) %>%
 
 
 ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_anc_lgsap.pdf", width = 4.5, height = 3.55) # save plot
+
 ggsave("./output/figures_exported/aspen_stem_count/emm_stemcnt_TCxF_anc_lgsap.png", width = 4.5, height = 3.55) # save plot
 
 # table of contrasts. Results are given on the log (not the response) scale.
@@ -2020,6 +2330,36 @@ emmeans(stmod_stally2.anc.lg, ~ time_class) %>%
   tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the response scale.")
 
 ```
+
+
+```{r, echo=TRUE, eval=FALSE}
+## emmip
+## fails b/c no groups to contrast
+pl.emmip.anc.sm <- plotF.emmip_TC_response(stmod_stally2.anc.sm) +
+  labs(title="Short saplings") +
+  theme(legend.position = "none")
+
+pl.emmip.anc.lg <- plotF.emmip_TC_response(stmod_stally2.anc.lg) +
+  labs(title="Tall saplings") +
+  theme(legend.position = c(.15, .85))
+
+pl.emmip.anc.sm + pl.emmip.ac.lg +
+  plot_annotation(tag_levels = 'A', title = "Core winter range", caption = "Panel A: large saplings; panel B: small saplings")
+
+# emmip XXXX
+
+# emmip(stmod_stally2.anc.lg)
+# plotF.emmip_TC_response <- function(model){
+#   emmip(model, time_class, type = "response") +
+#   theme_minimal() +
+#   scale_color_manual(values = colfunc3(2)) +
+#   labs(color="") +
+#   theme(legend.position = "top")
+#   # theme(legend.position = c(.15, .15))
+# }
+
+```
+
 
 ### Tall Saplings (1.5-2.5m Tall) - Kawuneeche Valley (AK)
 
@@ -2122,7 +2462,8 @@ ggsave("./output/figures_exported/asp_tall_sapling_panel_plot.pdf", width = 8.75
 
 #### Effect Description
 ```{r}
-fun.sexit.gt(stmod_stally2.ak.lg)
+# fun.sexit.gt(stmod_stally2.ak.lg)
+fun.sexit.flextable(stmod_stally2.ak.lg)
 
 fun.sexit.gt(stmod_stally2.ak.lg) %>%
  tab_header(title = "Aspen Count Posterior Description", subtitle = "Tall Saplings, Kawuneeche Valley") %>%
@@ -2222,17 +2563,19 @@ emmeans(stmod_stally2.ak.lg, ~ time_class) %>%
 emmeans(stmod_stally2.ak.lg, ~ time_class) %>% 
   pairs(reverse = FALSE, type="response") %>% 
   as_tibble() %>% 
-  mutate(across(where(is.numeric),round, 2)) %>% 
+  # mutate(across(where(is.numeric),round, 2)) %>% 
   gt() %>% 
   tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the response scale.")
 
 ```
 
+
 #### Effects of Burning on Tall Saplings (1.5-2.5m Tall) - Combined Winter Range (AC+ANC) 
 ```{r}
-asp.lg.acanc %>% 
+asp.lg.acanc %>% #names() 
   filter(range_type == "core winter range") %>% 
   filter(time_class == "BL" | time_class == "2013" | time_class == "2018") %>%
+  dplyr::select(-c(live_dead, utm_e_nad83, utm_n_nad83, site_number)) %>% 
   group_by(time_class, range_type, burned, fenced) %>% 
   summarytools::descr(stats = "fivenum") %>%
   summarytools::tb() %>% 
@@ -2252,7 +2595,7 @@ stmod_lgsap_TCxFxB_acanc <- stan_glmer(stem_tally ~ fenced * time_class * burned
 ```
 
 ```{r}
-fun.sexit.gt(stmod_lgsap_TCxFxB_acanc)
+fun.sexit.flextable(stmod_lgsap_TCxFxB_acanc)
 
 fun.sexit.gt(stmod_lgsap_TCxFxB_acanc) %>%
  tab_header(title = "Aspen Count Posterior Description", subtitle = "Combined Winter Range, Tall Saplings") %>%
@@ -2389,7 +2732,7 @@ mcmc_areas(posteriors.acanc.stcnt,
 
 #### Effect Description
 ```{r}
-fun.sexit.gt(stmod_stally2.acanc)
+fun.sexit.flextable(stmod_stally2.acanc)
 
 fun.sexit.gt(stmod_stally2.acanc) %>%
  tab_header(title = "Aspen Count Posterior Description", subtitle = "Core Winter Range") %>%
@@ -2593,7 +2936,7 @@ mcmc_areas(stmod_stally2,
 
 #### Effect Description
 ```{r}
-fun.sexit.gt(stmod_stally2)
+fun.sexit.flextable(stmod_stally2)
 
 fun.sexit.gt(stmod_stally2) %>%
  tab_header(title = "Aspen Count Posterior Description", subtitle = "Core Winter Range") %>%
@@ -2722,7 +3065,7 @@ stmod_stally_TCxFxB_ac <- stan_glmer(stem_tally ~ fenced * time_class * burned +
 ```
 
 ```{r}
-fun.sexit.gt(stmod_stally_TCxFxB_ac)
+fun.sexit.flextable(stmod_stally_TCxFxB_ac)
 
 fun.sexit.gt(stmod_stally_TCxFxB_ac) %>%
  tab_header(title = "Aspen Count Posterior Description", subtitle = "Core Winter Range") %>%
@@ -2733,8 +3076,13 @@ fun.sexit.gt(stmod_stally_TCxFxB_ac) %>%
 
 ```{r, eval=FALSE}
 prior_summary(stmod_stally_TCxFxB_ac)
+
+```
+
+```{r}
 pp_check(stmod_stally_TCxFxB_ac)
 ```
+
 
 ```{r}
 # Visualize the pd
@@ -2853,7 +3201,7 @@ mcmc_areas(stmod_anc_stally1,
 
 #### Effect Description
 ```{r}
-fun.sexit.gt(stmod_anc_stally1)
+fun.sexit.flextable(stmod_anc_stally1)
 
 fun.sexit.gt(stmod_anc_stally1) %>%
  tab_header(title = "Aspen Count Posterior Description", subtitle = "Noncore Winter Range") %>%
@@ -3044,7 +3392,7 @@ mcmc_areas(stmod_ak_stally1,
 
 #### Effect Description  
 ```{r}
-fun.sexit.gt(stmod_ak_stally1)
+fun.sexit.flextable(stmod_ak_stally1)
 
 fun.sexit.gt(stmod_ak_stally1) %>%
   tab_header(title = "Aspen Count Posterior Description", subtitle = "Kawuneeche Valley") %>%
@@ -3148,131 +3496,6 @@ HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Nonc
 ```
 
 ## Willow Macroplot Data
-
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}
-### Table functions
-## function to describe model out
-fun.desc.post1 <- function(model){
-  describe_posterior(
-  model,
-  effects = "fixed",
-  component = "all",
-  ci_method = "hdi",
-  test = c("p_direction", "p_significance"),
-  centrality = "all"
-) %>% 
-    as_tibble() %>% 
-    DT::datatable(caption = "Posterior description")
-}
-
-## Functions for summarizing posterior distributions, creating tables with the gt
-fun.sexit.gt <- function(model){
-  bayestestR::sexit(model, ci=0.9) %>% 
-  as_tibble() %>% 
-  mutate(across(where(is.numeric), round, 2)) %>% 
-  gt() %>% 
-  tab_header(title = "Effect Existence and Significance Testing") }
-
-fun.desc.post1.gt.rope <- function(model){
-  describe_posterior(
-  model,
-  effects = "fixed",
-  component = "all",
-  ci_method = "hdi",
-  ci=0.9,
-  test = c("p_direction", "p_significance","rope"),
-  #rope_range(c(-0.1,0.1)),
-  rope_range("default"),
-  rope_ci = 0.9,
-  centrality = "median") %>% 
-  as_tibble() %>% 
-  mutate(across(where(is.numeric), round, 1)) %>% 
-  gt() %>% 
-  tab_header(title = "Posterior description")
-}
-```
-
-```{r}
-## custom ggplot emm
-
-emm.func.tc.x.fenced <- function(model){
-  emmeans(model, ~ time_class | fenced) %>% 
-  pairs(reverse = TRUE) %>% 
-  as_tibble() %>% 
-  ggplot() +
-  geom_linerange(aes(y=contrast, xmin=lower.HPD, xmax=upper.HPD), color="#babefa", size=2.5) +
-  geom_point(aes(x=estimate, y=contrast)) +
-  theme_minimal() +
-  geom_vline(xintercept = 0, lty="dashed", size=1) +
-  facet_wrap(~fenced, ncol=1)
-}
-
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE, eval=TRUE}
-
-#### Plotting functions
-fun.contrast.plot <- function(df){
-  df %>% 
-  ggplot(aes(x = contrast)) +
-  geom_linerange(aes(ymin = lower.HPD, ymax = upper.HPD), color = "lightblue", size = 2) +
-  geom_point(aes(y = estimate), size = 2.5) +
-  theme_minimal() +
-  labs(caption = "Point estimate displayed: median 
-HPD interval probability: 0.95", x = "Estimate", y = "Estimate") +
-  coord_flip()
-}
-
-## ppcheck.plot
-ppc.plot <- function(model){
-  pp_check(model) +
-  labs(x = "Value", y = "Density") +
-  theme_minimal()
-}
-
-# session info: verbose
-package_versions <- function(packages=NULL, base=FALSE, sort=FALSE) {
-    #' Determine package versions.
-    #' 
-    #' @param packages Packages to query; if not specified (or \code{NULL}),
-    #' all currently attached packages are queried.
-    #' @param base If \code{TRUE}, include the base package (R version).
-    #' @param sort If \code{TRUE}, sort package names alphabetically. 
-    #' @return Data frame with package names and corresponding versions.
-    if (is.null(packages))
-        packages <- names(sessionInfo()$otherPkgs)
-    if (base)
-        packages <- c("base", packages)
-    if (sort)
-        packages <- sort(packages)
-    if (!is.null(packages)) {
-        tmp <- data.frame(sapply(sapply(packages, packageVersion, simplify=FALSE), as.character))
-        colnames(tmp) <- "version"
-        data.frame(package=rownames(tmp), version=tmp[1], row.names=NULL)
-    }
-}
-
-```
-
-```{r}
-# custom gradients and palettes
-dbhclass.gradient5 <- c("#26185F", "#0095AF", "#9ADCBB", "#FCFFDD", "grey50")
-
-colfunc1<-colorRampPalette(c("#26185F","#0095AF","#9ADCBB", "#FCFFDD"))
-colfunc2<-colorRampPalette(c("#0095AF","#9ADCBB", "#FCFFDD"))
-colfunc3<-colorRampPalette(c("#0095AF","#9ADCBB"))
-colfunc3_RdBu <- colorRampPalette(c("#EF8A62", "#FDDBC7", "#D1E5F0", "#67A9CF"))
-
-# plot(rep(1,50),col=(colfunc1(50)), pch=19,cex=2)
-# plot(rep(1,5),col=(colfunc1(5)), pch=19,cex=2)
-pal.5a <- colfunc1(5)
-pal.7a <- colfunc1(7)
-
-# palette3 <- RColorBrewer::brewer.pal(6,"RdBu")
-# RColorBrewer::display.brewer.pal(6,"RdBu")
-```
-
 
 ```{r}
 #### Data import and munging
@@ -3385,6 +3608,7 @@ ggsave("./output/figures_202108/willow_height_stats/hist_willowht_TC_wcwnc.png",
 
 ```
 
+# ----- height
 #### Modeling and Posterior Description
 ```{r, cache=TRUE}
 ## run with gamma
@@ -3430,7 +3654,7 @@ posteriors.wc.wnc.ht.tidy <- posteriors.wc.wnc.ht %>%
 #### Effect Description
 ```{r}
 # use function defined above
-fun.sexit.gt(wc.wnc.stmod_TCxF)
+fun.sexit.flextable(wc.wnc.stmod_TCxF)
 
 ## save as RTF
 fun.sexit.gt(wc.wnc.stmod_TCxF) %>%
@@ -3626,7 +3850,7 @@ ggsave("./output/figures_202108/willow_cover_stats/mcmcarea_wilwht_TCxFxB_wcwnc.
 
 ```{r}
 #### Effect Description
-fun.sexit.gt(stmod_ht.wc.wnc.TCxFxB$stanfit)
+fun.sexit.flextable(stmod_ht.wc.wnc.TCxFxB$stanfit)
 ```
 
 ```{r}
@@ -3635,6 +3859,12 @@ wcwnc.emm.TCxFxB <- emmeans(stmod_ht.wc.wnc.TCxFxB, ~ time_class | fenced | burn
 # wcwnc.emm.TCxFxB <- pairs(wcwnc.emm.TCxFxB, reverse = TRUE)
 
 wcwnc.emm.TCxFxB
+
+emmeans(stmod_ht.wc.wnc.TCxFxB, ~ time_class | fenced | burned) %>% 
+  pairs(reverse = TRUE,type='response') %>% 
+  as_tibble() %>% 
+  flextable()
+
 
 emmeans(stmod_ht.wc.wnc.TCxFxB, ~ time_class | fenced | burned) %>% 
   pairs(reverse = TRUE) %>% 
@@ -3772,7 +4002,7 @@ ppc.plot(stmod_ht2) +
 
 #### Effect Description
 ```{r}
-fun.sexit.gt(stmod_ht2)
+fun.sexit.flextable(stmod_ht2)
 
 ## save as RTF
 fun.sexit.gt(stmod_ht2) %>% 
@@ -3981,7 +4211,7 @@ ggsave("./output/figures_202108/willow_height_stats/ppc_willowht_wnc.png", dpi =
 #### Effect Description  
 ```{r}
 # use function defined above
-fun.sexit.gt(nc.stmod_ht1)
+fun.sexit.flextable(nc.stmod_ht1)
 
 ## save as RTF
 fun.sexit.gt(nc.stmod_ht1) %>% 
@@ -4278,7 +4508,7 @@ ggsave("./output/figures_202108/willow_height_stats/ppc_willowht_wk.png", dpi = 
 #### Effect Description
 ```{r}
 # use function defined above
-fun.sexit.gt(stmod_ht_wk_TCxF) 
+fun.sexit.flextable(stmod_ht_wk_TCxF) 
 
 fun.sexit.gt(stmod_ht_wk_TCxF) %>% 
   tab_header(title = "Kawuneeche Valley", subtitle = "Willow Height Posterior Description") %>% 
@@ -4435,6 +4665,7 @@ plot.mcmcareas_ht.wk
 ggsave("./output/figures_202108/willow_height_stats/mcmcarea_willowht_TC_wk.png", dpi = 300, width = 6.75, height = 3.75)
 ```
 
+# ---- COVER
 ### Willow Cover - Combined Winter Range Macroplot Data
 ```{r}
 # read in data
@@ -4475,6 +4706,18 @@ canopy.all.willow.sum <- canopy.all.willow.sum %>%
 ```
 
 ```{r}
+## check factor levels
+# levels(canopy.all.willow.sum$fenced)
+# levels(canopy.all.willow.sum$burned)
+levels(canopy.all.willow.sum$time_class)
+
+# relevel
+canopy.all.willow.sum <- canopy.all.willow.sum %>% 
+  mutate(fenced = fct_relevel(fenced, "Fenced", after = 1))
+
+canopy.all.willow.sum %>% 
+  mutate(fenced = fct_relevel(fenced, "Fenced", after = 1))
+
 ### create subsets of data for modeling
 # pull out WK, note different years of data
 cov.wk <- canopy.all.willow.sum %>% 
@@ -4624,7 +4867,7 @@ posteriors.cov.wcwnc <- insight::get_parameters(stmod_cov.wc.wnc)
 
 #### Effect Description
 ```{r}
-fun.sexit.gt(stmod_cov.wc.wnc$stanfit)
+fun.sexit.flextable(stmod_cov.wc.wnc$stanfit)
 
 fun.sexit.gt(stmod_cov.wc.wnc$stanfit) %>%
   tab_header(title = "Combined Core and Noncore Winter Range", subtitle = "Willow Cover Posterior Description") %>% 
@@ -4737,6 +4980,11 @@ emmeans(stmod_cov.wc.wnc, ~ time_class | fenced) %>%
 
 
 #### Effects of Burning - Combined Range
+```{r, eval=FALSE}
+levels(cov.wc.wnc$time_class)
+levels(cov.wc.wnc$burned)
+levels(cov.wc.wnc$fenced)
+```
 
 ```{r, cache=TRUE, eval=TRUE}
 #### Fenced and burned
@@ -4772,7 +5020,7 @@ posteriors.cov.wcwnc.TCxFxB <- insight::get_parameters(stmod_cov.wc.wnc.TCxFxB)
 
 ```{r}
 #### Effect Description
-fun.sexit.gt(stmod_cov.wc.wnc.TCxFxB$stanfit)
+fun.sexit.flextable(stmod_cov.wc.wnc.TCxFxB$stanfit)
 ```
 
 
@@ -4855,7 +5103,7 @@ ggsave("./output/figures_202108/willow_cover_stats/ppc_willowcov_wc.png", dpi = 
 #### Effect Description
 ```{r}
 
-fun.sexit.gt(stmod_cov.wc$stanfit)
+fun.sexit.flextable(stmod_cov.wc$stanfit)
 
 fun.sexit.gt(stmod_cov.wc$stanfit) %>%
   tab_header(title = "Core Winter Range", subtitle = "Willow Cover Posterior Description") %>% 
@@ -5003,7 +5251,7 @@ ggsave("./output/figures_202108/willow_cover_stats/ppc_willowcov_wc.png", dpi = 
 
 #### Effect Description
 ```{r}
-fun.sexit.gt(stmod_cov.wnc$stanfit)
+fun.sexit.flextable(stmod_cov.wnc$stanfit)
 
 fun.sexit.gt(stmod_cov.wnc$stanfit) %>% 
   tab_header(title = "Noncore Winter Range", subtitle = "Willow Cover Posterior Description") %>% 
@@ -5140,7 +5388,7 @@ ggsave("./output/figures_202108/willow_cover_stats/ppc_willowcov_wk.png", dpi = 
 
 #### Effect Description
 ```{r}
-fun.sexit.gt(stmod_cov.wk$stanfit)
+fun.sexit.flextable(stmod_cov.wk$stanfit)
 
 fun.sexit.gt(stmod_cov.wk$stanfit) %>% 
   tab_header(title = "Kawuneeche Valley", subtitle = "Willow Cover Posterior Description") %>% 
@@ -5911,7 +6159,7 @@ ggsave("./output/figures_202107_stats_upland/ppc_stemcnt_upl_allshrubs_ucunc.png
 ```
 
 ```{r}
-fun.sexit.gt(stmod_cov.allshr$stanfit)
+fun.sexit.flextable(stmod_cov.allshr$stanfit)
 
 fun.sexit.gt(stmod_cov.allshr$stanfit) %>%
   tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
@@ -5980,8 +6228,8 @@ back-transformation to ratios goes hand-in-hand with that.
 # Results are given on the log (not the response) scale.
 emmeans(stmod_cov.allshr, ~ time_class) %>% 
   pairs() %>% 
-  plot() +
-  # plot(type="response") +
+  # plot() +
+  plot(type="response") +
   theme_minimal() +
   geom_vline(aes(xintercept = 0), color= "black", size=1, lty="dashed") +
   labs(subtitle = "Point estimate displayed: median 
@@ -6080,7 +6328,7 @@ ggsave("./output/figures_202107_stats_upland/ppc_stemcnt_upl_allshrubs_uc.png", 
 ```
 
 ```{r}
-fun.sexit.gt(stmod_cov.allshr.uc$stanfit)
+fun.sexit.flextable(stmod_cov.allshr.uc$stanfit)
 
 fun.sexit.gt(stmod_cov.allshr.uc$stanfit) %>%
   tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
@@ -6237,7 +6485,7 @@ ggsave("./output/figures_202107_stats_upland/ppc_stemcnt_upl_allshrubs_unc.png",
 ```
 
 ```{r}
-fun.sexit.gt(stmod_cov.allshr.unc$stanfit)
+fun.sexit.flextable(stmod_cov.allshr.unc$stanfit)
 
 fun.sexit.gt(stmod_cov.allshr.unc$stanfit) %>%
   tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
@@ -6518,7 +6766,7 @@ ggsave("./output/figures_202107_stats_upland/ppc_PUTR_putrubs_unc.png", dpi = 30
 ```
 
 ```{r}
-fun.sexit.gt(stmod_cov.putr$stanfit)
+fun.sexit.flextable(stmod_cov.putr$stanfit)
 
 fun.sexit.gt(stmod_cov.putr$stanfit) %>%
   tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
@@ -6687,7 +6935,7 @@ ggsave("./output/figures_202107_stats_upland/ppc_PUTR_putrubs_uc.png", dpi = 300
 ```
 
 ```{r}
-fun.sexit.gt(stmod_cov.putr.uc$stanfit)
+fun.sexit.flextable(stmod_cov.putr.uc$stanfit)
 
 fun.sexit.gt(stmod_cov.putr.uc$stanfit) %>%
   tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
@@ -6844,7 +7092,7 @@ ggsave("./output/figures_202107_stats_upland/ppc_PUTR_putrubs_unc.png", dpi = 30
 ```
 
 ```{r}
-fun.sexit.gt(stmod_cov.putr.unc$stanfit)
+fun.sexit.flextable(stmod_cov.putr.unc$stanfit)
 
 fun.sexit.gt(stmod_cov.putr.unc$stanfit) %>%
   tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
@@ -7015,7 +7263,7 @@ ggsave("./output/figures_202107_stats_upland/ppc_PUTR_riceubs_unc.png", dpi = 30
 ```
 
 ```{r}
-fun.sexit.gt(stmod_cov.rice$stanfit)
+fun.sexit.flextable(stmod_cov.rice$stanfit)
 
 fun.sexit.gt(stmod_cov.rice$stanfit) %>%
   tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
@@ -7185,7 +7433,7 @@ ggsave("./output/figures_202107_stats_upland/ppc_RICE_riceubs_uc.png", dpi = 300
 ```
 
 ```{r}
-fun.sexit.gt(stmod_cov.rice.uc$stanfit)
+fun.sexit.flextable(stmod_cov.rice.uc$stanfit)
 
 fun.sexit.gt(stmod_cov.rice.uc$stanfit) %>%
   tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
@@ -7342,7 +7590,7 @@ ggsave("./output/figures_202107_stats_upland/ppc_RICE_riceubs_unc.png", dpi = 30
 ```
 
 ```{r}
-fun.sexit.gt(stmod_cov.rice.unc$stanfit)
+fun.sexit.flextable(stmod_cov.rice.unc$stanfit)
 
 fun.sexit.gt(stmod_cov.rice.unc$stanfit) %>%
   tab_header(title = "Upland Shrub Cover Posterior Description", subtitle = "Combined Core & Noncore Winter Range") %>% 
@@ -7594,8 +7842,27 @@ citation(package = "emmeans")
 citation(package = "rstanarm")
 citation(package = "bayestestR")
 citation(package = "Tidyverse")
-citation(package = "Bayesplot")
+# library(bayesplot)
+citation(package = "bayesplot")
 ```
+
+
+# References
+
+Gabry J., Mahr T. 2021. “bayesplot: Plotting for Bayesian Models.” R package version 1.8.1, <URL:
+https://mc-stan.org/bayesplot/>.
+
+Gabry J., Simpson D., Vehtari A., Betancourt M., Gelman A. 2019. “Visualization in Bayesian workflow.” _J.R. Stat. Soc. A_, *182*, 389-402. doi: 10.1111/rssa.12378 (URL: https://doi.org/10.1111/rssa.12378).
+
+Gelman, A., Hill, J., Vehtari, A. 2020. Regression and other stories. Cambridge University Press.
+
+Goodrich B, Gabry J, Ali I & Brilleman S. 2020. rstanarm: Bayesian applied regression modeling via
+  Stan. R package version 2.21.1 https://mc-stan.org/rstanarm
+
+Lenth, R.V. 2021. emmeans: Estimated Marginal Means, aka Least-Squares Means. R package version
+  1.6.3. https://CRAN.R-project.org/package=emmeans  
+
+  
 
 
 
