@@ -181,6 +181,15 @@ plotF.emmip_FxTC_response <- function(model){
   # theme(legend.position = c(.15, .15))
 }
 
+plotF.emmip_FxTCxB_response <- function(model){
+  emmip(model, fenced ~ time_class | fenced, type = "response") +
+  theme_minimal() +
+  scale_color_manual(values = colfunc3(2)) +
+  labs(color="") +
+  theme(legend.position = "top")
+  # theme(legend.position = c(.15, .15))
+}
+
 plotF.emmip_TC_response <- function(model){
   emmip(model, time_class, type = "response") +
   theme_minimal() +
@@ -299,7 +308,8 @@ fun.desc.post1.kable.rope <- function(model){
 ## custom ggplot emm
 
 emm.func.tc.x.fenced <- function(model){
-  emmeans(model, ~ time_class | fenced) %>% 
+  emmeans(model, ~ time_class | fenced,
+          CIs = TRUE) %>% 
   pairs(reverse = TRUE) %>% 
   as_tibble() %>% 
   ggplot() +
@@ -3793,6 +3803,17 @@ ggsave("./output/figures_202108/willow_height_stats/mcmcarea_willowht_TCxF_wcwnc
 # ggsave("./output/figures_202108/willow_height_stats/mcmcarea_willowht_TCxF_wcnc.pdf", width = 6.75, height = 3.75)
 ```
 
+# emmip
+```{r, echo=TRUE, eval=TRUE}
+
+plotF.emmip_FxTC_response(wc.wnc.stmod_TCxF) +
+  labs(title="Combined winter range") +
+  theme(legend.position = "right")
+
+ggsave("./output/figures_exported/emmip_TCxF_wcwnc.png", width = 3.75, height = 3.55) # save plot
+```
+
+
 ### Effects of Burning
 
 ```{r, cache=TRUE, eval=TRUE}
@@ -3893,6 +3914,21 @@ emmeans(wcwnc.emm.TCxFxB, ~ time_class | fenced) %>%
   tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the response scale.")
 ```
 
+# emmip
+```{r, echo=TRUE, eval=TRUE}
+
+# plotF.emmip_FxTCxB_response(wcwnc.emm.TCxFxB)
+
+emmip(wcwnc.emm.TCxFxB, fenced ~ time_class | fenced * burned, 
+      type = "response",
+      CIs = TRUE) +
+  labs(title="Combined winter range", caption = "willow height") +
+  theme_minimal()
+
+
+ggsave("./output/figures_exported/emmip_TCxFxB_wcwnc.png", width = 4.75, height = 4.25) # save plot
+
+```
 
 
 ### Willow Height - Core Winter Range Macroplot Data
@@ -4160,6 +4196,17 @@ ggsave("./output/figures_202108/willow_height_stats/mcmcarea_willowht_TCxF_wc.pd
 
 ```
 
+# emmip
+```{r, echo=TRUE, eval=TRUE}
+
+plotF.emmip_FxTC_response(stmod_ht2) +
+  labs(title="Core winter range") +
+  theme(legend.position = "right")
+
+ggsave("./output/figures_exported/emmip_TCxF_wc.png", width = 3.75, height = 3.55) # save plot
+```
+
+
 ### Willow Height - Noncore Winter Range Macroplot Data
 
 **Histograms of Willow Height**
@@ -4327,20 +4374,6 @@ ggsave("./output/figures_202108/willow_height_stats/mcmcarea_willowht_TCxF_wnc.p
 
 ```
 
-
-```{r}
-# bayesplot::mcmc_areas(posteriors.nc.ht,
-#            pars = c("time_class2013","time_class2018"),
-#            prob = 0.9) +
-#   theme_minimal() +
-#   labs(title = "Posterior distributions", subtitle = "with medians and 90% intervals", caption = "Willow height, WNC")
-# 
-# ggsave("./output/figures_202108/willow_height_stats/mcmcarea_willowht_TC_wnc.png", dpi = 300, width = 6.75, height = 3.75)
-# ggsave("./output/figures_202108/willow_height_stats/mcmcarea_willowht_TC_wnc.pdf", width = 6.75, height = 3.75)
-
-```
-
-
 ```{r}
 # Revised plot 2/15/21
 # willow height combined plot per revisions
@@ -4348,10 +4381,10 @@ ggsave("./output/figures_202108/willow_height_stats/mcmcarea_willowht_TCxF_wnc.p
 wc.emm.fenced <- emmeans(stmod_ht2, ~ fenced)
 wc.pairs.fenced <- pairs(wc.emm.fenced)
 
-plot(wc.pairs.fenced) +
-  theme_minimal() +
-  labs(subtitle = "Point estimate displayed: median 
-HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Willow Height")
+# plot(wc.pairs.fenced) +
+#   theme_minimal() +
+#   labs(subtitle = "Point estimate displayed: median 
+# HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Willow Height")
 
 
 nc.emm %>% 
@@ -4369,10 +4402,10 @@ ggsave("./output/figures_202108/willow_height_stats/emm_willowht_TC_wnc.png", wi
 
 
 ```{r}
-emm.wc <- plot(wc.pairs.fenced) +
-  theme_minimal() +
-  labs(subtitle = "Point estimate displayed: median 
-HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Willow Height")
+# emm.wc <- plot(wc.pairs.fenced) +
+#   theme_minimal() +
+#   labs(subtitle = "Point estimate displayed: median 
+# HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Core Winter Range, Willow Height")
 
 # emm.wnc.ht
 emm.wnc <- nc.emm %>% 
@@ -4385,12 +4418,6 @@ HPD interval probability: 0.95", x = "Estimate", y = "Contrast", caption = "Non-
   xlim(-0.5, 1.5)
 emm.wnc
 ggsave("./output/figures_202108/willow_height_stats/emm_willowht_TC_wnc.png", width = 7.5, height = 3.55) # save plot
-
-
-# emm.wc.ht + emm.wnc +
-#   plot_layout(ncol = 2) +
-#   plot_annotation(caption = "emm_willowht_TC_wcwnc.png")
-
 
 ```
 
@@ -4456,19 +4483,6 @@ ggsave("./output/figures_202108/willow_height_stats/hist_willowht_TC_WK_bw.png",
 ```
 
 #### Modeling and Posterior Description
-
-```{r, echo=FALSE, eval=FALSE}
-willow.ht.wk %>%
-  # tabyl(time_class)
-  tabyl(yr)
-  # glimpse()
-
-
-willow.ht.wk %>%
-  # tabyl(time_class)
-  tabyl(fenced)
-```
-
 
 ```{r, cache=TRUE}
 #### TC only (no fenced)
@@ -4665,6 +4679,15 @@ plot.mcmcareas_ht.wk
 ggsave("./output/figures_202108/willow_height_stats/mcmcarea_willowht_TC_wk.png", dpi = 300, width = 6.75, height = 3.75)
 ```
 
+```{r}
+plotF.emmip_FxTC_response(stmod_ht_wk_TCxF) +
+  labs(title="Combined winter range") +
+  theme(legend.position = "right")
+
+ggsave("./output/figures_exported/emmip_TCxF_wk.png", width = 3.75, height = 3.55)
+```
+
+
 # ---- COVER
 ### Willow Cover - Combined Winter Range Macroplot Data
 ```{r}
@@ -4709,14 +4732,17 @@ canopy.all.willow.sum <- canopy.all.willow.sum %>%
 ## check factor levels
 # levels(canopy.all.willow.sum$fenced)
 # levels(canopy.all.willow.sum$burned)
-levels(canopy.all.willow.sum$time_class)
+# levels(canopy.all.willow.sum$time_class)
 
 # relevel
 canopy.all.willow.sum <- canopy.all.willow.sum %>% 
   mutate(fenced = fct_relevel(fenced, "Fenced", after = 1))
 
-canopy.all.willow.sum %>% 
-  mutate(fenced = fct_relevel(fenced, "Fenced", after = 1))
+canopy.all.willow.sum <- canopy.all.willow.sum %>% 
+  mutate(time_class = fct_relevel(time_class, "2013", after = 1)) %>% 
+  mutate(time_class = fct_relevel(time_class, "2015", after = 2)) %>% 
+  mutate(time_class = fct_relevel(time_class, "2016", after = 3)) %>% 
+  mutate(time_class = fct_relevel(time_class, "2017", after = 4))
 
 ### create subsets of data for modeling
 # pull out WK, note different years of data
@@ -4978,6 +5004,16 @@ emmeans(stmod_cov.wc.wnc, ~ time_class | fenced) %>%
 # ggsave("./output/figures_202108/willow_cover_stats/mcmcarea_willowcov_TCxF_wcwnc.pdf", width = 6.75, height = 3.75)
 ```
 
+##### EMMIP
+
+```{r}
+plotF.emmip_FxTC_response(stmod_cov.wc.wnc) +
+  labs(title="Combined winter range", caption = "All willow cover") +
+  theme(legend.position = "right") 
+
+ggsave("./output/figures_exported/emmip_TCxF_wcwnc_cov.png", width = 5, height = 4.25)
+
+```
 
 #### Effects of Burning - Combined Range
 ```{r, eval=FALSE}
@@ -5041,6 +5077,25 @@ ggsave("./output/figures_202108/willow_cover_stats/mcmcarea_willowcov_wcwnc_TCxF
 ```
 
 
+##### EMMIP
+
+```{r}
+# plotF.emmip_FxTCxB_response(wcwnc.emm.TCxFxB)
+
+emmip(stmod_cov.wc.wnc.TCxFxB, fenced ~ time_class |burned, 
+      type = "response",
+      CIs = TRUE) +
+  scale_color_manual(values = colfunc3(2)) +
+  labs(title="Combined winter range", caption = "willow cover, all willow species combined", color = "") +
+  theme_minimal()
+
+
+ggsave("./output/figures_exported/emmip_TCxFxB_wcwnc_cover_wide.png", width = 7.75, height = 4.25) # save plot
+
+```
+
+
+
 ### Willow Cover - Core Winter Range Macroplot Data
 
 ```{r}
@@ -5064,6 +5119,8 @@ cov.wc %>%
   tab_header(title = "WC macroplot data: All willow cover - burned + time_class")
 
 ```
+
+
 
 #### Modeling and Posterior Description
 
@@ -5191,6 +5248,18 @@ emmeans(stmod_cov.wc, ~ time_class | fenced) %>%
   tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the response scale")
 
 ```
+
+#### EMMIP
+
+```{r}
+plotF.emmip_FxTC_response(stmod_cov.wc) +
+  labs(title="Core winter range", caption = "Combined willow cover, modeled means and CIs") +
+  theme_minimal()
+
+ggsave("./output/figures_exported/emmip_TCxF_wc_cov.png", width = 5, height = 4.25) # save plot
+
+```
+
 
 ### Willow Cover - Noncore Winter Range Macroplot Data
 ```{r}
@@ -5332,6 +5401,23 @@ emmeans(stmod_cov.wnc, ~ time_class) %>%
 
 ```
 
+# emmip TEST before running
+
+```{r}
+
+
+emmip(stmod_cov.wnc, fenced ~ time_class, 
+      type = "response",
+      CIs = TRUE) +
+  labs(title="Combined winter range", caption = "willow cover") +
+  theme_minimal()
+
+
+ggsave("./output/figures_exported/emmip_TC_wcwnc_ht.png", width = 4.75, height = 4.25) # save plot
+
+```
+
+
 ### Willow Cover - Kawuneeche Valley Macroplot Data
 
 ```{r}
@@ -5452,6 +5538,22 @@ emm.func.tc.x.fenced(stmod_cov.wk) +
 HPD interval probability: 0.95 \n Willow Cover. Results are given on the response scale.", title = "Kawuneeche Valley", x = "Estimate", y = "Contrast")
 
 ggsave("./output/figures_202108/willow_cover_stats/emm_willowht_TCxF_wk_alt.png", width = 5.75, height =5.75, dpi = 300)
+
+```
+
+# emmip #test before knit
+
+```{r}
+
+
+emmip(stmod_cov.wk, fenced ~ time_class | fenced, 
+      type = "response",
+      CIs = TRUE) +
+  labs(title="Combined winter range", caption = "willow cover") +
+  theme_minimal()
+
+
+ggsave("./output/figures_exported/emmip_TCxFxB_wcwnc.png", width = 4.75, height = 4.25) # save plot
 
 ```
 
@@ -6254,6 +6356,9 @@ emmeans(stmod_cov.allshr, ~ time_class) %>%
   tab_header(title = "Pairwise contrasts", subtitle = "Results are given on the response scale.")
 
 ```
+
+
+
 
 ### Upland Shrub Cover, Pooled Shrub Species - Core Winter Range
 ```{r}
@@ -7850,7 +7955,15 @@ citation(package = "bayesplot")
 # References
 
 Gabry J., Mahr T. 2021. “bayesplot: Plotting for Bayesian Models.” R package version 1.8.1, <URL:
-https://mc-stan.org/bayesplot/>.
+https://mc-stan.org/bayesplot/>.  
+
+Gabray, J., Goodrich, B. 2020a. Estimating Generalized Linear Models for Continuous Data with rstanarm. ver:2020-07-20 <URL:https://mc-stan.org/rstanarm/articles/continuous.html/>.  
+
+Gabray, J., Goodrich, B. 2020b. Estimating Generalized Linear Models for Count Data with rstanarm.
+ver:2020-07-20 <URL:https://mc-stan.org/rstanarm/articles/count.html/>.
+
+Gabray, J., Goodrich, B. 2020c. Modeling Rates/Proportions using Beta Regression with rstanarm.
+version 2020-07-20 <URL:https://mc-stan.org/rstanarm/articles/betareg.html/>.
 
 Gabry J., Simpson D., Vehtari A., Betancourt M., Gelman A. 2019. “Visualization in Bayesian workflow.” _J.R. Stat. Soc. A_, *182*, 389-402. doi: 10.1111/rssa.12378 (URL: https://doi.org/10.1111/rssa.12378).
 
